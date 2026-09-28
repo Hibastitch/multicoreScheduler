@@ -1235,6 +1235,69 @@ already the default) -- same precedent as the `burst_resets_timer`
 design decision: pass `arrival_rate_threshold=0.8, combine="or"`
 explicitly to reproduce the original detector behavior.
 
+## CORRECTION (2026-09-28b) -- "requiring AND eliminates the harm" overclaims what the data shows
+
+The claim two paragraphs up ("confirming that requiring agreement
+between both signals ... is what eliminates the harm") does not
+survive a direct check with `task6_threshold_grid_tradeoff.py`/
+`task6_threshold_grid_harm_breakdown.py` (both new, `final_results/
+1_calibration_grid/`, no new simulations -- read the existing per-seed
+CSVs only). **`combine` is not what separates harmful from harm-free
+configs.** Direct counterexample: `q4_a1.5_or` (`combine="or"`) is
+harm-free (0 of 9 workloads); `q4_a1.5_and` (`combine="and"`, same
+`q`/`a`) is harmful on 1 of 9 (`bursty_high_s64`/penalty=2, via
+`avg_slowdown` +1.3%, 21/30 seeds worse, sign_p=0.043). AND does not
+guarantee safety, and OR does not guarantee harm.
+
+**The pattern that actually holds, across all 12 configs' harm counts
+(0, 1, or 3 of 9 workloads):**
+- Every `a=0.8` + `combine="or"` config (`q2_a0.8_or`, `q4_a0.8_or`,
+  `q8_a0.8_or`) is harmful on the SAME 3 workloads
+  (`bursty_high_s24`, `bursty_high_s64`, `rate3.0_s4`) regardless of
+  `queue_growth_threshold` -- `q` doesn't matter here because
+  `arrival_rate_threshold=0.8` alone, ORed in, already fires on its
+  own often enough that queue growth is never the deciding factor.
+- The harm-free configs are the ones that simply **fire less easily**:
+  either `arrival_rate_threshold=1.5` (arrival rate rarely reaches it
+  at all, so it rarely contributes a false trigger regardless of
+  `combine`) or `queue_growth_threshold=8` (a high bar that rarely
+  trips regardless of `arrival_rate_threshold`). `combine="and"` at
+  `a=0.8` DOES reduce harm relative to the matching `"or"` config
+  (`q2_a0.8_and`/`q4_a0.8_and`: harm 1, vs `q2_a0.8_or`/`q4_a0.8_or`:
+  harm 3; `q8_a0.8_and`: harm 0, vs `q8_a0.8_or`: harm 3) -- AND has a
+  real, independent, partial protective effect at the low arrival-rate
+  threshold -- but it is not BY ITSELF sufficient (`q2_a0.8_and` and
+  `q4_a0.8_and` are still harmful on 1 workload each) or necessary
+  (`q4_a1.5_or` is harm-free).
+- **The selection was a near-tie, not a clear win.** Among the 4
+  harm-free configs, `q2_a1.5_and`'s benefit score (20.17% mean
+  p95_wait reduction on stacked_medium/high) beat `q4_a1.5_or`'s
+  (19.00%) by 1.17 points -- decided by the pre-registered "largest
+  benefit among harm-free options" rule as written, not because AND
+  was structurally superior to OR at this operating point. See
+  `figure_threshold_grid_tradeoff.png`/`.pdf` for the full harm-vs-
+  benefit scatter this correction is based on.
+
+**What triggers each of the 3-harm configs' `bursty_high_s64`/
+penalty=2 flag, checked directly (`harm_breakdown.csv`):** it's
+`avg_slowdown` in every case (+1.2% to +3.1%, 21-26 of 30 seeds
+worse), never `p95_wait` (whose change there is a non-significant
++0.4% to +4.6%, already noted above as "n.s.") -- consistent with the
+average-case-not-tail harm pattern found earlier in this investigation
+for `bursty`.
+
+**The size-4 arrival-rate blind spot, mechanism stated explicitly:**
+`arrival_rate()` is measured over a 5ms sliding window
+(`arrival_window=5`). A `burst_size=4` burst therefore has AT MOST 4
+arrivals in any 5ms window by construction, so its measured rate can
+never exceed 4/5 = **0.8 tasks/ms**, no matter how fast those 4 tasks
+actually arrive within the burst. `arrival_rate_threshold=1.5` is
+therefore mathematically unreachable for any `burst_size=4` workload,
+regardless of `arrival_rate_during_burst` -- this is why the calibrated
+detector (§07's AND-gate finding) never fires on any size-4 workload in
+the confirmation run's rate sweep, not a coincidence of the specific
+rates tested.
+
 ## Correction (2026-09-27h) -- harm-flag significance-test bug (verified harmless to the grid's outcome), plus honest disclosure of what the selection trades away
 
 **Default change above RETRACTED pending this check, per instruction --
