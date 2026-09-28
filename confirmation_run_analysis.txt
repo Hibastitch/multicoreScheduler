@@ -1,0 +1,113 @@
+Loaded 96 summary rows from 16 files
+
+==================================================================================================================================
+MAIN TABLE -- baseline (A+B+C) vs FINAL burst-aware, all workloads, both penalties
+==================================================================================================================================
+stacked_low      pen=0.0  p95_wait    7.50->   7.50 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+stacked_low      pen=2.0  p95_wait    7.47->   7.47 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+stacked_medium   pen=0.0  p95_wait   14.02->  12.44 ( -11.3%) sign_p=  0.0014 fires= 55.7 recall=  1.0 precision=  1.0 cores_scanned=  +2.2% migrations=  -0.2%
+stacked_medium   pen=2.0  p95_wait   14.12->  12.57 ( -11.0%) sign_p=  0.0023 fires= 58.0 recall=  1.0 precision=  1.0 cores_scanned=  +2.5% migrations=  -2.8%
+stacked_high     pen=0.0  p95_wait   25.35->  16.61 ( -34.5%) sign_p= <0.0001 fires=144.3 recall=  1.0 precision=  1.0 cores_scanned=  +6.0% migrations=  -7.0%
+stacked_high     pen=2.0  p95_wait   38.76->  27.35 ( -29.4%) sign_p= <0.0001 fires=147.6 recall=  1.0 precision=  1.0 cores_scanned=  +2.2% migrations= -10.2%
+bursty_high_s24  pen=0.0  p95_wait    1.47->   1.47 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+bursty_high_s24  pen=2.0  p95_wait    1.74->   1.74 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+bursty_high_s64  pen=0.0  p95_wait   64.64->  64.16 (  -0.7%) sign_p=  0.0987 fires=234.7 recall= 0.95 precision=  1.0 cores_scanned=  +3.5% migrations=  +6.4%
+bursty_high_s64  pen=2.0  p95_wait   76.07->  78.64 (  +3.4%) sign_p=  0.8555 fires=256.0 recall= 0.95 precision=  1.0 cores_scanned=  +3.5% migrations=  +8.1%
+heavy_tail_high  pen=0.0  p95_wait    0.93->   0.93 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0% [FLOORED]
+heavy_tail_high  pen=2.0  p95_wait    0.93->   0.93 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0% [FLOORED]
+rate0.5_s4       pen=0.0  p95_wait    7.37->   7.37 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate0.5_s4       pen=2.0  p95_wait    7.43->   7.43 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate0.5_s12      pen=0.0  p95_wait   11.73->  11.73 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate0.5_s12      pen=2.0  p95_wait   12.47->  12.47 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate0.75_s4      pen=0.0  p95_wait    8.89->   8.89 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate0.75_s4      pen=2.0  p95_wait    8.94->   8.94 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate0.75_s12     pen=0.0  p95_wait   14.54->  14.54 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate0.75_s12     pen=2.0  p95_wait   14.72->  14.72 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate1.0_s4       pen=0.0  p95_wait    8.13->   8.13 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate1.0_s4       pen=2.0  p95_wait    8.10->   8.10 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate1.0_s12      pen=0.0  p95_wait   15.33->  15.33 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate1.0_s12      pen=2.0  p95_wait   15.40->  15.40 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate1.5_s4       pen=0.0  p95_wait    8.44->   8.44 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate1.5_s4       pen=2.0  p95_wait    8.38->   8.38 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate1.5_s12      pen=0.0  p95_wait   17.03->  12.59 ( -26.1%) sign_p= <0.0001 fires= 31.9 recall=  1.0 precision=  1.0 cores_scanned=  +1.9% migrations=  -4.8%
+rate1.5_s12      pen=2.0  p95_wait   16.94->  12.87 ( -24.1%) sign_p= <0.0001 fires= 32.0 recall=  1.0 precision=  1.0 cores_scanned=  +2.1% migrations=  -4.0%
+rate3.0_s4       pen=0.0  p95_wait    7.92->   7.92 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate3.0_s4       pen=2.0  p95_wait    7.82->   7.82 (  +0.0%) sign_p=  1.0000 fires=  0.0 recall=  0.0 precision=      cores_scanned=  +0.0% migrations=  +0.0%
+rate3.0_s12      pen=0.0  p95_wait   18.60->  13.79 ( -25.9%) sign_p= <0.0001 fires= 49.7 recall=  1.0 precision=  1.0 cores_scanned=  +2.4% migrations=  -3.5%
+rate3.0_s12      pen=2.0  p95_wait   18.03->  14.53 ( -19.4%) sign_p= <0.0001 fires= 49.9 recall=  1.0 precision=  1.0 cores_scanned=  +2.2% migrations=  -3.6%
+
+Wrote results_task6_confirmation_MAIN_TABLE.csv
+
+==================================================================================================================================
+RQ4 -- cost (extra scanning work) vs benefit (p95_wait change), FINAL only
+==================================================================================================================================
+stacked_low      pen=0.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+stacked_low      pen=2.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+stacked_medium   pen=0.0  extra_scanning=   +2.2%  p95_wait_change=  -11.3%  migrations=   -0.2%  burst_levels_walked(abs)=    68.0
+stacked_medium   pen=2.0  extra_scanning=   +2.5%  p95_wait_change=  -11.0%  migrations=   -2.8%  burst_levels_walked(abs)=    68.0
+stacked_high     pen=0.0  extra_scanning=   +6.0%  p95_wait_change=  -34.5%  migrations=   -7.0%  burst_levels_walked(abs)=    51.7
+stacked_high     pen=2.0  extra_scanning=   +2.2%  p95_wait_change=  -29.4%  migrations=  -10.2%  burst_levels_walked(abs)=    51.9
+bursty_high_s24  pen=0.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+bursty_high_s24  pen=2.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+bursty_high_s64  pen=0.0  extra_scanning=   +3.5%  p95_wait_change=   -0.7%  migrations=   +6.4%  burst_levels_walked(abs)=   131.5
+bursty_high_s64  pen=2.0  extra_scanning=   +3.5%  p95_wait_change=   +3.4%  migrations=   +8.1%  burst_levels_walked(abs)=   132.4
+heavy_tail_high  pen=0.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+heavy_tail_high  pen=2.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate0.5_s4       pen=0.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate0.5_s4       pen=2.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate0.5_s12      pen=0.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate0.5_s12      pen=2.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate0.75_s4      pen=0.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate0.75_s4      pen=2.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate0.75_s12     pen=0.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate0.75_s12     pen=2.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate1.0_s4       pen=0.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate1.0_s4       pen=2.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate1.0_s12      pen=0.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate1.0_s12      pen=2.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate1.5_s4       pen=0.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate1.5_s4       pen=2.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate1.5_s12      pen=0.0  extra_scanning=   +1.9%  p95_wait_change=  -26.1%  migrations=   -4.8%  burst_levels_walked(abs)=    40.0
+rate1.5_s12      pen=2.0  extra_scanning=   +2.1%  p95_wait_change=  -24.1%  migrations=   -4.0%  burst_levels_walked(abs)=    40.0
+rate3.0_s4       pen=0.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate3.0_s4       pen=2.0  extra_scanning=   +0.0%  p95_wait_change=   +0.0%  migrations=   +0.0%  burst_levels_walked(abs)=     0.0
+rate3.0_s12      pen=0.0  extra_scanning=   +2.4%  p95_wait_change=  -25.9%  migrations=   -3.5%  burst_levels_walked(abs)=    40.0
+rate3.0_s12      pen=2.0  extra_scanning=   +2.2%  p95_wait_change=  -19.4%  migrations=   -3.6%  burst_levels_walked(abs)=    40.0
+
+==================================================================================================================================
+SECONDARY (report-only, no selection here) -- p95_wait %% change, all 3 burst-aware variants
+==================================================================================================================================
+stacked_low      pen=0.0  final=   +0.0%(harm=False)  original=   +6.2%(harm=True)  runner_up=   +0.0%(harm=False)
+stacked_low      pen=2.0  final=   +0.0%(harm=False)  original=   +7.1%(harm=True)  runner_up=   +0.0%(harm=False)
+stacked_medium   pen=0.0  final=  -11.3%(harm=False)  original=  -15.3%(harm=False)  runner_up=   -3.2%(harm=False)
+stacked_medium   pen=2.0  final=  -11.0%(harm=False)  original=  -15.5%(harm=False)  runner_up=   -3.5%(harm=False)
+stacked_high     pen=0.0  final=  -34.5%(harm=False)  original=  -26.4%(harm=False)  runner_up=  -33.4%(harm=False)
+stacked_high     pen=2.0  final=  -29.4%(harm=False)  original=  -20.4%(harm=False)  runner_up=  -28.9%(harm=False)
+bursty_high_s24  pen=0.0  final=   +0.0%(harm=False)  original=   +9.2%(harm=True)  runner_up=   +0.0%(harm=False)
+bursty_high_s24  pen=2.0  final=   +0.0%(harm=False)  original=  +10.7%(harm=True)  runner_up=   +0.0%(harm=False)
+bursty_high_s64  pen=0.0  final=   -0.7%(harm=False)  original=   +0.4%(harm=False)  runner_up=   -0.2%(harm=False)
+bursty_high_s64  pen=2.0  final=   +3.4%(harm=False)  original=   +3.7%(harm=True)  runner_up=   +7.0%(harm=True)
+heavy_tail_high  pen=0.0  final=   +0.0%(harm=False)  original=   +0.0%(harm=True)  runner_up=   +0.0%(harm=False)
+heavy_tail_high  pen=2.0  final=   +0.0%(harm=False)  original=   +0.0%(harm=True)  runner_up=   +0.0%(harm=False)
+rate0.5_s4       pen=0.0  final=   +0.0%(harm=False)  original=   +0.9%(harm=False)  runner_up=   +0.0%(harm=False)
+rate0.5_s4       pen=2.0  final=   +0.0%(harm=False)  original=   +3.6%(harm=False)  runner_up=   +0.0%(harm=False)
+rate0.5_s12      pen=0.0  final=   +0.0%(harm=False)  original=  -30.7%(harm=False)  runner_up=   +0.0%(harm=False)
+rate0.5_s12      pen=2.0  final=   +0.0%(harm=False)  original=  -30.5%(harm=False)  runner_up=   +0.0%(harm=False)
+rate0.75_s4      pen=0.0  final=   +0.0%(harm=False)  original=  -43.0%(harm=False)  runner_up=   +0.0%(harm=False)
+rate0.75_s4      pen=2.0  final=   +0.0%(harm=False)  original=  -43.2%(harm=False)  runner_up=   +0.0%(harm=False)
+rate0.75_s12     pen=0.0  final=   +0.0%(harm=False)  original=  -39.0%(harm=False)  runner_up=  -11.5%(harm=False)
+rate0.75_s12     pen=2.0  final=   +0.0%(harm=False)  original=  -40.9%(harm=False)  runner_up=  -13.7%(harm=False)
+rate1.0_s4       pen=0.0  final=   +0.0%(harm=False)  original=  -14.3%(harm=False)  runner_up=   +0.0%(harm=False)
+rate1.0_s4       pen=2.0  final=   +0.0%(harm=False)  original=  -14.4%(harm=False)  runner_up=   +0.0%(harm=False)
+rate1.0_s12      pen=0.0  final=   +0.0%(harm=False)  original=  -23.3%(harm=False)  runner_up=  -21.5%(harm=False)
+rate1.0_s12      pen=2.0  final=   +0.0%(harm=False)  original=  -19.9%(harm=False)  runner_up=  -25.1%(harm=False)
+rate1.5_s4       pen=0.0  final=   +0.0%(harm=False)  original=  -11.3%(harm=False)  runner_up=   +0.0%(harm=False)
+rate1.5_s4       pen=2.0  final=   +0.0%(harm=False)  original=  -10.5%(harm=False)  runner_up=   +0.0%(harm=False)
+rate1.5_s12      pen=0.0  final=  -26.1%(harm=False)  original=  -28.3%(harm=False)  runner_up=  -11.5%(harm=False)
+rate1.5_s12      pen=2.0  final=  -24.1%(harm=False)  original=  -26.3%(harm=False)  runner_up=  -13.6%(harm=False)
+rate3.0_s4       pen=0.0  final=   +0.0%(harm=False)  original=  -30.4%(harm=True)  runner_up=   +0.0%(harm=False)
+rate3.0_s4       pen=2.0  final=   +0.0%(harm=False)  original=  -29.5%(harm=True)  runner_up=   +0.0%(harm=False)
+rate3.0_s12      pen=0.0  final=  -25.9%(harm=False)  original=   +0.1%(harm=False)  runner_up=  -14.5%(harm=False)
+rate3.0_s12      pen=2.0  final=  -19.4%(harm=False)  original=   -2.2%(harm=False)  runner_up=  -15.5%(harm=False)
+
+Wrote figure_p95wait_vs_arrival_rate.png

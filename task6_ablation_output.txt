@@ -1,0 +1,62 @@
+
+==========================================================================================
+stacked_burst / low / penalty=0.0ms / A+B+C / FRESH seeds 7000-7029
+==========================================================================================
+low baseline vs resets_true (current) [p95_wait] n=30: baseline=7.533+-0.629  burst_aware=8.533+-0.937  mean_diff=+1.000 (95% CI [+0.608, +1.392])  wins=0/19 (ties=11)  p=<0.0001
+    Wilcoxon: n=19 (zeros dropped=11)  z=+3.923  p=<0.0001
+low baseline vs resets_false (ablation) [p95_wait] n=30: baseline=7.533+-0.629  burst_aware=8.033+-0.414  mean_diff=+0.500 (95% CI [+0.194, +0.806])  wins=3/19 (ties=11)  p=0.0044
+    Wilcoxon: n=19 (zeros dropped=11)  z=+2.962  p=0.0031
+low resets_true vs resets_false (direct) [p95_wait] n=30: baseline=8.533+-0.937  burst_aware=8.033+-0.414  mean_diff=-0.500 (95% CI [-0.836, -0.164])  wins=9/9 (ties=21)  p=0.0039
+    Wilcoxon: n=9 (zeros dropped=21)  z=-2.658  p=0.0079
+
+==========================================================================================
+stacked_burst / low / penalty=2.0ms / A+B+C / FRESH seeds 7000-7029
+==========================================================================================
+low baseline vs resets_true (current) [p95_wait] n=30: baseline=7.567+-0.626  burst_aware=8.733+-0.868  mean_diff=+1.167 (95% CI [+0.773, +1.560])  wins=0/21 (ties=9)  p=<0.0001
+    Wilcoxon: n=21 (zeros dropped=9)  z=+4.083  p=<0.0001
+low baseline vs resets_false (ablation) [p95_wait] n=30: baseline=7.567+-0.626  burst_aware=8.000+-0.000  mean_diff=+0.433 (95% CI [+0.200, +0.667])  wins=2/17 (ties=13)  p=0.0023
+    Wilcoxon: n=17 (zeros dropped=13)  z=+3.126  p=0.0018
+low resets_true vs resets_false (direct) [p95_wait] n=30: baseline=8.733+-0.868  burst_aware=8.000+-0.000  mean_diff=-0.733 (95% CI [-1.058, -0.409])  wins=16/16 (ties=14)  p=<0.0001
+    Wilcoxon: n=16 (zeros dropped=14)  z=-3.672  p=0.0002
+
+==========================================================================================
+stacked_burst / medium / penalty=0.0ms / A+B+C / FRESH seeds 7100-7129
+==========================================================================================
+medium baseline vs resets_true (current) [p95_wait] n=30: baseline=14.456+-1.273  burst_aware=11.556+-1.007  mean_diff=-2.900 (95% CI [-3.487, -2.313])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+medium baseline vs resets_false (ablation) [p95_wait] n=30: baseline=14.456+-1.273  burst_aware=12.133+-1.741  mean_diff=-2.322 (95% CI [-3.058, -1.587])  wins=26/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.217  p=<0.0001
+medium resets_true vs resets_false (direct) [p95_wait] n=30: baseline=11.556+-1.007  burst_aware=12.133+-1.741  mean_diff=+0.578 (95% CI [-0.011, +1.167])  wins=8/28 (ties=2)  p=0.0357
+    Wilcoxon: n=28 (zeros dropped=2)  z=+2.289  p=0.0221
+
+==========================================================================================
+stacked_burst / medium / penalty=2.0ms / A+B+C / FRESH seeds 7100-7129
+==========================================================================================
+medium baseline vs resets_true (current) [p95_wait] n=30: baseline=14.056+-1.336  burst_aware=11.678+-1.357  mean_diff=-2.378 (95% CI [-2.863, -1.892])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+medium baseline vs resets_false (ablation) [p95_wait] n=30: baseline=14.056+-1.336  burst_aware=11.467+-1.710  mean_diff=-2.589 (95% CI [-3.280, -1.897])  wins=28/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.463  p=<0.0001
+medium resets_true vs resets_false (direct) [p95_wait] n=30: baseline=11.678+-1.357  burst_aware=11.467+-1.710  mean_diff=-0.211 (95% CI [-0.805, +0.383])  wins=18/30 (ties=0)  p=0.3616
+    Wilcoxon: n=30 (zeros dropped=0)  z=-0.740  p=0.4590
+
+==========================================================================================
+stacked_burst / high / penalty=0.0ms / A+B+C / FRESH seeds 7200-7229
+==========================================================================================
+high baseline vs resets_true (current) [p95_wait] n=30: baseline=24.691+-7.660  burst_aware=16.411+-3.061  mean_diff=-8.280 (95% CI [-11.164, -5.396])  wins=27/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.319  p=<0.0001
+high baseline vs resets_false (ablation) [p95_wait] n=30: baseline=24.691+-7.660  burst_aware=17.871+-5.018  mean_diff=-6.820 (95% CI [-9.723, -3.917])  wins=26/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-3.641  p=0.0003
+high resets_true vs resets_false (direct) [p95_wait] n=30: baseline=16.411+-3.061  burst_aware=17.871+-5.018  mean_diff=+1.460 (95% CI [-0.295, +3.215])  wins=12/30 (ties=0)  p=0.3616
+    Wilcoxon: n=30 (zeros dropped=0)  z=+1.255  p=0.2096
+
+==========================================================================================
+stacked_burst / high / penalty=2.0ms / A+B+C / FRESH seeds 7200-7229
+==========================================================================================
+high baseline vs resets_true (current) [p95_wait] n=30: baseline=37.576+-9.484  burst_aware=28.129+-6.542  mean_diff=-9.447 (95% CI [-12.200, -6.693])  wins=28/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.546  p=<0.0001
+high baseline vs resets_false (ablation) [p95_wait] n=30: baseline=37.576+-9.484  burst_aware=29.422+-8.282  mean_diff=-8.153 (95% CI [-12.317, -3.989])  wins=25/30 (ties=0)  p=0.0003
+    Wilcoxon: n=30 (zeros dropped=0)  z=-3.579  p=0.0003
+high resets_true vs resets_false (direct) [p95_wait] n=30: baseline=28.129+-6.542  burst_aware=29.422+-8.282  mean_diff=+1.293 (95% CI [-2.007, +4.593])  wins=15/30 (ties=0)  p=1.0000
+    Wilcoxon: n=30 (zeros dropped=0)  z=+0.165  p=0.8693
+
+Wrote results_task6_ablation_burst_resets_timer.csv

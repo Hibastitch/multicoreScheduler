@@ -1,0 +1,17 @@
+group,workload,final_fires,final_p95_p0,final_p95_p2,orig_fires,orig_p95_p0,orig_p95_p2,orig_any_harm,orig_harm_metrics,avg_wait_final,avg_wait_final_flip,avg_wait_original,avg_wait_original_flip,migrations_final,migrations_final_flip,scanwork_final,scanwork_final_flip
+final silent,stacked_low,0.0,+0.0%,+0.0%,49.86666666666667,+6.2%**,+7.1%***,True,"p95_wait@p0,p2; p99_wait@p0,p2",0.0,False,-0.02365842722370047,True,0.0,False,0.0,False
+final helps,stacked_medium,56.81666666666666,-11.3%**,-11.0%**,158.05,-15.3%***,-15.5%***,False,,-16.221700293988373,False,-21.36636267876825,False,-1.4864451776546863,False,2.361584406444961,False
+final helps,stacked_high,145.96666666666667,-34.5%***,-29.4%***,180.60000000000002,-26.4%**,-20.4%**,False,,-32.25725836495769,False,-22.919089685212292,False,-8.614066603286268,False,4.094952621887565,False
+final silent,bursty_high_s24,0.0,+0.0%,+0.0%,10.983333333333334,+9.2%,+10.7%**,True,"p95_wait@p2; avg_wait@p2; avg_slowdown@p0,p2",0.0,False,2.4277777539423133,False,0.0,False,0.0,False
+fires without benefit,bursty_high_s64,245.33333333333331,-0.7%,+3.4%,431.2166666666667,+0.4%,+3.7%,True,avg_slowdown@p2,0.5450052199101936,True,-0.36139952464416364,True,7.222574151899272,False,3.4903574382328384,False
+final silent,heavy_tail_high,0.0,+0.0%,+0.0%,12.0,+0.0%,+0.0%,True,"p99_wait@p0,p2; avg_wait@p0,p2; avg_slowdown@p0,p2; p95_slowdown@p0,p2",0.0,False,0.9615384615384717,False,0.0,False,0.0,False
+final silent,rate0.5_s4,0.0,+0.0%,+0.0%,9.983333333333334,+0.9%,+3.6%,False,,0.0,False,0.23828611876536235,True,0.0,False,0.0,False
+final silent,rate0.5_s12,0.0,+0.0%,+0.0%,23.05,-30.7%***,-30.5%***,False,,0.0,False,-19.57914073235336,False,0.0,False,0.0,False
+final silent,rate0.75_s4,0.0,+0.0%,+0.0%,19.966666666666665,-43.0%***,-43.2%***,False,,0.0,False,-41.26956905601246,False,0.0,False,0.0,False
+final silent,rate0.75_s12,0.0,+0.0%,+0.0%,99.86666666666667,-39.0%***,-40.9%***,False,,0.0,False,-33.81427258286439,False,0.0,False,0.0,False
+final silent,rate1.0_s4,0.0,+0.0%,+0.0%,19.95,-14.3%**,-14.4%***,False,,0.0,False,-25.77326514667235,False,0.0,False,0.0,False
+final silent,rate1.0_s12,0.0,+0.0%,+0.0%,99.56666666666666,-23.3%***,-19.9%***,False,,0.0,False,-22.738574459898096,False,0.0,False,0.0,False
+final silent,rate1.5_s4,0.0,+0.0%,+0.0%,19.96666666666667,-11.3%***,-10.5%**,False,,0.0,False,-17.6598294743494,False,0.0,False,0.0,False
+final helps,rate1.5_s12,31.933333333333334,-26.1%***,-24.1%***,95.76666666666667,-28.3%***,-26.3%***,False,,-27.43009511247966,False,-30.357170569444385,False,-4.361769633356023,False,1.9682401121528095,False
+final silent,rate3.0_s4,0.0,+0.0%,+0.0%,10.0,-30.4%***,-29.5%***,True,"avg_slowdown@p0,p2; p95_slowdown@p2",0.0,False,-26.509029733125615,False,0.0,False,0.0,False
+final helps,rate3.0_s12,49.8,-25.9%***,-19.4%***,91.83333333333334,+0.1%,-2.2%,False,,-32.879611018795615,False,-15.625138068920624,False,-3.5288459281658806,False,2.2981830950349096,False

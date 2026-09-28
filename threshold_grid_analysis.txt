@@ -1,0 +1,275 @@
+Loaded 216 rows across 9 workloads x 12 configs x 2 penalties
+Workloads: ['bursty_high_s24', 'bursty_high_s64', 'rate0.5_s12', 'rate0.5_s4', 'rate3.0_s12', 'rate3.0_s4', 'stacked_high', 'stacked_low', 'stacked_medium']
+Configs: ['q2_a0.8_and', 'q2_a0.8_or', 'q2_a1.5_and', 'q2_a1.5_or', 'q4_a0.8_and', 'q4_a0.8_or', 'q4_a1.5_and', 'q4_a1.5_or', 'q8_a0.8_and', 'q8_a0.8_or', 'q8_a1.5_and', 'q8_a1.5_or']
+
+====================================================================================================
+HARM CHECK per config (any workload, any penalty, any metric)
+====================================================================================================
+q2_a0.8_and          HARM   harmful_on=[('rate3.0_s4', '0.0'), ('rate3.0_s4', '2.0')]
+q2_a0.8_or           HARM   harmful_on=[('bursty_high_s24', '0.0'), ('bursty_high_s64', '2.0'), ('rate3.0_s4', '0.0'), ('rate3.0_s4', '2.0')]
+q2_a1.5_and          clean  harmful_on=-
+q2_a1.5_or           HARM   harmful_on=[('rate3.0_s4', '0.0'), ('rate3.0_s4', '2.0')]
+q4_a0.8_and          HARM   harmful_on=[('bursty_high_s64', '2.0')]
+q4_a0.8_or           HARM   harmful_on=[('bursty_high_s24', '0.0'), ('bursty_high_s64', '2.0'), ('rate3.0_s4', '0.0'), ('rate3.0_s4', '2.0')]
+q4_a1.5_and          HARM   harmful_on=[('bursty_high_s64', '2.0')]
+q4_a1.5_or           clean  harmful_on=-
+q8_a0.8_and          clean  harmful_on=-
+q8_a0.8_or           HARM   harmful_on=[('bursty_high_s24', '0.0'), ('bursty_high_s64', '2.0'), ('rate3.0_s4', '0.0'), ('rate3.0_s4', '2.0')]
+q8_a1.5_and          clean  harmful_on=-
+q8_a1.5_or           HARM   harmful_on=[('bursty_high_s64', '2.0')]
+
+Harm-free configs: ['q2_a1.5_and', 'q4_a1.5_or', 'q8_a0.8_and', 'q8_a1.5_and']
+
+====================================================================================================
+stacked_burst medium/high p95_wait %% change, harm-free configs only
+====================================================================================================
+q2_a1.5_and          mean p95_wait %% change (medium+high, both penalties) = -20.17%  (values: [-14.5, -10.1, -30.3, -25.7])
+q4_a1.5_or           mean p95_wait %% change (medium+high, both penalties) = -19.00%  (values: [-6.9, -2.9, -31.0, -35.2])
+q8_a0.8_and          mean p95_wait %% change (medium+high, both penalties) = -9.98%  (values: [-1.5, 0.7, -22.2, -16.9])
+q8_a1.5_and          mean p95_wait %% change (medium+high, both penalties) = -9.97%  (values: [-1.5, 0.7, -22.2, -16.8])
+
+SELECTED (largest reduction among harm-free configs): q2_a1.5_and (-20.17%)
+
+====================================================================================================
+FULL GRID (p95_wait %% change, sign_p, fires, recall, precision) -- condensed
+====================================================================================================
+
+--- q2_a0.8_and ---
+  bursty_high_s24  p=0.0  p95_wait 0.14388489208641034%  sign_p=     1.0  harm=False  fires=0.1  recall=0.006666666666666667  precision=1.0
+  bursty_high_s24  p=2.0  p95_wait -0.1140250855184009%  sign_p=     1.0  harm=False  fires=0.3  recall=0.023333333333333334  precision=1.0
+  bursty_high_s64  p=0.0  p95_wait 1.0634296460938444%  sign_p=0.855535551905632  harm=False  fires=328.8  recall=0.9933333333333333  precision=1.0
+  bursty_high_s64  p=2.0  p95_wait 3.4403938576951094%  sign_p=0.584664711728692  harm=False  fires=345.0  recall=0.9933333333333333  precision=1.0
+  rate0.5_s12      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s12      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s12      p=0.0  p95_wait -7.083333333333106%  sign_p=0.0241195447742939  harm=False  fires=85.7  recall=1.0  precision=1.0
+  rate3.0_s12      p=2.0  p95_wait -5.900243309002531%  sign_p=0.13604594767093658  harm=False  fires=85.5  recall=1.0  precision=1.0
+  rate3.0_s4       p=0.0  p95_wait -18.922651933701307%  sign_p=1.4901161193847656e-08  harm=True   fires=5.0  recall=0.5  precision=1.0
+  rate3.0_s4       p=2.0  p95_wait -17.20733427362441%  sign_p=8.046627044677734e-07  harm=True   fires=5.0  recall=0.5  precision=1.0
+  stacked_high     p=0.0  p95_wait -31.90155343440013%  sign_p=8.430331945419312e-06  harm=False  fires=162.5  recall=1.0  precision=1.0
+  stacked_high     p=2.0  p95_wait -33.688978959289464%  sign_p=8.67992639541626e-07  harm=False  fires=168.8  recall=1.0  precision=1.0
+  stacked_low      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_low      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_medium   p=0.0  p95_wait -15.64160971905868%  sign_p=0.0015137195587158203  harm=False  fires=135.8  recall=1.0  precision=1.0
+  stacked_medium   p=2.0  p95_wait -11.79245283018974%  sign_p=0.00010371580719947815  harm=False  fires=135.1  recall=1.0  precision=1.0
+
+--- q2_a0.8_or ---
+  bursty_high_s24  p=0.0  p95_wait 15.683453237414932%  sign_p=0.002599477767944336  harm=True   fires=11.2  recall=0.5666666666666667  precision=1.0
+  bursty_high_s24  p=2.0  p95_wait 4.4469783352355%  sign_p=0.06391465663909912  harm=False  fires=13.0  recall=0.5733333333333334  precision=1.0
+  bursty_high_s64  p=0.0  p95_wait 2.721832791930603%  sign_p=0.361594608053565  harm=False  fires=427.0  recall=1.0  precision=1.0
+  bursty_high_s64  p=2.0  p95_wait 1.2630406751843637%  sign_p=0.20048842206597328  harm=True   fires=443.7  recall=1.0  precision=1.0
+  rate0.5_s12      p=0.0  p95_wait -35.309973045822105%  sign_p=7.450580596923828e-09  harm=False  fires=23.4  recall=0.9966666666666667  precision=1.0
+  rate0.5_s12      p=2.0  p95_wait -34.12073490813648%  sign_p=3.725290298461914e-09  harm=False  fires=24.5  recall=0.99  precision=1.0
+  rate0.5_s4       p=0.0  p95_wait -1.724137931034488%  sign_p=0.210113525390625  harm=False  fires=10.0  recall=1.0  precision=1.0
+  rate0.5_s4       p=2.0  p95_wait -5.084745762711858%  sign_p=0.03515625  harm=False  fires=10.0  recall=1.0  precision=1.0
+  rate3.0_s12      p=0.0  p95_wait -0.23809523809489264%  sign_p=     1.0  harm=False  fires=91.9  recall=1.0  precision=1.0
+  rate3.0_s12      p=2.0  p95_wait -2.8588807785888726%  sign_p=0.45825831964612007  harm=False  fires=91.8  recall=1.0  precision=1.0
+  rate3.0_s4       p=0.0  p95_wait -30.248618784530702%  sign_p=1.862645149230957e-09  harm=True   fires=10.0  recall=1.0  precision=1.0
+  rate3.0_s4       p=2.0  p95_wait -29.196050775740805%  sign_p=3.725290298461914e-09  harm=True   fires=10.0  recall=1.0  precision=1.0
+  stacked_high     p=0.0  p95_wait -27.01665730862804%  sign_p=8.67992639541626e-07  harm=False  fires=180.4  recall=1.0  precision=1.0
+  stacked_high     p=2.0  p95_wait -25.58264290397568%  sign_p=0.00032491423189640045  harm=False  fires=181.0  recall=1.0  precision=1.0
+  stacked_low      p=0.0  p95_wait 1.7241379310344764%  sign_p=0.266845703125  harm=False  fires=49.8  recall=0.9953333333333333  precision=1.0
+  stacked_low      p=2.0  p95_wait 3.004291845493563%  sign_p=0.2265625  harm=False  fires=49.8  recall=0.9953333333333333  precision=1.0
+  stacked_medium   p=0.0  p95_wait -18.071374335611267%  sign_p=5.774199962615967e-08  harm=False  fires=158.0  recall=1.0  precision=1.0
+  stacked_medium   p=2.0  p95_wait -16.50943396226401%  sign_p=1.5236437320709229e-05  harm=False  fires=157.5  recall=1.0  precision=1.0
+
+--- q2_a1.5_and ---
+  bursty_high_s24  p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  bursty_high_s24  p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  bursty_high_s64  p=0.0  p95_wait 0.4137459394772066%  sign_p=     1.0  harm=False  fires=232.4  recall=0.9766666666666667  precision=1.0
+  bursty_high_s64  p=2.0  p95_wait 4.644824756769051%  sign_p=0.361594608053565  harm=False  fires=254.6  recall=0.98  precision=1.0
+  rate0.5_s12      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s12      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s12      p=0.0  p95_wait -26.666666666666423%  sign_p=2.1606683731079102e-07  harm=False  fires=49.9  recall=1.0  precision=1.0
+  rate3.0_s12      p=2.0  p95_wait -20.742092457420938%  sign_p=2.744048833847046e-05  harm=False  fires=49.6  recall=1.0  precision=1.0
+  rate3.0_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_high     p=0.0  p95_wait -30.34811903425052%  sign_p=8.67992639541626e-07  harm=False  fires=145.2  recall=1.0  precision=1.0
+  stacked_high     p=2.0  p95_wait -25.67801156344995%  sign_p=0.00032491423189640045  harm=False  fires=148.1  recall=1.0  precision=1.0
+  stacked_low      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_low      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_medium   p=0.0  p95_wait -14.50265755505006%  sign_p=8.430331945419312e-06  harm=False  fires=55.7  recall=1.0  precision=1.0
+  stacked_medium   p=2.0  p95_wait -10.14150943396456%  sign_p=0.009355306625366211  harm=False  fires=58.6  recall=1.0  precision=1.0
+
+--- q2_a1.5_or ---
+  bursty_high_s24  p=0.0  p95_wait 0.7194244604319224%  sign_p=     0.5  harm=False  fires=0.2  recall=0.016666666666666666  precision=1.0
+  bursty_high_s24  p=2.0  p95_wait -1.5039281108949143e-12%  sign_p=     1.0  harm=False  fires=0.4  recall=0.03666666666666667  precision=1.0
+  bursty_high_s64  p=0.0  p95_wait 0.4342622670544866%  sign_p=     1.0  harm=False  fires=363.6  recall=0.9966666666666667  precision=1.0
+  bursty_high_s64  p=2.0  p95_wait -0.8644941976322882%  sign_p=0.584664711728692  harm=False  fires=381.9  recall=0.9966666666666667  precision=1.0
+  rate0.5_s12      p=0.0  p95_wait -35.309973045822105%  sign_p=7.450580596923828e-09  harm=False  fires=23.4  recall=0.9966666666666667  precision=1.0
+  rate0.5_s12      p=2.0  p95_wait -34.12073490813648%  sign_p=3.725290298461914e-09  harm=False  fires=24.5  recall=0.99  precision=1.0
+  rate0.5_s4       p=0.0  p95_wait -1.724137931034488%  sign_p=0.210113525390625  harm=False  fires=10.0  recall=1.0  precision=1.0
+  rate0.5_s4       p=2.0  p95_wait -5.084745762711858%  sign_p=0.03515625  harm=False  fires=10.0  recall=1.0  precision=1.0
+  rate3.0_s12      p=0.0  p95_wait -0.3571428571421677%  sign_p=0.1849333420395851  harm=False  fires=87.7  recall=1.0  precision=1.0
+  rate3.0_s12      p=2.0  p95_wait -5.10948905109534%  sign_p=0.04277394525706768  harm=False  fires=87.5  recall=1.0  precision=1.0
+  rate3.0_s4       p=0.0  p95_wait -18.922651933701307%  sign_p=1.4901161193847656e-08  harm=True   fires=5.0  recall=0.5  precision=1.0
+  rate3.0_s4       p=2.0  p95_wait -17.20733427362441%  sign_p=8.046627044677734e-07  harm=True   fires=5.0  recall=0.5  precision=1.0
+  stacked_high     p=0.0  p95_wait -31.330713082538004%  sign_p=8.430331945419312e-06  harm=False  fires=172.2  recall=1.0  precision=1.0
+  stacked_high     p=2.0  p95_wait -33.98104547892954%  sign_p=8.430331945419312e-06  harm=False  fires=175.2  recall=1.0  precision=1.0
+  stacked_low      p=0.0  p95_wait 1.7241379310344764%  sign_p=0.266845703125  harm=False  fires=49.8  recall=0.9953333333333333  precision=1.0
+  stacked_low      p=2.0  p95_wait 3.004291845493563%  sign_p=0.2265625  harm=False  fires=49.8  recall=0.9953333333333333  precision=1.0
+  stacked_medium   p=0.0  p95_wait -18.071374335611353%  sign_p=2.1606683731079102e-07  harm=False  fires=147.5  recall=1.0  precision=1.0
+  stacked_medium   p=2.0  p95_wait -13.28616352201296%  sign_p=5.947612226009369e-05  harm=False  fires=146.4  recall=1.0  precision=1.0
+
+--- q4_a0.8_and ---
+  bursty_high_s24  p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  bursty_high_s24  p=2.0  p95_wait 0.11402508551923263%  sign_p=     1.0  harm=False  fires=0.1  recall=0.006666666666666667  precision=1.0
+  bursty_high_s64  p=0.0  p95_wait 1.9114378526243785%  sign_p=0.361594608053565  harm=False  fires=254.2  recall=0.9633333333333334  precision=1.0
+  bursty_high_s64  p=2.0  p95_wait -0.3487281678590126%  sign_p=0.855535551905632  harm=True   fires=269.0  recall=0.9666666666666667  precision=1.0
+  rate0.5_s12      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s12      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s12      p=0.0  p95_wait -17.14285714285723%  sign_p=1.6242265701293945e-06  harm=False  fires=61.2  recall=1.0  precision=1.0
+  rate3.0_s12      p=2.0  p95_wait -14.537712895376934%  sign_p=0.001430906355381012  harm=False  fires=61.4  recall=1.0  precision=1.0
+  rate3.0_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_high     p=0.0  p95_wait -33.09002433090021%  sign_p=8.67992639541626e-07  harm=False  fires=143.0  recall=1.0  precision=1.0
+  stacked_high     p=2.0  p95_wait -35.79901055015781%  sign_p=8.67992639541626e-07  harm=False  fires=155.5  recall=1.0  precision=1.0
+  stacked_low      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_low      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_medium   p=0.0  p95_wait -6.226271829917734%  sign_p=0.08715855330228806  harm=False  fires=51.1  recall=0.9784313725490196  precision=1.0
+  stacked_medium   p=2.0  p95_wait -2.358490566038951%  sign_p=0.1849333420395851  harm=False  fires=51.4  recall=0.984313725490196  precision=1.0
+
+--- q4_a0.8_or ---
+  bursty_high_s24  p=0.0  p95_wait 15.827338129499257%  sign_p=0.002599477767944336  harm=True   fires=11.1  recall=0.5599999999999999  precision=1.0
+  bursty_high_s24  p=2.0  p95_wait 4.4469783352355%  sign_p=0.06391465663909912  harm=False  fires=12.9  recall=0.57  precision=1.0
+  bursty_high_s64  p=0.0  p95_wait 1.774662335442519%  sign_p=0.584664711728692  harm=False  fires=426.7  recall=1.0  precision=1.0
+  bursty_high_s64  p=2.0  p95_wait 1.802250615402018%  sign_p=0.20048842206597328  harm=True   fires=441.2  recall=1.0  precision=1.0
+  rate0.5_s12      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s12      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s12      p=0.0  p95_wait -7.2023809523805715%  sign_p=0.1849333420395851  harm=False  fires=90.0  recall=1.0  precision=1.0
+  rate3.0_s12      p=2.0  p95_wait -3.345498783455298%  sign_p=0.13604594767093658  harm=False  fires=90.0  recall=1.0  precision=1.0
+  rate3.0_s4       p=0.0  p95_wait -30.248618784530702%  sign_p=1.862645149230957e-09  harm=True   fires=10.0  recall=1.0  precision=1.0
+  rate3.0_s4       p=2.0  p95_wait -29.196050775740805%  sign_p=3.725290298461914e-09  harm=True   fires=10.0  recall=1.0  precision=1.0
+  stacked_high     p=0.0  p95_wait -27.521991390604505%  sign_p=1.862645149230957e-09  harm=False  fires=179.0  recall=1.0  precision=1.0
+  stacked_high     p=2.0  p95_wait -25.731656434404336%  sign_p=5.947612226009369e-05  harm=False  fires=179.1  recall=1.0  precision=1.0
+  stacked_low      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_low      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_medium   p=0.0  p95_wait -21.10858010630113%  sign_p=2.1606683731079102e-07  harm=False  fires=149.0  recall=1.0  precision=1.0
+  stacked_medium   p=2.0  p95_wait -14.150943396227584%  sign_p=0.00010371580719947815  harm=False  fires=149.0  recall=1.0  precision=1.0
+
+--- q4_a1.5_and ---
+  bursty_high_s24  p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  bursty_high_s24  p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  bursty_high_s64  p=0.0  p95_wait 1.2925286373743496%  sign_p=     1.0  harm=False  fires=221.5  recall=0.9533333333333334  precision=1.0
+  bursty_high_s64  p=2.0  p95_wait 3.126831555502833%  sign_p=0.584664711728692  harm=True   fires=238.3  recall=0.9566666666666667  precision=1.0
+  rate0.5_s12      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s12      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s12      p=0.0  p95_wait -26.48809523809495%  sign_p=1.6242265701293945e-06  harm=False  fires=45.8  recall=1.0  precision=1.0
+  rate3.0_s12      p=2.0  p95_wait -18.49148418491492%  sign_p=0.0005461126565933228  harm=False  fires=45.3  recall=1.0  precision=1.0
+  rate3.0_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_high     p=0.0  p95_wait -29.30001871607709%  sign_p=5.774199962615967e-08  harm=False  fires=133.9  recall=1.0  precision=1.0
+  stacked_high     p=2.0  p95_wait -25.558800739107078%  sign_p=0.00032491423189640045  harm=False  fires=143.5  recall=1.0  precision=1.0
+  stacked_low      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_low      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_medium   p=0.0  p95_wait -15.337889141990418%  sign_p=4.172325134277344e-07  harm=False  fires=32.2  recall=0.9666666666666667  precision=1.0
+  stacked_medium   p=2.0  p95_wait -11.949685534592543%  sign_p=0.008130058646202087  harm=False  fires=34.3  recall=0.9607843137254902  precision=1.0
+
+--- q4_a1.5_or ---
+  bursty_high_s24  p=0.0  p95_wait 0.575539568345512%  sign_p=     1.0  harm=False  fires=0.1  recall=0.0033333333333333335  precision=1.0
+  bursty_high_s24  p=2.0  p95_wait 0.11402508551923263%  sign_p=     1.0  harm=False  fires=0.1  recall=0.006666666666666667  precision=1.0
+  bursty_high_s64  p=0.0  p95_wait -0.4821336980680381%  sign_p=     1.0  harm=False  fires=293.9  recall=0.98  precision=1.0
+  bursty_high_s64  p=2.0  p95_wait 1.828625014652089%  sign_p=0.855535551905632  harm=False  fires=320.7  recall=0.9833333333333334  precision=1.0
+  rate0.5_s12      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s12      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s12      p=0.0  p95_wait -18.035714285714374%  sign_p=1.6242265701293945e-06  harm=False  fires=68.4  recall=1.0  precision=1.0
+  rate3.0_s12      p=2.0  p95_wait -14.172749391727402%  sign_p=0.001430906355381012  harm=False  fires=68.3  recall=1.0  precision=1.0
+  rate3.0_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_high     p=0.0  p95_wait -30.993823694553672%  sign_p=8.67992639541626e-07  harm=False  fires=160.3  recall=1.0  precision=1.0
+  stacked_high     p=2.0  p95_wait -35.17911426357503%  sign_p=8.430331945419312e-06  harm=False  fires=163.1  recall=1.0  precision=1.0
+  stacked_low      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_low      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_medium   p=0.0  p95_wait -6.9096431283227675%  sign_p=0.0241195447742939  harm=False  fires=100.0  recall=1.0  precision=1.0
+  stacked_medium   p=2.0  p95_wait -2.9088050314473652%  sign_p=0.20048842206597328  harm=False  fires=98.8  recall=1.0  precision=1.0
+
+--- q8_a0.8_and ---
+  bursty_high_s24  p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  bursty_high_s24  p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  bursty_high_s64  p=0.0  p95_wait 2.547444007523318%  sign_p=0.361594608053565  harm=False  fires=123.5  recall=0.8466666666666667  precision=1.0
+  bursty_high_s64  p=2.0  p95_wait 2.086508029538942%  sign_p=0.855535551905632  harm=False  fires=143.3  recall=0.86  precision=1.0
+  rate0.5_s12      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s12      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s12      p=0.0  p95_wait -14.047619047619126%  sign_p=0.00032491423189640045  harm=False  fires=21.9  recall=0.7966666666666666  precision=1.0
+  rate3.0_s12      p=2.0  p95_wait -10.948905109489278%  sign_p=0.002315700054168701  harm=False  fires=20.5  recall=0.76  precision=1.0
+  rate3.0_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_high     p=0.0  p95_wait -22.234699606962412%  sign_p=8.430331945419312e-06  harm=False  fires=101.6  recall=1.0  precision=1.0
+  stacked_high     p=2.0  p95_wait -16.868331644513365%  sign_p=0.016124801710247993  harm=False  fires=120.7  recall=1.0  precision=1.0
+  stacked_low      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_low      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_medium   p=0.0  p95_wait -1.51860288534532%  sign_p=0.3876953125  harm=False  fires=0.6  recall=0.03333333333333333  precision=1.0
+  stacked_medium   p=2.0  p95_wait 0.7075471698106911%  sign_p=     1.0  harm=False  fires=0.7  recall=0.0392156862745098  precision=1.0
+
+--- q8_a0.8_or ---
+  bursty_high_s24  p=0.0  p95_wait 15.827338129499257%  sign_p=0.002599477767944336  harm=True   fires=11.1  recall=0.5599999999999999  precision=1.0
+  bursty_high_s24  p=2.0  p95_wait 4.4469783352355%  sign_p=0.06391465663909912  harm=False  fires=12.9  recall=0.57  precision=1.0
+  bursty_high_s64  p=0.0  p95_wait 1.774662335442519%  sign_p=0.584664711728692  harm=False  fires=426.7  recall=1.0  precision=1.0
+  bursty_high_s64  p=2.0  p95_wait 1.8344859922629495%  sign_p=0.20048842206597328  harm=True   fires=441.0  recall=1.0  precision=1.0
+  rate0.5_s12      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s12      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s12      p=0.0  p95_wait -7.2023809523805715%  sign_p=0.1849333420395851  harm=False  fires=90.0  recall=1.0  precision=1.0
+  rate3.0_s12      p=2.0  p95_wait -3.345498783455298%  sign_p=0.13604594767093658  harm=False  fires=90.0  recall=1.0  precision=1.0
+  rate3.0_s4       p=0.0  p95_wait -30.248618784530702%  sign_p=1.862645149230957e-09  harm=True   fires=10.0  recall=1.0  precision=1.0
+  rate3.0_s4       p=2.0  p95_wait -29.196050775740805%  sign_p=3.725290298461914e-09  harm=True   fires=10.0  recall=1.0  precision=1.0
+  stacked_high     p=0.0  p95_wait -27.521991390604505%  sign_p=1.862645149230957e-09  harm=False  fires=179.0  recall=1.0  precision=1.0
+  stacked_high     p=2.0  p95_wait -25.731656434404336%  sign_p=5.947612226009369e-05  harm=False  fires=179.0  recall=1.0  precision=1.0
+  stacked_low      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_low      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_medium   p=0.0  p95_wait -21.10858010630113%  sign_p=2.1606683731079102e-07  harm=False  fires=149.0  recall=1.0  precision=1.0
+  stacked_medium   p=2.0  p95_wait -14.150943396227584%  sign_p=0.00010371580719947815  harm=False  fires=149.0  recall=1.0  precision=1.0
+
+--- q8_a1.5_and ---
+  bursty_high_s24  p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  bursty_high_s24  p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  bursty_high_s64  p=0.0  p95_wait 2.2602154214402383%  sign_p=0.584664711728692  harm=False  fires=122.4  recall=0.8433333333333334  precision=1.0
+  bursty_high_s64  p=2.0  p95_wait 3.3759231039734146%  sign_p=0.20048842206597328  harm=False  fires=142.9  recall=0.86  precision=1.0
+  rate0.5_s12      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s12      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s12      p=0.0  p95_wait -14.047619047619126%  sign_p=0.00032491423189640045  harm=False  fires=21.9  recall=0.7966666666666666  precision=1.0
+  rate3.0_s12      p=2.0  p95_wait -10.948905109489278%  sign_p=0.002315700054168701  harm=False  fires=20.5  recall=0.76  precision=1.0
+  rate3.0_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_high     p=0.0  p95_wait -22.234699606962412%  sign_p=8.430331945419312e-06  harm=False  fires=101.6  recall=1.0  precision=1.0
+  stacked_high     p=2.0  p95_wait -16.838528938427697%  sign_p=0.016124801710247993  harm=False  fires=120.7  recall=1.0  precision=1.0
+  stacked_low      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_low      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_medium   p=0.0  p95_wait -1.51860288534532%  sign_p=0.3876953125  harm=False  fires=0.6  recall=0.03333333333333333  precision=1.0
+  stacked_medium   p=2.0  p95_wait 0.7075471698106911%  sign_p=     1.0  harm=False  fires=0.7  recall=0.0392156862745098  precision=1.0
+
+--- q8_a1.5_or ---
+  bursty_high_s24  p=0.0  p95_wait 0.575539568345512%  sign_p=     1.0  harm=False  fires=0.1  recall=0.0033333333333333335  precision=1.0
+  bursty_high_s24  p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  bursty_high_s64  p=0.0  p95_wait -3.183450162420377%  sign_p=0.20048842206597328  harm=False  fires=270.1  recall=0.9766666666666667  precision=1.0
+  bursty_high_s64  p=2.0  p95_wait 2.971515648809879%  sign_p=0.855535551905632  harm=True   fires=292.9  recall=0.98  precision=1.0
+  rate0.5_s12      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s12      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate0.5_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s12      p=0.0  p95_wait -26.666666666666423%  sign_p=2.1606683731079102e-07  harm=False  fires=50.0  recall=1.0  precision=1.0
+  rate3.0_s12      p=2.0  p95_wait -20.742092457420938%  sign_p=2.744048833847046e-05  harm=False  fires=50.0  recall=1.0  precision=1.0
+  rate3.0_s4       p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  rate3.0_s4       p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_high     p=0.0  p95_wait -30.685008422234812%  sign_p=8.67992639541626e-07  harm=False  fires=151.0  recall=1.0  precision=1.0
+  stacked_high     p=2.0  p95_wait -25.59456398640992%  sign_p=0.00032491423189640045  harm=False  fires=151.1  recall=1.0  precision=1.0
+  stacked_low      p=0.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_low      p=2.0  p95_wait     0.0%  sign_p=     1.0  harm=False  fires=0.0  recall=0.0  precision=
+  stacked_medium   p=0.0  p95_wait -14.50265755505006%  sign_p=8.430331945419312e-06  harm=False  fires=81.0  recall=1.0  precision=1.0
+  stacked_medium   p=2.0  p95_wait -10.062893081763177%  sign_p=0.009355306625366211  harm=False  fires=81.0  recall=1.0  precision=1.0

@@ -1,0 +1,26 @@
+rate3.0_s4       penalty=0.0ms q2_a0.8_or           p95_wait: 8.044->5.611 (-30.2%) sign_p=<0.0001 harm=True  fires=10.0 recall=1.0  precision=1.0
+rate3.0_s4       penalty=0.0ms q2_a0.8_and          p95_wait: 8.044->6.522 (-18.9%) sign_p=<0.0001 harm=True  fires=5.0 recall=0.5  precision=1.0
+rate3.0_s4       penalty=0.0ms q2_a1.5_or           p95_wait: 8.044->6.522 (-18.9%) sign_p=<0.0001 harm=True  fires=5.0 recall=0.5  precision=1.0
+rate3.0_s4       penalty=0.0ms q2_a1.5_and          p95_wait: 8.044->8.044 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=0.0ms q4_a0.8_or           p95_wait: 8.044->5.611 (-30.2%) sign_p=<0.0001 harm=True  fires=10.0 recall=1.0  precision=1.0
+rate3.0_s4       penalty=0.0ms q4_a0.8_and          p95_wait: 8.044->8.044 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=0.0ms q4_a1.5_or           p95_wait: 8.044->8.044 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=0.0ms q4_a1.5_and          p95_wait: 8.044->8.044 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=0.0ms q8_a0.8_or           p95_wait: 8.044->5.611 (-30.2%) sign_p=<0.0001 harm=True  fires=10.0 recall=1.0  precision=1.0
+rate3.0_s4       penalty=0.0ms q8_a0.8_and          p95_wait: 8.044->8.044 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=0.0ms q8_a1.5_or           p95_wait: 8.044->8.044 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=0.0ms q8_a1.5_and          p95_wait: 8.044->8.044 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=2.0ms q2_a0.8_or           p95_wait: 7.878->5.578 (-29.2%) sign_p=<0.0001 harm=True  fires=10.0 recall=1.0  precision=1.0
+rate3.0_s4       penalty=2.0ms q2_a0.8_and          p95_wait: 7.878->6.522 (-17.2%) sign_p=<0.0001 harm=True  fires=5.0 recall=0.5  precision=1.0
+rate3.0_s4       penalty=2.0ms q2_a1.5_or           p95_wait: 7.878->6.522 (-17.2%) sign_p=<0.0001 harm=True  fires=5.0 recall=0.5  precision=1.0
+rate3.0_s4       penalty=2.0ms q2_a1.5_and          p95_wait: 7.878->7.878 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=2.0ms q4_a0.8_or           p95_wait: 7.878->5.578 (-29.2%) sign_p=<0.0001 harm=True  fires=10.0 recall=1.0  precision=1.0
+rate3.0_s4       penalty=2.0ms q4_a0.8_and          p95_wait: 7.878->7.878 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=2.0ms q4_a1.5_or           p95_wait: 7.878->7.878 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=2.0ms q4_a1.5_and          p95_wait: 7.878->7.878 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=2.0ms q8_a0.8_or           p95_wait: 7.878->5.578 (-29.2%) sign_p=<0.0001 harm=True  fires=10.0 recall=1.0  precision=1.0
+rate3.0_s4       penalty=2.0ms q8_a0.8_and          p95_wait: 7.878->7.878 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=2.0ms q8_a1.5_or           p95_wait: 7.878->7.878 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+rate3.0_s4       penalty=2.0ms q8_a1.5_and          p95_wait: 7.878->7.878 (+0.0%) sign_p=1.0000 harm=False  fires=0.0 recall=0.0  precision=None
+
+Wrote results_task6_threshold_grid_rate3.0_s4_perseed.csv and _summary.csv

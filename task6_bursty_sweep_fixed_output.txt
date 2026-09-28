@@ -1,0 +1,183 @@
+
+=== bursty size=2 penalty=0.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.4167->0.4167 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_false: 0.4167->0.4167 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_true: 1.0283->1.0283 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_false: 1.0283->1.0283 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+
+=== bursty size=2 penalty=2.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.4167->0.4167 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_false: 0.4167->0.4167 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_true: 1.0347->1.0347 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_false: 1.0347->1.0347 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+
+=== bursty size=4 penalty=0.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.5250->0.5250 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_false: 0.5250->0.5250 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_true: 1.0330->1.0330 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_false: 1.0330->1.0330 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+
+=== bursty size=4 penalty=2.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.5250->0.5250 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_false: 0.5250->0.5250 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_true: 1.0407->1.0407 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_false: 1.0407->1.0407 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+
+=== bursty size=8 penalty=0.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.5417->0.5417 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_false: 0.5417->0.5417 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_true: 1.0359->1.0359 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_false: 1.0359->1.0359 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+
+=== bursty size=8 penalty=2.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0667 (+6.67%)  wins=0/1 (ties=29)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0667 (+6.67%)  wins=0/1 (ties=29)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.5417->0.5429 (+0.23%)  wins=0/1 (ties=29)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_false: 0.5417->0.5429 (+0.23%)  wins=0/1 (ties=29)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_true: 1.0483->1.0486 (+0.03%)  wins=0/1 (ties=29)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_false: 1.0483->1.0486 (+0.03%)  wins=0/1 (ties=29)  sign_p=1.0000  wilcoxon_p=1.0000
+
+=== bursty size=12 penalty=0.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.5250->0.5261 (+0.21%)  wins=0/2 (ties=28)  sign_p=0.5000  wilcoxon_p=0.3711
+  [avg_wait] resets_false: 0.5250->0.5261 (+0.21%)  wins=0/2 (ties=28)  sign_p=0.5000  wilcoxon_p=0.3711
+  [avg_slowdown] resets_true: 1.0346->1.0350 (+0.04%)  wins=0/2 (ties=28)  sign_p=0.5000  wilcoxon_p=0.3711
+  [avg_slowdown] resets_false: 1.0346->1.0350 (+0.04%)  wins=0/2 (ties=28)  sign_p=0.5000  wilcoxon_p=0.3711
+
+=== bursty size=12 penalty=2.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.5250->0.5253 (+0.05%)  wins=0/1 (ties=29)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_false: 0.5250->0.5253 (+0.05%)  wins=0/1 (ties=29)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_true: 1.0454->1.0457 (+0.04%)  wins=0/1 (ties=29)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_slowdown] resets_false: 1.0454->1.0457 (+0.04%)  wins=0/1 (ties=29)  sign_p=1.0000  wilcoxon_p=1.0000
+
+=== bursty size=16 penalty=0.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.5125->0.5140 (+0.28%)  wins=0/3 (ties=27)  sign_p=0.2500  wilcoxon_p=0.1736
+  [avg_wait] resets_false: 0.5125->0.5140 (+0.28%)  wins=0/3 (ties=27)  sign_p=0.2500  wilcoxon_p=0.1736
+  [avg_slowdown] resets_true: 1.0332->1.0337 (+0.04%)  wins=0/3 (ties=27)  sign_p=0.2500  wilcoxon_p=0.1814
+  [avg_slowdown] resets_false: 1.0332->1.0337 (+0.04%)  wins=0/3 (ties=27)  sign_p=0.2500  wilcoxon_p=0.1814
+
+=== bursty size=16 penalty=2.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.5125->0.5133 (+0.16%)  wins=0/2 (ties=28)  sign_p=0.5000  wilcoxon_p=0.3711
+  [avg_wait] resets_false: 0.5125->0.5133 (+0.16%)  wins=0/2 (ties=28)  sign_p=0.5000  wilcoxon_p=0.3711
+  [avg_slowdown] resets_true: 1.0462->1.0465 (+0.03%)  wins=1/5 (ties=25)  sign_p=0.3750  wilcoxon_p=0.2807
+  [avg_slowdown] resets_false: 1.0462->1.0465 (+0.03%)  wins=1/5 (ties=25)  sign_p=0.3750  wilcoxon_p=0.2807
+
+=== bursty size=24 penalty=0.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0222 (+2.22%)  wins=0/1 (ties=29)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0222 (+2.22%)  wins=0/1 (ties=29)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.4875->0.4953 (+1.60%)  wins=0/16 (ties=14)  sign_p=<0.0001  wilcoxon_p=0.0004
+  [avg_wait] resets_false: 0.4875->0.4953 (+1.60%)  wins=0/16 (ties=14)  sign_p=<0.0001  wilcoxon_p=0.0004
+  [avg_slowdown] resets_true: 1.0321->1.0333 (+0.12%)  wins=0/17 (ties=13)  sign_p=<0.0001  wilcoxon_p=0.0003
+  [avg_slowdown] resets_false: 1.0321->1.0333 (+0.12%)  wins=0/17 (ties=13)  sign_p=<0.0001  wilcoxon_p=0.0003
+
+=== bursty size=24 penalty=2.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.4875->0.4940 (+1.34%)  wins=0/16 (ties=14)  sign_p=<0.0001  wilcoxon_p=0.0004
+  [avg_wait] resets_false: 0.4875->0.4940 (+1.34%)  wins=0/16 (ties=14)  sign_p=<0.0001  wilcoxon_p=0.0004
+  [avg_slowdown] resets_true: 1.0504->1.0521 (+0.17%)  wins=1/18 (ties=12)  sign_p=0.0001  wilcoxon_p=0.0003
+  [avg_slowdown] resets_false: 1.0504->1.0521 (+0.17%)  wins=1/18 (ties=12)  sign_p=0.0001  wilcoxon_p=0.0003
+
+=== bursty size=32 penalty=0.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [avg_wait] resets_true: 0.5385->0.5453 (+1.26%)  wins=0/21 (ties=9)  sign_p=<0.0001  wilcoxon_p=<0.0001
+  [avg_wait] resets_false: 0.5385->0.5453 (+1.26%)  wins=0/21 (ties=9)  sign_p=<0.0001  wilcoxon_p=<0.0001
+  [avg_slowdown] resets_true: 1.0358->1.0370 (+0.12%)  wins=0/21 (ties=9)  sign_p=<0.0001  wilcoxon_p=<0.0001
+  [avg_slowdown] resets_false: 1.0358->1.0370 (+0.12%)  wins=0/21 (ties=9)  sign_p=<0.0001  wilcoxon_p=<0.0001
+
+=== bursty size=32 penalty=2.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 1.0000->1.0444 (+4.44%)  wins=0/2 (ties=28)  sign_p=0.5000  wilcoxon_p=0.3711
+  [p99_wait] resets_false: 1.0000->1.0444 (+4.44%)  wins=0/2 (ties=28)  sign_p=0.5000  wilcoxon_p=0.3711
+  [avg_wait] resets_true: 0.5385->0.5470 (+1.57%)  wins=0/21 (ties=9)  sign_p=<0.0001  wilcoxon_p=<0.0001
+  [avg_wait] resets_false: 0.5385->0.5470 (+1.57%)  wins=0/21 (ties=9)  sign_p=<0.0001  wilcoxon_p=<0.0001
+  [avg_slowdown] resets_true: 1.0605->1.0627 (+0.21%)  wins=2/26 (ties=4)  sign_p=<0.0001  wilcoxon_p=<0.0001
+  [avg_slowdown] resets_false: 1.0605->1.0627 (+0.21%)  wins=2/26 (ties=4)  sign_p=<0.0001  wilcoxon_p=<0.0001
+
+=== bursty size=48 penalty=0.0ms ===
+  [p95_wait] resets_true: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p95_wait] resets_false: 1.0000->1.0000 (+0.00%)  wins=0/0 (ties=30)  sign_p=1.0000  wilcoxon_p=1.0000
+  [p99_wait] resets_true: 2.2222->2.4444 (+10.00%)  wins=4/19 (ties=11)  sign_p=0.0192  wilcoxon_p=0.0106
+  [p99_wait] resets_false: 2.2222->2.4222 (+9.00%)  wins=5/19 (ties=11)  sign_p=0.0636  wilcoxon_p=0.0166
+  [avg_wait] resets_true: 0.5469->0.5549 (+1.45%)  wins=4/28 (ties=2)  sign_p=0.0002  wilcoxon_p=0.0005
+  [avg_wait] resets_false: 0.5469->0.5544 (+1.36%)  wins=4/28 (ties=2)  sign_p=0.0002  wilcoxon_p=0.0017
+  [avg_slowdown] resets_true: 1.0401->1.0415 (+0.14%)  wins=4/30 (ties=0)  sign_p=<0.0001  wilcoxon_p=<0.0001
+  [avg_slowdown] resets_false: 1.0401->1.0415 (+0.13%)  wins=4/30 (ties=0)  sign_p=<0.0001  wilcoxon_p=<0.0001
+
+=== bursty size=48 penalty=2.0ms ===
+  [p95_wait] resets_true: 1.0222->1.0778 (+5.43%)  wins=1/6 (ties=24)  sign_p=0.2188  wilcoxon_p=0.0585
+  [p95_wait] resets_false: 1.0222->1.0778 (+5.43%)  wins=1/6 (ties=24)  sign_p=0.2188  wilcoxon_p=0.0585
+  [p99_wait] resets_true: 2.5111->2.7000 (+7.52%)  wins=6/20 (ties=10)  sign_p=0.1153  wilcoxon_p=0.0217
+  [p99_wait] resets_false: 2.5111->2.7000 (+7.52%)  wins=6/20 (ties=10)  sign_p=0.1153  wilcoxon_p=0.0217
+  [avg_wait] resets_true: 0.5592->0.5695 (+1.84%)  wins=6/29 (ties=1)  sign_p=0.0023  wilcoxon_p=0.0008
+  [avg_wait] resets_false: 0.5592->0.5695 (+1.84%)  wins=6/29 (ties=1)  sign_p=0.0023  wilcoxon_p=0.0008
+  [avg_slowdown] resets_true: 1.0810->1.0857 (+0.43%)  wins=3/29 (ties=1)  sign_p=<0.0001  wilcoxon_p=<0.0001
+  [avg_slowdown] resets_false: 1.0810->1.0857 (+0.43%)  wins=3/29 (ties=1)  sign_p=<0.0001  wilcoxon_p=<0.0001
+
+=== bursty size=64 penalty=0.0ms ===
+  [p95_wait] resets_true: 1.8444->1.9556 (+6.02%)  wins=5/19 (ties=11)  sign_p=0.0636  wilcoxon_p=0.1119
+  [p95_wait] resets_false: 1.8444->1.9778 (+7.23%)  wins=3/17 (ties=13)  sign_p=0.0127  wilcoxon_p=0.0179
+  [p99_wait] resets_true: 3.3111->3.4000 (+2.68%)  wins=5/17 (ties=13)  sign_p=0.1435  wilcoxon_p=0.2763
+  [p99_wait] resets_false: 3.3111->3.4000 (+2.68%)  wins=6/17 (ties=13)  sign_p=0.3323  wilcoxon_p=0.4074
+  [avg_wait] resets_true: 0.6495->0.6633 (+2.12%)  wins=8/29 (ties=1)  sign_p=0.0241  wilcoxon_p=0.0029
+  [avg_wait] resets_false: 0.6495->0.6645 (+2.30%)  wins=8/30 (ties=0)  sign_p=0.0161  wilcoxon_p=0.0016
+  [avg_slowdown] resets_true: 1.0585->1.0602 (+0.16%)  wins=9/30 (ties=0)  sign_p=0.0428  wilcoxon_p=0.0144
+  [avg_slowdown] resets_false: 1.0585->1.0605 (+0.19%)  wins=8/30 (ties=0)  sign_p=0.0161  wilcoxon_p=0.0071
+
+=== bursty size=64 penalty=2.0ms ===
+  [p95_wait] resets_true: 2.2444->2.3111 (+2.97%)  wins=5/14 (ties=16)  sign_p=0.4240  wilcoxon_p=0.0516
+  [p95_wait] resets_false: 2.2444->2.2556 (+0.50%)  wins=8/17 (ties=13)  sign_p=1.0000  wilcoxon_p=0.2763
+  [p99_wait] resets_true: 3.5667->3.7111 (+4.05%)  wins=4/16 (ties=14)  sign_p=0.0768  wilcoxon_p=0.0140
+  [p99_wait] resets_false: 3.5667->3.7111 (+4.05%)  wins=5/18 (ties=12)  sign_p=0.0963  wilcoxon_p=0.0294
+  [avg_wait] resets_true: 0.7031->0.7177 (+2.08%)  wins=7/29 (ties=1)  sign_p=0.0081  wilcoxon_p=0.0053
+  [avg_wait] resets_false: 0.7031->0.7147 (+1.65%)  wins=7/27 (ties=3)  sign_p=0.0192  wilcoxon_p=0.0105
+  [avg_slowdown] resets_true: 1.1233->1.1279 (+0.41%)  wins=7/30 (ties=0)  sign_p=0.0052  wilcoxon_p=0.0002
+  [avg_slowdown] resets_false: 1.1233->1.1273 (+0.36%)  wins=9/30 (ties=0)  sign_p=0.0428  wilcoxon_p=0.0013
+
+Wrote results_task6_bursty_sweep_fixed_perseed.csv
+Wrote results_task6_bursty_sweep_fixed_summary.csv

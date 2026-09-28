@@ -1,0 +1,242 @@
+
+===============================================================================================
+stacked_burst / low / penalty=0.0ms / A+B+C / transition / n=30 (seeds 5000-5029)
+===============================================================================================
+stacked_burst/low [p95_wait] n=30: baseline=7.400+-0.621  burst_aware=8.500+-0.682  mean_diff=+1.100 (95% CI [+0.834, +1.366])  wins=0/25 (ties=5)  p=<0.0001
+    Wilcoxon: n=25 (zeros dropped=5)  z=+4.572  p=<0.0001
+stacked_burst/low [avg_slowdown] n=30: baseline=1.427+-0.032  burst_aware=1.382+-0.031  mean_diff=-0.044 (95% CI [-0.060, -0.028])  wins=25/30 (ties=0)  p=0.0003
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.073  p=<0.0001
+stacked_burst/low [p95_slowdown] n=30: baseline=2.263+-0.133  burst_aware=2.245+-0.149  mean_diff=-0.019 (95% CI [-0.072, +0.035])  wins=16/27 (ties=3)  p=0.4421
+    Wilcoxon: n=27 (zeros dropped=3)  z=-0.889  p=0.3740
+stacked_burst/low [avg_wait] n=30: baseline=2.575+-0.085  burst_aware=2.772+-0.116  mean_diff=+0.197 (95% CI [+0.165, +0.229])  wins=0/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=+4.772  p=<0.0001
+stacked_burst/low [makespan_excess] n=30: baseline=10.267+-6.253  burst_aware=8.700+-5.120  mean_diff=-1.567 (95% CI [-3.655, +0.522])  wins=16/24 (ties=6)  p=0.1516
+    Wilcoxon: n=24 (zeros dropped=6)  z=-1.161  p=0.2457
+stacked_burst/low [makespan] n=30: baseline=3340.700+-7.429  burst_aware=3339.133+-6.345  mean_diff=-1.567 (95% CI [-3.655, +0.522])  wins=16/24 (ties=6)  p=0.1516
+    Wilcoxon: n=24 (zeros dropped=6)  z=-1.161  p=0.2457
+
+  RQ4 cost: sched_cores_scanned baseline=384478 burst_aware=387983 (+0.9%)
+  periodic_levels_walked: baseline=427482 burst_aware=427281
+  newidle_levels_walked:  baseline=758 burst_aware=767
+  burst_balance_levels_walked: baseline=0 burst_aware=199
+  total_migrations: baseline=202.4 burst_aware=200.5 (-0.9%)
+  p95_wait change: +14.9%   vs extra scanning work: +0.9%   vs extra migrations: -0.9%
+  machine-wide drain time: baseline mean=22.04ms  burst_aware mean=19.71ms  (n_bursts base=1500 burst_aware=1500)
+
+===============================================================================================
+stacked_burst / low / penalty=2.0ms / A+B+C / transition / n=30 (seeds 5000-5029)
+===============================================================================================
+stacked_burst/low [p95_wait] n=30: baseline=7.800+-0.761  burst_aware=8.800+-0.997  mean_diff=+1.000 (95% CI [+0.690, +1.310])  wins=0/22 (ties=8)  p=<0.0001
+    Wilcoxon: n=22 (zeros dropped=8)  z=+4.291  p=<0.0001
+stacked_burst/low [avg_slowdown] n=30: baseline=1.565+-0.040  burst_aware=1.539+-0.037  mean_diff=-0.026 (95% CI [-0.042, -0.010])  wins=19/30 (ties=0)  p=0.2005
+    Wilcoxon: n=30 (zeros dropped=0)  z=-2.818  p=0.0048
+stacked_burst/low [p95_slowdown] n=30: baseline=2.656+-0.223  burst_aware=2.656+-0.221  mean_diff=-0.000 (95% CI [-0.080, +0.080])  wins=14/25 (ties=5)  p=0.6900
+    Wilcoxon: n=25 (zeros dropped=5)  z=-0.498  p=0.6186
+stacked_burst/low [avg_wait] n=30: baseline=2.615+-0.121  burst_aware=2.864+-0.108  mean_diff=+0.249 (95% CI [+0.210, +0.289])  wins=0/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=+4.772  p=<0.0001
+stacked_burst/low [makespan_excess] n=30: baseline=13.433+-6.632  burst_aware=11.867+-6.642  mean_diff=-1.567 (95% CI [-3.789, +0.656])  wins=13/23 (ties=7)  p=0.6776
+    Wilcoxon: n=23 (zeros dropped=7)  z=-1.233  p=0.2174
+stacked_burst/low [makespan] n=30: baseline=3343.867+-8.191  burst_aware=3342.300+-6.742  mean_diff=-1.567 (95% CI [-3.789, +0.656])  wins=13/23 (ties=7)  p=0.6776
+    Wilcoxon: n=23 (zeros dropped=7)  z=-1.233  p=0.2174
+
+  RQ4 cost: sched_cores_scanned baseline=382721 burst_aware=387022 (+1.1%)
+  periodic_levels_walked: baseline=427887 burst_aware=427686
+  newidle_levels_walked:  baseline=784 burst_aware=777
+  burst_balance_levels_walked: baseline=0 burst_aware=200
+  total_migrations: baseline=209.0 burst_aware=204.8 (-2.0%)
+  p95_wait change: +12.8%   vs extra scanning work: +1.1%   vs extra migrations: -2.0%
+  machine-wide drain time: baseline mean=20.98ms  burst_aware mean=16.17ms  (n_bursts base=1500 burst_aware=1500)
+
+===============================================================================================
+stacked_burst / medium / penalty=0.0ms / A+B+C / transition / n=30 (seeds 5100-5129)
+===============================================================================================
+stacked_burst/medium [p95_wait] n=30: baseline=14.478+-1.289  burst_aware=12.156+-1.459  mean_diff=-2.322 (95% CI [-3.036, -1.608])  wins=27/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.278  p=<0.0001
+stacked_burst/medium [avg_slowdown] n=30: baseline=1.620+-0.057  burst_aware=1.531+-0.055  mean_diff=-0.089 (95% CI [-0.113, -0.065])  wins=28/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.422  p=<0.0001
+stacked_burst/medium [p95_slowdown] n=30: baseline=2.889+-0.223  burst_aware=2.671+-0.197  mean_diff=-0.219 (95% CI [-0.306, -0.131])  wins=26/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-3.826  p=0.0001
+stacked_burst/medium [avg_wait] n=30: baseline=5.457+-0.443  burst_aware=4.372+-0.405  mean_diff=-1.084 (95% CI [-1.260, -0.908])  wins=29/29 (ties=1)  p=<0.0001
+    Wilcoxon: n=29 (zeros dropped=1)  z=-4.692  p=<0.0001
+stacked_burst/medium [makespan_excess] n=30: baseline=8.378+-6.675  burst_aware=9.078+-6.187  mean_diff=+0.700 (95% CI [-1.460, +2.860])  wins=13/29 (ties=1)  p=0.7111
+    Wilcoxon: n=29 (zeros dropped=1)  z=+1.116  p=0.2643
+stacked_burst/medium [makespan] n=30: baseline=760.633+-8.126  burst_aware=761.333+-7.078  mean_diff=+0.700 (95% CI [-1.460, +2.860])  wins=13/29 (ties=1)  p=0.7111
+    Wilcoxon: n=29 (zeros dropped=1)  z=+1.116  p=0.2643
+
+  RQ4 cost: sched_cores_scanned baseline=94695 burst_aware=97895 (+3.4%)
+  periodic_levels_walked: baseline=97233 burst_aware=97323
+  newidle_levels_walked:  baseline=764 burst_aware=758
+  burst_balance_levels_walked: baseline=0 burst_aware=132
+  total_migrations: baseline=313.7 burst_aware=300.4 (-4.2%)
+  p95_wait change: -16.0%   vs extra scanning work: +3.4%   vs extra migrations: -4.2%
+  machine-wide drain time: baseline mean=19.17ms  burst_aware mean=15.06ms  (n_bursts base=510 burst_aware=510)
+
+===============================================================================================
+stacked_burst / medium / penalty=2.0ms / A+B+C / transition / n=30 (seeds 5100-5129)
+===============================================================================================
+stacked_burst/medium [p95_wait] n=30: baseline=14.300+-1.294  burst_aware=11.856+-1.500  mean_diff=-2.444 (95% CI [-3.033, -1.856])  wins=27/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.504  p=<0.0001
+stacked_burst/medium [avg_slowdown] n=30: baseline=1.831+-0.075  burst_aware=1.749+-0.067  mean_diff=-0.082 (95% CI [-0.110, -0.054])  wins=26/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.258  p=<0.0001
+stacked_burst/medium [p95_slowdown] n=30: baseline=3.551+-0.392  burst_aware=3.343+-0.286  mean_diff=-0.208 (95% CI [-0.348, -0.067])  wins=22/30 (ties=0)  p=0.0161
+    Wilcoxon: n=30 (zeros dropped=0)  z=-2.756  p=0.0058
+stacked_burst/medium [avg_wait] n=30: baseline=5.373+-0.368  burst_aware=4.332+-0.387  mean_diff=-1.042 (95% CI [-1.213, -0.871])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst/medium [makespan_excess] n=30: baseline=13.278+-5.957  burst_aware=11.178+-4.867  mean_diff=-2.100 (95% CI [-5.004, +0.804])  wins=17/29 (ties=1)  p=0.4583
+    Wilcoxon: n=29 (zeros dropped=1)  z=-1.418  p=0.1561
+stacked_burst/medium [makespan] n=30: baseline=765.533+-6.564  burst_aware=763.433+-6.157  mean_diff=-2.100 (95% CI [-5.004, +0.804])  wins=17/29 (ties=1)  p=0.4583
+    Wilcoxon: n=29 (zeros dropped=1)  z=-1.418  p=0.1561
+
+  RQ4 cost: sched_cores_scanned baseline=95398 burst_aware=97905 (+2.6%)
+  periodic_levels_walked: baseline=97860 burst_aware=97591
+  newidle_levels_walked:  baseline=785 burst_aware=774
+  burst_balance_levels_walked: baseline=0 burst_aware=132
+  total_migrations: baseline=311.8 burst_aware=304.7 (-2.3%)
+  p95_wait change: -17.1%   vs extra scanning work: +2.6%   vs extra migrations: -2.3%
+  machine-wide drain time: baseline mean=19.19ms  burst_aware mean=15.32ms  (n_bursts base=510 burst_aware=510)
+
+===============================================================================================
+stacked_burst / high / penalty=0.0ms / A+B+C / transition / n=30 (seeds 5200-5229)
+===============================================================================================
+stacked_burst/high [p95_wait] n=30: baseline=21.720+-6.283  burst_aware=16.509+-3.447  mean_diff=-5.211 (95% CI [-7.576, -2.846])  wins=25/30 (ties=0)  p=0.0003
+    Wilcoxon: n=30 (zeros dropped=0)  z=-3.785  p=0.0002
+stacked_burst/high [avg_slowdown] n=30: baseline=1.922+-0.337  burst_aware=1.656+-0.193  mean_diff=-0.265 (95% CI [-0.391, -0.140])  wins=26/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-3.908  p=<0.0001
+stacked_burst/high [p95_slowdown] n=30: baseline=3.718+-1.062  burst_aware=2.968+-0.580  mean_diff=-0.750 (95% CI [-1.161, -0.340])  wins=24/30 (ties=0)  p=0.0014
+    Wilcoxon: n=30 (zeros dropped=0)  z=-3.785  p=0.0002
+stacked_burst/high [avg_wait] n=30: baseline=10.173+-3.028  burst_aware=7.423+-1.964  mean_diff=-2.750 (95% CI [-3.910, -1.590])  wins=27/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.114  p=<0.0001
+stacked_burst/high [makespan_excess] n=30: baseline=10.653+-5.164  burst_aware=9.520+-3.822  mean_diff=-1.133 (95% CI [-2.983, +0.716])  wins=15/28 (ties=2)  p=0.8506
+    Wilcoxon: n=28 (zeros dropped=2)  z=-0.961  p=0.3367
+stacked_burst/high [makespan] n=30: baseline=204.267+-5.813  burst_aware=203.133+-4.337  mean_diff=-1.133 (95% CI [-2.983, +0.716])  wins=15/28 (ties=2)  p=0.8506
+    Wilcoxon: n=28 (zeros dropped=2)  z=-0.961  p=0.3367
+
+  RQ4 cost: sched_cores_scanned baseline=31984 burst_aware=33881 (+5.9%)
+  periodic_levels_walked: baseline=26018 burst_aware=25873
+  newidle_levels_walked:  baseline=721 burst_aware=754
+  burst_balance_levels_walked: baseline=0 burst_aware=52
+  total_migrations: baseline=367.9 burst_aware=356.0 (-3.2%)
+  p95_wait change: -24.0%   vs extra scanning work: +5.9%   vs extra migrations: -3.2%
+  machine-wide drain time: baseline mean=63.78ms  burst_aware mean=41.40ms  (n_bursts base=210 burst_aware=210)
+
+===============================================================================================
+stacked_burst / high / penalty=2.0ms / A+B+C / transition / n=30 (seeds 5200-5229)
+===============================================================================================
+stacked_burst/high [p95_wait] n=30: baseline=33.962+-7.466  burst_aware=28.387+-7.008  mean_diff=-5.576 (95% CI [-8.208, -2.943])  wins=24/30 (ties=0)  p=0.0014
+    Wilcoxon: n=30 (zeros dropped=0)  z=-3.558  p=0.0004
+stacked_burst/high [avg_slowdown] n=30: baseline=2.915+-0.417  burst_aware=2.550+-0.331  mean_diff=-0.364 (95% CI [-0.510, -0.219])  wins=24/30 (ties=0)  p=0.0014
+    Wilcoxon: n=30 (zeros dropped=0)  z=-3.785  p=0.0002
+stacked_burst/high [p95_slowdown] n=30: baseline=6.441+-1.342  burst_aware=5.404+-1.085  mean_diff=-1.037 (95% CI [-1.483, -0.592])  wins=23/30 (ties=0)  p=0.0052
+    Wilcoxon: n=30 (zeros dropped=0)  z=-3.661  p=0.0003
+stacked_burst/high [avg_wait] n=30: baseline=15.775+-2.604  burst_aware=13.321+-2.855  mean_diff=-2.454 (95% CI [-3.316, -1.592])  wins=24/30 (ties=0)  p=0.0014
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.196  p=<0.0001
+stacked_burst/high [makespan_excess] n=30: baseline=29.820+-7.749  burst_aware=24.353+-7.918  mean_diff=-5.467 (95% CI [-7.960, -2.973])  wins=23/29 (ties=1)  p=0.0023
+    Wilcoxon: n=29 (zeros dropped=1)  z=-3.518  p=0.0004
+stacked_burst/high [makespan] n=30: baseline=223.433+-8.093  burst_aware=217.967+-8.336  mean_diff=-5.467 (95% CI [-7.960, -2.973])  wins=23/29 (ties=1)  p=0.0023
+    Wilcoxon: n=29 (zeros dropped=1)  z=-3.518  p=0.0004
+
+  RQ4 cost: sched_cores_scanned baseline=33128 burst_aware=34276 (+3.5%)
+  periodic_levels_walked: baseline=28471 burst_aware=27772
+  newidle_levels_walked:  baseline=655 burst_aware=680
+  burst_balance_levels_walked: baseline=0 burst_aware=52
+  total_migrations: baseline=384.8 burst_aware=356.3 (-7.4%)
+  p95_wait change: -16.4%   vs extra scanning work: +3.5%   vs extra migrations: -7.4%
+  machine-wide drain time: baseline mean=99.49ms  burst_aware mean=92.96ms  (n_bursts base=210 burst_aware=210)
+
+===============================================================================================
+bursty / high / penalty=0.0ms / A+B+C / transition / n=30 (seeds 1200-1229)
+===============================================================================================
+bursty/high [p95_wait] n=30: baseline=4.396+-1.414  burst_aware=4.304+-1.548  mean_diff=-0.091 (95% CI [-0.292, +0.109])  wins=18/30 (ties=0)  p=0.3616
+    Wilcoxon: n=30 (zeros dropped=0)  z=-1.214  p=0.2249
+bursty/high [avg_slowdown] n=30: baseline=1.121+-0.038  burst_aware=1.123+-0.042  mean_diff=+0.002 (95% CI [-0.003, +0.007])  wins=15/30 (ties=0)  p=1.0000
+    Wilcoxon: n=30 (zeros dropped=0)  z=+0.021  p=0.9836
+bursty/high [p95_slowdown] n=30: baseline=1.449+-0.144  burst_aware=1.469+-0.184  mean_diff=+0.019 (95% CI [-0.025, +0.064])  wins=17/28 (ties=2)  p=0.3449
+    Wilcoxon: n=28 (zeros dropped=2)  z=-0.398  p=0.6903
+bursty/high [avg_wait] n=30: baseline=1.137+-0.312  burst_aware=1.127+-0.317  mean_diff=-0.009 (95% CI [-0.036, +0.017])  wins=16/29 (ties=1)  p=0.7111
+    Wilcoxon: n=29 (zeros dropped=1)  z=-0.681  p=0.4957
+bursty/high [makespan_excess] n=30: baseline=1.240+-1.291  burst_aware=1.507+-1.482  mean_diff=+0.267 (95% CI [-0.252, +0.785])  wins=5/14 (ties=16)  p=0.4240
+    Wilcoxon: n=14 (zeros dropped=16)  z=+0.960  p=0.3372
+bursty/high [makespan] n=30: baseline=194.033+-1.829  burst_aware=194.300+-1.968  mean_diff=+0.267 (95% CI [-0.252, +0.785])  wins=5/14 (ties=16)  p=0.4240
+    Wilcoxon: n=14 (zeros dropped=16)  z=+0.960  p=0.3372
+
+  RQ4 cost: sched_cores_scanned baseline=54098 burst_aware=55384 (+2.4%)
+  periodic_levels_walked: baseline=24708 burst_aware=24742
+  newidle_levels_walked:  baseline=817 burst_aware=813
+  burst_balance_levels_walked: baseline=0 burst_aware=40
+  total_migrations: baseline=101.4 burst_aware=106.4 (+5.0%)
+  p95_wait change: -2.1%   vs extra scanning work: +2.4%   vs extra migrations: +5.0%
+  machine-wide drain time: baseline mean=21.88ms  burst_aware mean=20.33ms  (n_bursts base=210 burst_aware=210)
+
+===============================================================================================
+bursty / high / penalty=2.0ms / A+B+C / transition / n=30 (seeds 1200-1229)
+===============================================================================================
+bursty/high [p95_wait] n=30: baseline=5.722+-2.032  burst_aware=5.444+-1.940  mean_diff=-0.278 (95% CI [-0.604, +0.049])  wins=17/30 (ties=0)  p=0.5847
+    Wilcoxon: n=30 (zeros dropped=0)  z=-1.337  p=0.1812
+bursty/high [avg_slowdown] n=30: baseline=1.242+-0.071  burst_aware=1.247+-0.069  mean_diff=+0.004 (95% CI [-0.002, +0.011])  wins=11/30 (ties=0)  p=0.2005
+    Wilcoxon: n=30 (zeros dropped=0)  z=+1.234  p=0.2172
+bursty/high [p95_slowdown] n=30: baseline=1.830+-0.219  burst_aware=1.821+-0.240  mean_diff=-0.009 (95% CI [-0.051, +0.034])  wins=16/28 (ties=2)  p=0.5716
+    Wilcoxon: n=28 (zeros dropped=2)  z=-0.922  p=0.3564
+bursty/high [avg_wait] n=30: baseline=1.492+-0.533  burst_aware=1.452+-0.444  mean_diff=-0.040 (95% CI [-0.098, +0.017])  wins=15/30 (ties=0)  p=1.0000
+    Wilcoxon: n=30 (zeros dropped=0)  z=-1.090  p=0.2756
+bursty/high [makespan_excess] n=30: baseline=4.307+-3.516  burst_aware=5.007+-3.415  mean_diff=+0.700 (95% CI [-0.525, +1.925])  wins=7/23 (ties=7)  p=0.0931
+    Wilcoxon: n=23 (zeros dropped=7)  z=+1.091  p=0.2754
+bursty/high [makespan] n=30: baseline=197.100+-3.772  burst_aware=197.800+-3.010  mean_diff=+0.700 (95% CI [-0.525, +1.925])  wins=7/23 (ties=7)  p=0.0931
+    Wilcoxon: n=23 (zeros dropped=7)  z=+1.091  p=0.2754
+
+  RQ4 cost: sched_cores_scanned baseline=54135 burst_aware=55774 (+3.0%)
+  periodic_levels_walked: baseline=25101 burst_aware=25190
+  newidle_levels_walked:  baseline=789 burst_aware=788
+  burst_balance_levels_walked: baseline=0 burst_aware=44
+  total_migrations: baseline=118.5 burst_aware=124.6 (+5.2%)
+  p95_wait change: -4.9%   vs extra scanning work: +3.0%   vs extra migrations: +5.2%
+  machine-wide drain time: baseline mean=21.74ms  burst_aware mean=20.63ms  (n_bursts base=210 burst_aware=210)
+
+===============================================================================================
+heavy_tail / high / penalty=0.0ms / A+B+C / transition / n=30 (seeds 2200-2229)
+===============================================================================================
+heavy_tail/high [p95_wait] n=30: baseline=0.933+-0.000  burst_aware=0.933+-0.000  mean_diff=+0.000 (95% CI [+0.000, +0.000])  wins=0/13 (ties=17)  p=0.0002
+    Wilcoxon: n=13 (zeros dropped=17)  z=+3.321  p=0.0009
+heavy_tail/high [avg_slowdown] n=30: baseline=1.085+-0.001  burst_aware=1.085+-0.002  mean_diff=+0.001 (95% CI [+0.000, +0.001])  wins=0/14 (ties=16)  p=0.0001
+    Wilcoxon: n=14 (zeros dropped=16)  z=+3.284  p=0.0010
+heavy_tail/high [p95_slowdown] n=30: baseline=1.178+-0.006  burst_aware=1.179+-0.007  mean_diff=+0.001 (95% CI [-0.000, +0.002])  wins=0/13 (ties=17)  p=0.0002
+    Wilcoxon: n=13 (zeros dropped=17)  z=+3.151  p=0.0016
+heavy_tail/high [avg_wait] n=30: baseline=0.477+-0.000  burst_aware=0.480+-0.005  mean_diff=+0.004 (95% CI [+0.002, +0.005])  wins=0/14 (ties=16)  p=0.0001
+    Wilcoxon: n=14 (zeros dropped=16)  z=+3.344  p=0.0008
+heavy_tail/high [makespan_excess] n=30: baseline=0.440+-0.217  burst_aware=0.440+-0.217  mean_diff=+0.000 (95% CI [+0.000, +0.000])  wins=0/0 (ties=30)  p=1.0000
+    Wilcoxon: n=0 (zeros dropped=30)  z=+0.000  p=1.0000
+heavy_tail/high [makespan] n=30: baseline=189.267+-40.826  burst_aware=189.267+-40.826  mean_diff=+0.000 (95% CI [+0.000, +0.000])  wins=0/0 (ties=30)  p=1.0000
+    Wilcoxon: n=0 (zeros dropped=30)  z=+0.000  p=1.0000
+
+  RQ4 cost: sched_cores_scanned baseline=54974 burst_aware=56088 (+2.0%)
+  periodic_levels_walked: baseline=24098 burst_aware=24098
+  newidle_levels_walked:  baseline=909 burst_aware=908
+  burst_balance_levels_walked: baseline=0 burst_aware=31
+  total_migrations: baseline=52.3 burst_aware=55.0 (+5.2%)
+  p95_wait change: +0.0%   vs extra scanning work: +2.0%   vs extra migrations: +5.2%
+  machine-wide drain time: baseline mean=0.00ms  burst_aware mean=0.00ms  (n_bursts base=210 burst_aware=210)
+
+===============================================================================================
+heavy_tail / high / penalty=2.0ms / A+B+C / transition / n=30 (seeds 2200-2229)
+===============================================================================================
+heavy_tail/high [p95_wait] n=30: baseline=0.933+-0.000  burst_aware=0.933+-0.000  mean_diff=+0.000 (95% CI [+0.000, +0.000])  wins=0/13 (ties=17)  p=0.0002
+    Wilcoxon: n=13 (zeros dropped=17)  z=+3.381  p=0.0007
+heavy_tail/high [avg_slowdown] n=30: baseline=1.177+-0.006  burst_aware=1.182+-0.007  mean_diff=+0.005 (95% CI [+0.004, +0.007])  wins=1/29 (ties=1)  p=<0.0001
+    Wilcoxon: n=29 (zeros dropped=1)  z=+4.671  p=<0.0001
+heavy_tail/high [p95_slowdown] n=30: baseline=1.536+-0.014  burst_aware=1.541+-0.014  mean_diff=+0.006 (95% CI [+0.001, +0.010])  wins=3/25 (ties=5)  p=0.0002
+    Wilcoxon: n=25 (zeros dropped=5)  z=+3.014  p=0.0026
+heavy_tail/high [avg_wait] n=30: baseline=0.477+-0.000  burst_aware=0.480+-0.004  mean_diff=+0.003 (95% CI [+0.002, +0.005])  wins=0/14 (ties=16)  p=0.0001
+    Wilcoxon: n=14 (zeros dropped=16)  z=+3.383  p=0.0007
+heavy_tail/high [makespan_excess] n=30: baseline=1.073+-0.999  burst_aware=1.073+-0.999  mean_diff=+0.000 (95% CI [+0.000, +0.000])  wins=0/0 (ties=30)  p=1.0000
+    Wilcoxon: n=0 (zeros dropped=30)  z=+0.000  p=1.0000
+heavy_tail/high [makespan] n=30: baseline=189.900+-40.582  burst_aware=189.900+-40.582  mean_diff=+0.000 (95% CI [+0.000, +0.000])  wins=0/0 (ties=30)  p=1.0000
+    Wilcoxon: n=0 (zeros dropped=30)  z=+0.000  p=1.0000
+
+  RQ4 cost: sched_cores_scanned baseline=54978 burst_aware=56064 (+2.0%)
+  periodic_levels_walked: baseline=24179 burst_aware=24179
+  newidle_levels_walked:  baseline=909 burst_aware=908
+  burst_balance_levels_walked: baseline=0 burst_aware=31
+  total_migrations: baseline=51.7 burst_aware=54.2 (+5.0%)
+  p95_wait change: +0.0%   vs extra scanning work: +2.0%   vs extra migrations: +5.0%
+  machine-wide drain time: baseline mean=0.00ms  burst_aware mean=0.00ms  (n_bursts base=210 burst_aware=210)
+
+Wrote results_task6_step3_full_rerun.csv

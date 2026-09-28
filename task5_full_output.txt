@@ -1,0 +1,140 @@
+
+==========================================================================================
+stacked_burst / low / penalty=0.0ms / transition / n=30 (seeds 5000-5029)
+==========================================================================================
+stacked_burst [p95_wait] n=30: baseline=11.233+-1.223  burst_aware=8.267+-0.521  mean_diff=-2.967 (95% CI [-3.432, -2.502])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.817  p=<0.0001
+stacked_burst [avg_slowdown] n=30: baseline=1.844+-0.071  burst_aware=1.433+-0.029  mean_diff=-0.411 (95% CI [-0.433, -0.390])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [p95_slowdown] n=30: baseline=3.520+-0.313  burst_aware=2.396+-0.139  mean_diff=-1.124 (95% CI [-1.237, -1.011])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [makespan_excess] n=30: baseline=22.733+-20.137  burst_aware=12.833+-9.348  mean_diff=-9.900 (95% CI [-15.949, -3.851])  wins=23/28 (ties=2)  p=0.0009
+    Wilcoxon: n=28 (zeros dropped=2)  z=-2.939  p=0.0033
+stacked_burst [avg_wait] n=30: baseline=3.312+-0.194  burst_aware=2.299+-0.151  mean_diff=-1.014 (95% CI [-1.096, -0.932])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.773  p=<0.0001
+stacked_burst [makespan] n=30: baseline=3353.167+-21.377  burst_aware=3343.267+-11.120  mean_diff=-9.900 (95% CI [-15.949, -3.851])  wins=23/28 (ties=2)  p=0.0009
+    Wilcoxon: n=28 (zeros dropped=2)  z=-2.939  p=0.0033
+
+  idle_while_waiting_time: baseline=1570.7  burst_aware=1096.2
+  queue_imbalance during-burst mean: baseline=1.151  burst_aware=0.827
+  funnel: detector_fires=50.4  burst_balance_attempts=49.9  burst_triggered_migrations=47.6
+  detector_quality: recall=0.997  precision=1.000  avg_detection_latency=4.008
+  lead_time vs_burst_tagged: n=997  mean=2.740
+  lead_time vs_any_migration: n=1046  mean=2.599
+
+==========================================================================================
+stacked_burst / low / penalty=2.0ms / transition / n=30 (seeds 5000-5029)
+==========================================================================================
+stacked_burst [p95_wait] n=30: baseline=11.400+-1.070  burst_aware=8.400+-0.770  mean_diff=-3.000 (95% CI [-3.500, -2.500])  wins=29/29 (ties=1)  p=<0.0001
+    Wilcoxon: n=29 (zeros dropped=1)  z=-4.726  p=<0.0001
+stacked_burst [avg_slowdown] n=30: baseline=1.961+-0.089  burst_aware=1.564+-0.026  mean_diff=-0.397 (95% CI [-0.426, -0.368])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [p95_slowdown] n=30: baseline=3.691+-0.323  burst_aware=2.689+-0.162  mean_diff=-1.002 (95% CI [-1.107, -0.897])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [makespan_excess] n=30: baseline=23.467+-18.691  burst_aware=15.700+-9.903  mean_diff=-7.767 (95% CI [-13.543, -1.990])  wins=19/28 (ties=2)  p=0.0872
+    Wilcoxon: n=28 (zeros dropped=2)  z=-2.373  p=0.0176
+stacked_burst [avg_wait] n=30: baseline=3.309+-0.191  burst_aware=2.373+-0.163  mean_diff=-0.936 (95% CI [-1.012, -0.859])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [makespan] n=30: baseline=3353.900+-19.975  burst_aware=3346.133+-11.016  mean_diff=-7.767 (95% CI [-13.543, -1.990])  wins=19/28 (ties=2)  p=0.0872
+    Wilcoxon: n=28 (zeros dropped=2)  z=-2.373  p=0.0176
+
+  idle_while_waiting_time: baseline=1624.0  burst_aware=1167.7
+  queue_imbalance during-burst mean: baseline=1.149  burst_aware=0.837
+  funnel: detector_fires=50.6  burst_balance_attempts=49.8  burst_triggered_migrations=47.4
+  detector_quality: recall=0.997  precision=1.000  avg_detection_latency=4.009
+  lead_time vs_burst_tagged: n=985  mean=2.646
+  lead_time vs_any_migration: n=1034  mean=2.483
+
+==========================================================================================
+stacked_burst / medium / penalty=0.0ms / transition / n=30 (seeds 5100-5129)
+==========================================================================================
+stacked_burst [p95_wait] n=30: baseline=32.589+-6.989  burst_aware=22.978+-3.007  mean_diff=-9.611 (95% CI [-12.483, -6.739])  wins=28/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.648  p=<0.0001
+stacked_burst [avg_slowdown] n=30: baseline=2.590+-0.377  burst_aware=2.037+-0.103  mean_diff=-0.553 (95% CI [-0.696, -0.410])  wins=29/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.731  p=<0.0001
+stacked_burst [p95_slowdown] n=30: baseline=5.756+-1.196  burst_aware=4.149+-0.583  mean_diff=-1.607 (95% CI [-2.062, -1.153])  wins=28/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.690  p=<0.0001
+stacked_burst [makespan_excess] n=30: baseline=18.978+-11.581  burst_aware=16.578+-9.074  mean_diff=-2.400 (95% CI [-7.184, +2.384])  wins=15/27 (ties=3)  p=0.7011
+    Wilcoxon: n=27 (zeros dropped=3)  z=-1.142  p=0.2535
+stacked_burst [avg_wait] n=30: baseline=12.005+-2.046  burst_aware=8.693+-0.824  mean_diff=-3.312 (95% CI [-4.140, -2.484])  wins=29/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.710  p=<0.0001
+stacked_burst [makespan] n=30: baseline=771.233+-13.045  burst_aware=768.833+-9.494  mean_diff=-2.400 (95% CI [-7.184, +2.384])  wins=15/27 (ties=3)  p=0.7011
+    Wilcoxon: n=27 (zeros dropped=3)  z=-1.142  p=0.2535
+
+  idle_while_waiting_time: baseline=636.3  burst_aware=578.2
+  queue_imbalance during-burst mean: baseline=5.293  burst_aware=4.164
+  funnel: detector_fires=159.3  burst_balance_attempts=33.0  burst_triggered_migrations=20.5
+  detector_quality: recall=1.000  precision=1.000  avg_detection_latency=1.595
+  lead_time vs_burst_tagged: n=407  mean=-1.310
+  lead_time vs_any_migration: n=485  mean=0.666
+
+==========================================================================================
+stacked_burst / medium / penalty=2.0ms / transition / n=30 (seeds 5100-5129)
+==========================================================================================
+stacked_burst [p95_wait] n=30: baseline=33.711+-7.980  burst_aware=22.956+-2.543  mean_diff=-10.756 (95% CI [-13.836, -7.675])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [avg_slowdown] n=30: baseline=2.854+-0.414  burst_aware=2.198+-0.116  mean_diff=-0.657 (95% CI [-0.821, -0.493])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [p95_slowdown] n=30: baseline=6.380+-1.298  burst_aware=4.622+-0.525  mean_diff=-1.758 (95% CI [-2.232, -1.285])  wins=29/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.731  p=<0.0001
+stacked_burst [makespan_excess] n=30: baseline=19.978+-12.643  burst_aware=19.711+-9.313  mean_diff=-0.267 (95% CI [-5.790, +5.256])  wins=13/28 (ties=2)  p=0.8506
+    Wilcoxon: n=28 (zeros dropped=2)  z=+0.285  p=0.7758
+stacked_burst [avg_wait] n=30: baseline=12.348+-2.165  burst_aware=8.622+-0.708  mean_diff=-3.727 (95% CI [-4.537, -2.916])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [makespan] n=30: baseline=772.233+-12.929  burst_aware=771.967+-9.212  mean_diff=-0.267 (95% CI [-5.790, +5.256])  wins=13/28 (ties=2)  p=0.8506
+    Wilcoxon: n=28 (zeros dropped=2)  z=+0.285  p=0.7758
+
+  idle_while_waiting_time: baseline=644.9  burst_aware=583.3
+  queue_imbalance during-burst mean: baseline=5.490  burst_aware=4.091
+  funnel: detector_fires=158.3  burst_balance_attempts=33.0  burst_triggered_migrations=21.1
+  detector_quality: recall=1.000  precision=1.000  avg_detection_latency=1.634
+  lead_time vs_burst_tagged: n=410  mean=-0.980
+  lead_time vs_any_migration: n=492  mean=1.122
+
+==========================================================================================
+stacked_burst / high / penalty=0.0ms / transition / n=30 (seeds 5200-5229)
+==========================================================================================
+stacked_burst [p95_wait] n=30: baseline=178.156+-49.019  burst_aware=88.011+-12.360  mean_diff=-90.144 (95% CI [-106.533, -73.756])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [avg_slowdown] n=30: baseline=12.267+-2.463  burst_aware=5.398+-0.631  mean_diff=-6.869 (95% CI [-7.755, -5.983])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [p95_slowdown] n=30: baseline=28.144+-6.668  burst_aware=13.063+-1.965  mean_diff=-15.080 (95% CI [-17.371, -12.790])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [makespan_excess] n=30: baseline=283.887+-62.209  burst_aware=83.020+-19.707  mean_diff=-200.867 (95% CI [-223.402, -178.331])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [avg_wait] n=30: baseline=61.890+-13.655  burst_aware=37.130+-4.692  mean_diff=-24.759 (95% CI [-28.689, -20.830])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [makespan] n=30: baseline=477.500+-62.421  burst_aware=276.633+-20.157  mean_diff=-200.867 (95% CI [-223.402, -178.331])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+
+  idle_while_waiting_time: baseline=440.4  burst_aware=233.1
+  queue_imbalance during-burst mean: baseline=29.932  burst_aware=26.210
+  funnel: detector_fires=180.8  burst_balance_attempts=13.0  burst_triggered_migrations=18.6
+  detector_quality: recall=1.000  precision=1.000  avg_detection_latency=0.730
+  lead_time vs_burst_tagged: n=178  mean=1.654
+  lead_time vs_any_migration: n=200  mean=2.143
+
+==========================================================================================
+stacked_burst / high / penalty=2.0ms / transition / n=30 (seeds 5200-5229)
+==========================================================================================
+stacked_burst [p95_wait] n=30: baseline=185.684+-50.674  burst_aware=93.618+-13.660  mean_diff=-92.067 (95% CI [-108.998, -75.135])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [avg_slowdown] n=30: baseline=13.223+-2.390  burst_aware=6.030+-0.686  mean_diff=-7.193 (95% CI [-8.050, -6.337])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [p95_slowdown] n=30: baseline=30.385+-6.077  burst_aware=14.780+-2.179  mean_diff=-15.605 (95% CI [-17.568, -13.642])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [makespan_excess] n=30: baseline=310.853+-63.189  burst_aware=98.153+-20.774  mean_diff=-212.700 (95% CI [-235.347, -190.053])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [avg_wait] n=30: baseline=63.251+-13.908  burst_aware=39.338+-4.590  mean_diff=-23.913 (95% CI [-27.876, -19.950])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+stacked_burst [makespan] n=30: baseline=504.467+-63.455  burst_aware=291.767+-21.479  mean_diff=-212.700 (95% CI [-235.347, -190.053])  wins=30/30 (ties=0)  p=<0.0001
+    Wilcoxon: n=30 (zeros dropped=0)  z=-4.772  p=<0.0001
+
+  idle_while_waiting_time: baseline=467.9  burst_aware=248.4
+  queue_imbalance during-burst mean: baseline=30.086  burst_aware=26.690
+  funnel: detector_fires=180.9  burst_balance_attempts=13.0  burst_triggered_migrations=19.1
+  detector_quality: recall=1.000  precision=1.000  avg_detection_latency=0.728
+  lead_time vs_burst_tagged: n=181  mean=2.150
+  lead_time vs_any_migration: n=200  mean=2.573
+
+Wrote results_task5_stacked_burst.csv

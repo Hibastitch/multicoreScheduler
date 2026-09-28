@@ -1,0 +1,98 @@
+====================================================================================================
+CELLS FLAGGED UNDER OLD RULE AND/OR NEW RULE
+====================================================================================================
+
+bursty_high_s24  penalty=0.0 q2_a0.8_or    
+    p95_wait       wins=  4 harms= 19 ties=  7  pct= +15.68%  sign_p=0.0026  wilcoxon_p=0.0012  old_harm=True  new_harm=True
+    avg_wait       wins=  3 harms= 24 ties=  3  pct=  +3.01%  sign_p=<0.0001  wilcoxon_p=0.0003  old_harm=True  new_harm=True
+
+bursty_high_s24  penalty=0.0 q4_a0.8_or    
+    p95_wait       wins=  4 harms= 19 ties=  7  pct= +15.83%  sign_p=0.0026  wilcoxon_p=0.0012  old_harm=True  new_harm=True
+    avg_wait       wins=  3 harms= 24 ties=  3  pct=  +3.03%  sign_p=<0.0001  wilcoxon_p=0.0003  old_harm=True  new_harm=True
+
+bursty_high_s24  penalty=0.0 q8_a0.8_or    
+    p95_wait       wins=  4 harms= 19 ties=  7  pct= +15.83%  sign_p=0.0026  wilcoxon_p=0.0012  old_harm=True  new_harm=True
+    avg_wait       wins=  3 harms= 24 ties=  3  pct=  +3.03%  sign_p=<0.0001  wilcoxon_p=0.0003  old_harm=True  new_harm=True
+
+bursty_high_s64  penalty=2.0 q2_a0.8_or    
+    avg_slowdown   wins=  5 harms= 25 ties=  0  pct=  +3.07%  sign_p=0.0003  wilcoxon_p=<0.0001  old_harm=True  new_harm=True
+
+bursty_high_s64  penalty=2.0 q4_a0.8_and   
+    avg_slowdown   wins=  6 harms= 24 ties=  0  pct=  +1.50%  sign_p=0.0014  wilcoxon_p=0.0048  old_harm=True  new_harm=True
+
+bursty_high_s64  penalty=2.0 q4_a0.8_or    
+    avg_slowdown   wins=  4 harms= 26 ties=  0  pct=  +3.01%  sign_p=<0.0001  wilcoxon_p=<0.0001  old_harm=True  new_harm=True
+
+bursty_high_s64  penalty=2.0 q4_a1.5_and   
+    avg_slowdown   wins=  9 harms= 21 ties=  0  pct=  +1.32%  sign_p=0.0428  wilcoxon_p=0.0460  old_harm=True  new_harm=True
+
+bursty_high_s64  penalty=2.0 q8_a0.8_or    
+    avg_slowdown   wins=  5 harms= 25 ties=  0  pct=  +2.95%  sign_p=0.0003  wilcoxon_p=0.0001  old_harm=True  new_harm=True
+
+bursty_high_s64  penalty=2.0 q8_a1.5_or    
+    avg_slowdown   wins=  8 harms= 22 ties=  0  pct=  +1.19%  sign_p=0.0161  wilcoxon_p=0.0108  old_harm=True  new_harm=True
+
+rate3.0_s4       penalty=0.0 q2_a0.8_and   
+    avg_slowdown   wins=  5 harms= 25 ties=  0  pct=  +4.25%  sign_p=0.0003  wilcoxon_p=<0.0001  old_harm=True  new_harm=True
+
+rate3.0_s4       penalty=2.0 q2_a0.8_and   
+    avg_slowdown   wins=  5 harms= 25 ties=  0  pct=  +5.00%  sign_p=0.0003  wilcoxon_p=<0.0001  old_harm=True  new_harm=True
+
+rate3.0_s4       penalty=0.0 q2_a0.8_or    
+    avg_slowdown   wins=  7 harms= 23 ties=  0  pct=  +5.08%  sign_p=0.0052  wilcoxon_p=0.0003  old_harm=True  new_harm=True
+
+rate3.0_s4       penalty=2.0 q2_a0.8_or    
+    avg_slowdown   wins=  4 harms= 26 ties=  0  pct=  +7.35%  sign_p=<0.0001  wilcoxon_p=<0.0001  old_harm=True  new_harm=True
+
+rate3.0_s4       penalty=0.0 q2_a1.5_or    
+    avg_slowdown   wins=  5 harms= 25 ties=  0  pct=  +4.25%  sign_p=0.0003  wilcoxon_p=<0.0001  old_harm=True  new_harm=True
+
+rate3.0_s4       penalty=2.0 q2_a1.5_or    
+    avg_slowdown   wins=  5 harms= 25 ties=  0  pct=  +5.00%  sign_p=0.0003  wilcoxon_p=<0.0001  old_harm=True  new_harm=True
+
+rate3.0_s4       penalty=0.0 q4_a0.8_or    
+    avg_slowdown   wins=  7 harms= 23 ties=  0  pct=  +5.08%  sign_p=0.0052  wilcoxon_p=0.0003  old_harm=True  new_harm=True
+
+rate3.0_s4       penalty=2.0 q4_a0.8_or    
+    avg_slowdown   wins=  4 harms= 26 ties=  0  pct=  +7.35%  sign_p=<0.0001  wilcoxon_p=<0.0001  old_harm=True  new_harm=True
+
+rate3.0_s4       penalty=0.0 q8_a0.8_or    
+    avg_slowdown   wins=  7 harms= 23 ties=  0  pct=  +5.08%  sign_p=0.0052  wilcoxon_p=0.0003  old_harm=True  new_harm=True
+
+rate3.0_s4       penalty=2.0 q8_a0.8_or    
+    avg_slowdown   wins=  4 harms= 26 ties=  0  pct=  +7.35%  sign_p=<0.0001  wilcoxon_p=<0.0001  old_harm=True  new_harm=True
+
+Total cells flagged by old rule: 19
+Total cells flagged by new rule: 19
+Cells where old/new disagree: 0
+
+====================================================================================================
+SELECTION RULE RE-APPLIED WITH CORRECTED HARM FLAG
+====================================================================================================
+q2_a0.8_and      HARM   harmful_on=[('rate3.0_s4', '0.0'), ('rate3.0_s4', '2.0')]
+q2_a0.8_or       HARM   harmful_on=[('bursty_high_s24', '0.0'), ('bursty_high_s64', '2.0'), ('rate3.0_s4', '0.0'), ('rate3.0_s4', '2.0')]
+q2_a1.5_and      clean  harmful_on=-
+q2_a1.5_or       HARM   harmful_on=[('rate3.0_s4', '0.0'), ('rate3.0_s4', '2.0')]
+q4_a0.8_and      HARM   harmful_on=[('bursty_high_s64', '2.0')]
+q4_a0.8_or       HARM   harmful_on=[('bursty_high_s24', '0.0'), ('bursty_high_s64', '2.0'), ('rate3.0_s4', '0.0'), ('rate3.0_s4', '2.0')]
+q4_a1.5_and      HARM   harmful_on=[('bursty_high_s64', '2.0')]
+q4_a1.5_or       clean  harmful_on=-
+q8_a0.8_and      clean  harmful_on=-
+q8_a0.8_or       HARM   harmful_on=[('bursty_high_s24', '0.0'), ('bursty_high_s64', '2.0'), ('rate3.0_s4', '0.0'), ('rate3.0_s4', '2.0')]
+q8_a1.5_and      clean  harmful_on=-
+q8_a1.5_or       HARM   harmful_on=[('bursty_high_s64', '2.0')]
+
+Harm-free configs (corrected rule): ['q2_a1.5_and', 'q4_a1.5_or', 'q8_a0.8_and', 'q8_a1.5_and']
+
+stacked_burst medium/high p95_wait %% change, harm-free (corrected) configs only
+q2_a1.5_and      mean p95_wait %% change = -20.17%  (values: [-14.5, -10.1, -30.3, -25.7])
+q4_a1.5_or       mean p95_wait %% change = -19.00%  (values: [-6.9, -2.9, -31.0, -35.2])
+q8_a0.8_and      mean p95_wait %% change = -9.98%  (values: [-1.5, 0.7, -22.2, -16.9])
+q8_a1.5_and      mean p95_wait %% change = -9.97%  (values: [-1.5, 0.7, -22.2, -16.8])
+
+SELECTED (corrected rule): q2_a1.5_and (-20.17%)
+
+====================================================================================================
+OLD RULE (for comparison)
+====================================================================================================
+Harm-free configs (old rule): ['q2_a1.5_and', 'q4_a1.5_or', 'q8_a0.8_and', 'q8_a1.5_and']

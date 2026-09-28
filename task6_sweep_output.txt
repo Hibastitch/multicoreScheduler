@@ -1,0 +1,28 @@
+stacked_burst  size=  2 penalty=0.0ms  p95:    4.38->   4.38 (  +0.0% +-0.0)  sign_p=1.0000  wilcoxon_p=1.0000  extra_scan=+0.0%  extra_mig=+0.0%  fires=0.0
+stacked_burst  size=  2 penalty=2.0ms  p95:    4.41->   4.41 (  +0.0% +-0.0)  sign_p=1.0000  wilcoxon_p=1.0000  extra_scan=+0.0%  extra_mig=+0.0%  fires=0.0
+stacked_burst  size=  4 penalty=0.0ms  p95:    8.27->   7.18 ( -13.2% +-2.8)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+1.0%  extra_mig=-1.7%  fires=93.5
+stacked_burst  size=  4 penalty=2.0ms  p95:    8.26->   7.12 ( -13.7% +-3.7)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+1.3%  extra_mig=-4.4%  fires=93.0
+stacked_burst  size=  8 penalty=0.0ms  p95:   12.77->  11.98 (  -6.2% +-3.8)  sign_p=0.0987  wilcoxon_p=0.0055  extra_scan=+2.4%  extra_mig=-7.4%  fires=137.3
+stacked_burst  size=  8 penalty=2.0ms  p95:   12.34->  11.58 (  -6.2% +-3.9)  sign_p=0.0241  wilcoxon_p=0.0069  extra_scan=+2.0%  extra_mig=-6.7%  fires=137.6
+stacked_burst  size= 12 penalty=0.0ms  p95:   14.48->  12.16 ( -16.0% +-4.9)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+3.4%  extra_mig=-4.2%  fires=158.0
+stacked_burst  size= 12 penalty=2.0ms  p95:   14.30->  11.86 ( -17.1% +-4.1)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+2.6%  extra_mig=-2.3%  fires=157.6
+stacked_burst  size= 16 penalty=0.0ms  p95:   14.91->  12.67 ( -15.1% +-5.1)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+3.4%  extra_mig=-3.4%  fires=161.0
+stacked_burst  size= 16 penalty=2.0ms  p95:   14.58->  12.48 ( -14.4% +-5.4)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+2.8%  extra_mig=-3.4%  fires=161.5
+stacked_burst  size= 24 penalty=0.0ms  p95:   14.91->  12.67 ( -15.1% +-5.1)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+3.4%  extra_mig=-3.4%  fires=161.0
+stacked_burst  size= 24 penalty=2.0ms  p95:   14.58->  12.48 ( -14.4% +-5.4)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+2.8%  extra_mig=-3.4%  fires=161.5
+stacked_burst  size= 32 penalty=0.0ms  p95:   14.91->  12.67 ( -15.1% +-5.1)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+3.4%  extra_mig=-3.4%  fires=161.0
+stacked_burst  size= 32 penalty=2.0ms  p95:   14.58->  12.48 ( -14.4% +-5.4)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+2.8%  extra_mig=-3.4%  fires=161.5
+stacked_burst  size= 48 penalty=0.0ms  p95:   14.91->  12.67 ( -15.1% +-5.1)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+3.4%  extra_mig=-3.4%  fires=161.0
+stacked_burst  size= 48 penalty=2.0ms  p95:   14.58->  12.48 ( -14.4% +-5.4)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+2.8%  extra_mig=-3.4%  fires=161.5
+stacked_burst  size= 64 penalty=0.0ms  p95:   14.91->  12.67 ( -15.1% +-5.1)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+3.4%  extra_mig=-3.4%  fires=161.0
+stacked_burst  size= 64 penalty=2.0ms  p95:   14.58->  12.48 ( -14.4% +-5.4)  sign_p=<0.0001  wilcoxon_p=<0.0001  extra_scan=+2.8%  extra_mig=-3.4%  fires=161.5
+bursty         size= 16 penalty=0.0ms  p95:    1.00->   1.00 (  +0.0% +-0.0)  sign_p=1.0000  wilcoxon_p=1.0000  extra_scan=+0.1%  extra_mig=+0.4%  fires=0.6
+bursty         size= 16 penalty=2.0ms  p95:    1.00->   1.00 (  +0.0% +-0.0)  sign_p=1.0000  wilcoxon_p=1.0000  extra_scan=+0.1%  extra_mig=+2.0%  fires=0.9
+bursty         size= 32 penalty=0.0ms  p95:    1.00->   1.00 (  +0.0% +-0.0)  sign_p=1.0000  wilcoxon_p=1.0000  extra_scan=+0.1%  extra_mig=+0.4%  fires=0.6
+bursty         size= 32 penalty=2.0ms  p95:    1.00->   1.00 (  +0.0% +-0.0)  sign_p=1.0000  wilcoxon_p=1.0000  extra_scan=+0.1%  extra_mig=+2.0%  fires=0.9
+bursty         size= 48 penalty=0.0ms  p95:    1.00->   1.00 (  +0.0% +-0.0)  sign_p=1.0000  wilcoxon_p=1.0000  extra_scan=+0.1%  extra_mig=+0.4%  fires=0.6
+bursty         size= 48 penalty=2.0ms  p95:    1.00->   1.00 (  +0.0% +-0.0)  sign_p=1.0000  wilcoxon_p=1.0000  extra_scan=+0.1%  extra_mig=+2.0%  fires=0.9
+bursty         size= 64 penalty=0.0ms  p95:    1.00->   1.00 (  +0.0% +-0.0)  sign_p=1.0000  wilcoxon_p=1.0000  extra_scan=+0.1%  extra_mig=+0.4%  fires=0.6
+bursty         size= 64 penalty=2.0ms  p95:    1.00->   1.00 (  +0.0% +-0.0)  sign_p=1.0000  wilcoxon_p=1.0000  extra_scan=+0.1%  extra_mig=+2.0%  fires=0.9
+
+Wrote results_task6_burst_size_sweep.csv
