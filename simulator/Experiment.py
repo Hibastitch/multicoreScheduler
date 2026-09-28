@@ -1,4 +1,8 @@
 """
+NOT used to produce the paper's results -- those come from the scripts
+in final_results/ (n=30, dedicated seed ranges). This is a general-
+purpose exploration harness (n=10 by default), kept for that purpose.
+
 Phase 2 harness: 2 schedulers x 5 profiles x 3 intensity levels,
 N repetitions each, averaged. Writes results to CSV.
 

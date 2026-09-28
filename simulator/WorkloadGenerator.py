@@ -141,9 +141,12 @@ class WorkloadGenerator:
         `direct_core`, if set (stacked_burst -- see _plan_burst_stacked),
         means "enqueue directly on this core, bypassing placement
         entirely" -- a stronger instruction than `entry_core`, which is
-        only a wake-affine HINT that still goes through
-        select_core_for_task(). Always present (default None) so every
-        plan entry has a uniform shape for run_profile()/place_fn()."""
+        only the starting CPU for the fork-path top-down descent
+        (hierarchical_new_task_placement) that still goes through
+        select_core_for_task() -- NOT a wake-affine hint; wake-affine is
+        dead code in this simulator (see Placement.py). Always present
+        (default None) so every plan entry has a uniform shape for
+        run_profile()/place_fn()."""
         cpu_time = self._sample_cpu_time(heavy_tail)
         weight = self._sample_weight()
         deadline = (now + self.deadline_slack * cpu_time) if with_deadline else None
@@ -158,9 +161,9 @@ class WorkloadGenerator:
     # ---------------- arrival shapes (planning-time: pure computation, `now` threaded explicitly) ----------------
 
     def _plan_burst(self, now, size, duration, rate, heavy_tail=False, with_deadline=False):
-        """Same timing/logic as the old simpy-driven _emit_burst(), just
-        computed synchronously with an explicit `now` instead of reading
-        self.env.now -- see module docstring. Returns (entries, end_time)."""
+        """Computes one burst's arrival timing/entries synchronously with
+        an explicit `now` argument (no simpy involved -- see module
+        docstring's RNG-isolation section). Returns (entries, end_time)."""
         start = now
         entries = []
         emitted = 0
@@ -182,15 +185,18 @@ class WorkloadGenerator:
         return entries, end
 
     def _plan_burst_stacked(self, now, size, duration, rate, heavy_tail=False, with_deadline=False):
-        """Task 5 (`stacked_burst`, opt-in -- see Readme.md): like
-        _plan_burst(), but sets `direct_core` (bypasses placement's
-        wake-affine/idle-sibling search ENTIRELY, straight onto one
-        fixed core) instead of `entry_core` (a placement HINT that still
-        goes through select_core_for_task()). Models wakeup stacking /
-        CPU affinity -- every task in this burst lands on the SAME core
-        regardless of what placement would have chosen, the deliberately
-        worst-case scenario for a load balancer to have to fix after the
-        fact, since placement itself does nothing to spread this load."""
+        """Task 5 (`stacked_burst`, opt-in -- see docs/NOTEBOOK.md): like
+        _plan_burst(), but sets `direct_core` (bypasses fork-path
+        placement's top-down descent ENTIRELY, straight onto one core)
+        instead of `entry_core` (a placement HINT that still goes
+        through select_core_for_task()). `direct_core` is chosen at
+        RANDOM, once per burst (self.rng.choice(self.cores)) -- not a
+        single core fixed for the whole run, and not per task. Models
+        wakeup stacking / CPU affinity -- every task in ONE burst lands
+        on that burst's SAME (randomly chosen) core regardless of what
+        placement would have chosen, the deliberately worst-case
+        scenario for a load balancer to have to fix after the fact,
+        since placement itself does nothing to spread this load."""
         start = now
         entries = []
         emitted = 0
