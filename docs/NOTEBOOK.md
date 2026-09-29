@@ -3151,3 +3151,75 @@ fix. No `pytest` in this environment; the script runs standalone
 (`python test_invariants.py`, the tested path) and also exposes a
 single coarse-grained `pytest`-collectible test if `pytest` is ever
 installed (unverified in this environment -- noted as such in the file).
+
+## 2026-09-29g — Task 8 result: the v2 calibration grid (seeds 10000+, all 6 fidelity fixes as default)
+
+Run and committed by the user directly (`5d326ee`, "Task 8 v2 grid
+results (seeds 10000+): no harm-free config"), using the `TASK8_V2=1`
+pipeline Task 8 Step 4 prepared. Recorded here per this project's
+standing ledger discipline, verified against the actual output before
+writing anything below (`final_results/1_calibration_grid/harm_
+breakdown_v2.csv`, and a fresh `TASK8_V2=1 python task6_threshold_grid_
+analyze.py`/`_recompute_harm.py` run this session).
+
+**Verified facts:**
+
+- **All 12 threshold configs are flagged harmful on `bursty_high_s64` at
+  penalty=2.0, metric `avg_slowdown`**, +2.64% to +7.06% (not the
+  originally-stated "+7.1%" -- the true max is +7.061%, `q2_a1.5_or`),
+  25-30 harms out of 30 seeds per config (`harm_breakdown_v2.csv`).
+  Confirmed to broadly SCALE WITH FIRE COUNT: `q8_a0.8_and` (109.0 fires)
+  is the mildest at +2.64%, `q4_a0.8_or`/`q8_a0.8_or` (427.0-427.3 fires)
+  are near the worst at +6.75-6.77% -- not perfectly monotonic (`q2_a0.8_
+  or`, the most fires at 434.6, is +5.93%, not the single worst), but the
+  overall trend across all 12 configs is a clear, real correlation, not
+  noise.
+- **`q2_a0.8_or` and `q2_a1.5_or` (only these two, not "OR configs"
+  generally) are also harmful on `stacked_low` (`p95_wait`, +8.32%, 17
+  harms/23 n_eff, both AT PENALTY=0.0)** -- `harm_breakdown_v2.csv`'s
+  other 10 OR-combine configs (`q4_a0.8_or`, `q4_a1.5_or`, `q8_a0.8_or`,
+  `q8_a1.5_or`) are NOT flagged on `stacked_low` at all.
+- **`q2_a0.8_or` is also harmful on `bursty_high_s24`** (`p95_wait`,
+  +6.53%, 13 harms/17 n_eff, **AT PENALTY=0.0**).
+- **Harm-free configs: `[]` (empty) -- confirmed directly** via both
+  `task6_threshold_grid_analyze.py`'s and `_recompute_harm.py`'s own
+  "HARM CHECK per config" output (old rule and the corrected `harms>
+  wins` rule agree: 0 harm-free configs either way).
+
+**Correction to the initial characterization, made before writing this
+down as fact:** "no harm at penalty 0" is NOT accurate as a blanket
+statement -- `harm_breakdown_v2.csv` shows 3 (config, workload, metric)
+cells harmful AT PENALTY=0.0 (`q2_a0.8_or`/`bursty_high_s24`,
+`q2_a0.8_or`/`stacked_low`, `q2_a1.5_or`/`stacked_low`), against 12 cells
+at penalty=2.0. The accurate statement is: **harm is heavily
+concentrated at penalty=2.0 (12 of 15 flagged cells, and the only
+penalty where EVERY config is flagged), but is not exclusively a
+penalty=2.0 phenomenon** -- 2 of the 12 configs (`q2_a0.8_or`,
+`q2_a1.5_or`) are also flagged at penalty=0.0. Logged as a correction
+here, not silently fixed, per this project's standing rule.
+
+**NO CONFIG SELECTED under the pre-registered rule** (harm-free on any
+metric/workload/penalty, then largest stacked_medium+stacked_high
+p95_wait reduction) -- there is no harm-free config to select from.
+
+**Not done:** confirmation v2 (seeds 40000+) was NOT run -- correctly,
+since the pre-registered selection rule has nothing to confirm when no
+config survives the grid stage. `task6_threshold_grid_analyze.py` and
+`task6_threshold_grid_recompute_harm.py` both used to crash
+(`TypeError: 'NoneType' object is not subscriptable` on `best[0]`) on an
+empty harm-free set -- neither script had ever been exercised with one
+before, since the original (v1) grid always found `q2_a1.5_and`
+harm-free. Both now print `"NO CONFIG SELECTED"` plainly instead of
+crashing; verified this session that v1's original output
+(`SELECTED (largest reduction among harm-free configs): q2_a1.5_and
+(-20.17%)`) is byte-identical to before the fix -- the fix only changes
+behavior on the previously-untested empty-set path.
+
+This result is the direct motivation for Task 9's two fixes below: the
+migration-penalty cost model (currently charges every migration
+identically, including a task that has never run and therefore has no
+warm cache to lose) and the burst path's missing "is moving even worth
+it" gap check (currently balances toward the LEAST-loaded core it can
+find, even when that core is only 1 task behind -- moving in that case
+cannot possibly finish the moved task any earlier, since the source
+would have gotten to it in the same or less time).

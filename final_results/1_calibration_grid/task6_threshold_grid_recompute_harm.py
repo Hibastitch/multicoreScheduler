@@ -153,7 +153,16 @@ def main():
         print(f"{cfg:16} mean p95_wait %% change = {mean_pct:+.2f}%  (values: {[round(v,1) for v in vals]})")
         if best is None or mean_pct < best[1]:
             best = (cfg, mean_pct)
-    print(f"\nSELECTED (corrected rule): {best[0]} ({best[1]:+.2f}%)")
+    # TASK 9 STEP 0 (2026-09-29): an empty harm-free-under-the-corrected-
+    # rule set is a real, reportable outcome -- see docs/NOTEBOOK.md's
+    # "Task 8 result" entry (the v2 grid found all 12 configs harmful) --
+    # not a bug to crash on.
+    if best is None:
+        print("\nNO CONFIG SELECTED (corrected rule): every config was flagged "
+              "harmful on at least one (workload, penalty, metric) -- see the "
+              "harm-free list above (empty).")
+    else:
+        print(f"\nSELECTED (corrected rule): {best[0]} ({best[1]:+.2f}%)")
 
     # --- 3. old selection for comparison ---
     print("\n" + "=" * 100)

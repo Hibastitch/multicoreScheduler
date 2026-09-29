@@ -57,7 +57,15 @@ for cfg in harm_free_configs:
     if best is None or mean_pct < best[1]:
         best = (cfg, mean_pct)
 
-print(f"\nSELECTED (largest reduction among harm-free configs): {best[0]} ({best[1]:+.2f}%)")
+# TASK 9 STEP 0 (2026-09-29): an empty harm-free set is a real,
+# reportable outcome (see docs/NOTEBOOK.md's "Task 8 result" entry --
+# the v2 grid found all 12 configs harmful), not a bug -- print it
+# plainly instead of crashing on `best[0]` when `best` is still None.
+if best is None:
+    print("\nNO CONFIG SELECTED: every config was flagged harmful on at least "
+          "one (workload, penalty, metric) -- see the HARM CHECK above.")
+else:
+    print(f"\nSELECTED (largest reduction among harm-free configs): {best[0]} ({best[1]:+.2f}%)")
 
 # --- full grid table for the report ---
 print("\n" + "=" * 100)
