@@ -286,6 +286,11 @@ class Core:
             task.remaining_time -= slice_len
             task.vruntime += slice_len * (NICE_0_WEIGHT / task.weight)
             self.total_busy_time += slice_len
+            # TRACKING-ONLY (Task 8 pre-audit, Step 4, see Task.py's
+            # last_ran_until docstring): read by nothing but the audit's
+            # cache-hot measurement script -- no decision anywhere in
+            # this file or LoadBalancer.py consults it.
+            task.last_ran_until = env.now
 
             if task.remaining_time <= 1e-9:
                 task.finish_time = env.now

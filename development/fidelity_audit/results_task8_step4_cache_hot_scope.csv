@@ -1,0 +1,11 @@
+workload,balancer,total_migrations,would_be_cache_hot,pct_cache_hot,never_run_at_migration,pct_never_run
+stacked_medium,baseline,3861,178,4.61,2116,54.8
+stacked_medium,burst_aware,3744,215,5.74,2155,57.56
+stacked_high,baseline,4711,132,2.8,2913,61.83
+stacked_high,burst_aware,4334,176,4.06,2868,66.17
+rate3.0_s12,baseline,3038,125,4.11,1640,53.98
+rate3.0_s12,burst_aware,3019,136,4.5,1807,59.85
+bursty_high_s24,baseline,801,81,10.11,558,69.66
+bursty_high_s24,burst_aware,801,81,10.11,558,69.66
+bursty_high_s64,baseline,16295,890,5.46,2688,16.5
+bursty_high_s64,burst_aware,17153,933,5.44,2938,17.13

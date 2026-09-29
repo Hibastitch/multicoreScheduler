@@ -2836,3 +2836,118 @@ than fixing before the re-run.
 **Not done, per instruction:** no simulator logic was changed, no fixes
 were implemented, and neither the calibration grid nor the confirmation
 run was re-run. This entry is the audit's findings, not a new baseline.
+
+## 2026-09-29b — Task 8 pre-audit corrections pass (6 steps, 1 tracking-only code change)
+
+Six directed corrections/verifications to the 2026-09-29 audit above,
+requested before any fix is implemented. Still audit-only except one
+explicitly authorized tracking-only addition (Step 4). Full detail and
+citations in `docs/FIDELITY_AUDIT.md` (updated in place); this entry is
+the ledger pointer plus headline outcomes.
+
+**STEP 1 -- RETRACTION OF A RETRACTION.** The 2026-09-29 entry above
+claimed the "Placement.py machines[0]-fixed-root" Phase-10 finding was a
+mischaracterization ("there is only ONE machine object ... no machines[]
+array"). **That claim was wrong** -- made without actually reading
+`Topology.build_topology()`, only `Main.py`'s single-variable unpacking.
+Re-read this session: `build_topology()` builds a `machines = []` list
+with one `Domain` PER NODE (`Topology.py:434-456`) and returns only
+`machines[0]` (`Topology.py:458`) to every caller -- exactly what the
+ORIGINAL Phase-10 finding said. `home_children` correctly anchors each
+onehop's `.parent` to its OWN node (`Topology.py:406-418`,
+`home_children=[nodes[i]]`), so `domain_chain()`-based BALANCING is
+unaffected, as both the original finding and `Topology.py`'s own
+in-code CAVEAT (`Topology.py:369-387`, already present before this
+audit task started) say -- the bug is PLACEMENT-only:
+`machines[0].children == [onehop0, onehop2]`, and node1/node3-forked
+tasks' first-match local domain is always `onehop0`, never their own.
+**The original Phase-10 finding stands, unaltered. Last session's
+"correction" of it is itself now retracted** -- this is a
+correction-of-a-correction, logged per ledger discipline rather than
+silently fixed in place. Lesson for future sessions: a claim about what
+a function returns must be verified by reading THAT function, not
+inferred from one call site's variable naming.
+
+**STEP 2 -- `TIME_SLICE` vs the EFFECTIVE `base_slice`.** Fetched
+`get_update_sysctl_factor()`/`update_sysctl()`/`sched_init_granularity()`
+(`fair.c:192-226`). Confirmed: under the default `SCHED_TUNABLESCALING_
+LOG`, `sysctl_sched_base_slice` is scaled at boot by `1+ilog2(min(ncpus,
+8))` -- for any machine with >=8 online CPUs (including this sim's 32),
+`factor=4`, so the EFFECTIVE base slice is **2.8ms**, not the raw 0.7ms
+figure previously cited. Sim's `TIME_SLICE=4` is ~1.43x the real
+effective value, not ~5.7x as previously stated. Also corrected: this
+is NOT neutral for the paper's metrics -- `TIME_SLICE` is literally
+`Core.run()`'s dispatch quantum (how long a core holds its current task
+before re-picking), so it directly sets how long a queued task waits
+behind a running one, i.e. it reaches p95_wait, this audit's own primary
+metric. `docs/FIDELITY_AUDIT.md` §10 rewritten accordingly; not
+independently measured (a `TIME_SLICE`-scaling toggle run the same way
+as Toggle A/B/C would be needed).
+
+**STEP 3 -- 1ms ticker reclassified MATCH (timing).** Re-examined
+whether `rq->next_balance`'s single-pointer gate produces a genuine
+timing difference from this sim's every-tick-every-core walk, or only a
+work-accounting one. Confirmed the latter: `next_balance` is
+constructed as the MINIMUM, over every domain, of that domain's own
+due-time (`fair.c:13775-13835`), so `jiffies>=rq->next_balance` becomes
+true at exactly the moment the soonest-due domain is due -- never later
+than the naive scheme finds it -- and the softirq handler, once it
+fires, walks every domain checking its OWN interval
+(`fair.c:13798-13816`) exactly like `periodic_balance()`'s own loop.
+Reclassified from UNDOCUMENTED MISMATCH to **MATCH (timing)**; only the
+per-tick WORK differs (O(levels) every tick per core here vs. O(1) on
+most real-Linux ticks). Does NOT affect the separate, still-real
+busy_factor finding (§1 row 2) -- that's about the VALUE of the
+interval, not whether the check happens every tick.
+
+**STEP 4 -- cache-hot scope narrowed and MEASURED.** Verified
+`task_hot()`'s exceptions before measuring: `__sched_fork()` sets
+`p->se.exec_start=0` at fork (`core.c:4568`); only `update_stats_curr_
+start()` (`fair.c:2150-2156`, on actually being picked to run)
+overwrites it with a real timestamp -- so a freshly-forked, never-run
+task is NEVER cache-hot in real Linux (huge `delta`), confirming the
+original §7 framing ("applies to literally every migration") overstated
+the gap's scope. Added a TRACKING-ONLY `Task.last_ran_until` field
+(`Task.py`, set in `Core.run()`) -- the one simulator-file edit in this
+whole audit, explicitly authorized for this step. **Verified
+byte-identical before/after**: a throwaway fingerprint script (12 runs,
+2 balancers x 2 workloads x 3 seeds, full migration-event sequences +
+summary metrics, sha256) produced the identical hash
+(`fe3a33c37f180f...`) before and after the addition, confirming zero
+decisions changed; the script itself was scratch and not committed.
+Measured (`development/fidelity_audit/task8_step4_cache_hot_scope.py`,
+baseline + burst-aware, 5 workloads, 10 seeds 50000+): only **2.8%-
+10.1%** of migrations across workloads would actually be refused as
+cache-hot -- most sim migrations are either already-cold or, especially
+on the burst path (88-99.8%), of tasks that have NEVER run since being
+queued, which real Linux would never block either. An upper bound (does
+not account for `task_hot()`'s own active-balance/NUMA-preferred/
+nr_balance_failed exceptions). This is an order of magnitude smaller
+than the un-measured "applies to every migration" framing this finding
+originally got -- §14's Rank 2 demoted accordingly (see below).
+
+**STEP 5 -- a missed §8 row.** Checked directly: within
+`calculate_imbalance()` (`fair.c:12577-12753`), there is EXACTLY ONE
+call to `adjust_numa_imbalance()` (`fair.c:12693`), inside the
+`group_has_spare` branch only -- the "both overloaded" migrate_load
+branch (`fair.c:12718-12753`) never calls it. But
+`LoadBalancer._balance_domain`'s GENERIC migrate_load path
+(`LoadBalancer.py:386-387`) calls `_adjust_numa_imbalance()`
+unconditionally whenever `domain.is_numa`, reached from BOTH the
+has-spare-legacy-fallthrough case AND the "both overloaded" case --
+meaning the sim forgives small NUMA imbalances in the overloaded-vs-
+overloaded scenario that real Linux never forgives there at all. New
+row added to `docs/FIDELITY_AUDIT.md` §8; the previously-MATCH-labeled
+"both overloaded" row in §5 now carries a caveat pointing to this.
+
+**STEP 6 -- §14 Rank 1 framing corrected.** Removed the "directly in
+the user's interest" justification for fixing `busy_factor` before the
+re-run. The reason to fix it is fidelity -- the simulator claims to
+model `get_sd_balance_interval()` (`fair.c:13565-13586`) and currently
+implements only one of its two multiplicative factors -- not which
+direction the fix happens to move any particular comparison.
+
+**Not done, per instruction:** no fix was implemented for any of the
+underlying mismatches; the calibration grid/confirmation run was not
+re-run. The `last_ran_until` field is tracking-only and read by nothing
+but this audit's own measurement script.

@@ -66,6 +66,18 @@ togglable without editing simulator files.
   busy_factor scaling is large and highly significant (+26% to +48% p95_wait
   when corrected); the idle-gate and NUMA-constant fixes both measured zero
   effect at these two high-intensity workloads.
+- `task8_step4_cache_hot_scope.py` — Step 4 of the 2026-09-29 corrections
+  pass: measures what fraction of this sim's migrations real Linux's
+  `task_hot()` would refuse as cache-hot, using a new TRACKING-ONLY
+  `Task.last_ran_until` field (`simulator/Task.py`/`Core.py`, verified
+  byte-identical decisions before/after via a fingerprint hash — the one
+  simulator-file edit in this whole audit, explicitly authorized). Baseline +
+  burst-aware, 5 workloads, 10 seeds (50000+).
+- `results_task8_step4_cache_hot_scope.csv`, `_by_trigger.csv` — its output.
+  Headline: only 2.8%-10.1% of migrations would actually be refused (most are
+  either already-cold or never-run — real Linux's cache-hot check only ever
+  blocks tasks that have ACTUALLY run recently), a much smaller scope than
+  originally assumed in `docs/FIDELITY_AUDIT.md`'s first pass.
 
 ## sweeps_precalibration/ — burst-size / interval sweeps before the detector was calibrated
 

@@ -4,7 +4,12 @@ Full Linux-fidelity audit of the simulator against kernel v7.2 source
 (`raw.githubusercontent.com/torvalds/linux/v7.2/kernel/sched/{fair,core,
 topology,pelt}.c`, `sched.h`), done BEFORE the Task 8 grid/confirmation
 re-run this was requested to precede. **No simulator logic was changed
-in this task** -- audit and measurement only. Every citation below was
+in this task** -- audit and measurement only, with ONE explicit,
+authorized exception (2026-09-29 corrections pass, Step 4): a
+TRACKING-ONLY `Task.last_ran_until` field was added to `Task.py`/
+`Core.py` to measure §7's cache-hot scope. It is read by nothing but the
+audit's own measurement script and was verified to change zero decisions
+(byte-identical fingerprint hash before/after, see §7). Every citation below was
 fetched fresh this session (cached at `/tmp/fair_v72.c`, `/tmp/core_v72.c`,
 `/tmp/topology_v72.c`, `/tmp/pelt_v72.c`, `/tmp/sched_v72.h`); none is
 from memory.
@@ -28,11 +33,39 @@ Column meanings:
 
 | sim | Linux | status | bias | affects |
 |---|---|---|---|---|
-| `Main.py:83-90` `periodic_ticker()`: every core, every 1 sim-ms, calls `periodic_balance()` unconditionally | `sched_balance_trigger`/`scheduler_tick()` raises `SCHED_SOFTIRQ` only when `time_after_eq(jiffies, rq->next_balance)` (`fair.c:14531`, `run_rebalance_domains` gates on `next_balance`, not every tick) | UNDOCUMENTED MISMATCH | earlier/more often | periodic, burst (shared `_balance_domain`) |
+| `Main.py:83-90` `periodic_ticker()`: every core, every 1 sim-ms, calls `periodic_balance()`, which walks `d=core.parent` checking EACH domain's own `now - last_balance >= interval` (`LoadBalancer.py:275-326`) | `scheduler_tick()` checks `jiffies >= rq->next_balance` every tick, raising `SCHED_SOFTIRQ` only when due (`fair.c:14531`); the softirq handler, `sched_balance_domains()`, then walks `for_each_domain(cpu, sd)` checking EACH domain's own `time_after_eq(jiffies, sd->last_balance+interval)` (`fair.c:13798-13816`) -- the SAME per-domain gate our `periodic_balance()` implements | **CORRECTED to MATCH (timing), 2026-09-29** | neutral | periodic, burst |
 | `LoadBalancer.periodic_balance` interval check: `now - last_balance >= interval` where `interval` is `Domain.balance_interval` / per-cpu state, no scaling | `get_sd_balance_interval(sd, cpu_busy)` (`fair.c:13565-13586`): `interval = sd->balance_interval; if (cpu_busy) interval *= sd->busy_factor;` (**busy_factor = 16**, `topology.c:1958`), then `msecs_to_jiffies`, `-1` if busy, `clamp(1, max_load_balance_interval)` | UNDOCUMENTED MISMATCH | earlier (checks ~16x too often whenever the checking core is busy) | periodic, burst |
 | `Topology.py:139-141` `min_interval = max(weight,1)`, `max_interval = 2*min_interval` | `sd_init()`: `.min_interval = sd_weight, .max_interval = 2*sd_weight` (`topology.c:1956-1957`) | MATCH | neutral | periodic |
 | `LoadBalancer.periodic_balance:321` `new_interval = d.min_interval if n else min(interval*2, d.max_interval)` | success: `sd->balance_interval = sd->min_interval` (`fair.c:13507`); failure: `sd->balance_interval *= 2` capped at `max_interval` (`fair.c:13556-13557`), but ONLY reached after `out_one_pinned`, and explicitly SKIPPED for `CPU_NEWLY_IDLE`/misfit (`fair.c:13538-13554`) | DOCUMENTED SIMPLIFICATION | neutral (shape matches; the NEWLY_IDLE/misfit skip and the finer pinned-vs-unpinned distinction aren't ported, but the sim's periodic path never calls this from a NEWLY_IDLE context anyway) | periodic |
 | No `max_load_balance_interval` clamp modeled | `max_load_balance_interval = HZ * num_online_cpus() / 10` (`fair.c:13692`) -- an upper ceiling independent of any one domain's `max_interval` | NOT MODELED | neutral (this sim's per-domain `max_interval` values, 2..64 "ms", never approach a realistic `HZ*32/10` ceiling anyway) | periodic |
+
+**Correction, 2026-09-29:** row 1 was originally marked UNDOCUMENTED
+MISMATCH ("earlier/more often") on the theory that real Linux only
+checks balancing when `rq->next_balance` is due, while this sim checks
+every core every tick. Re-examined this session: `rq->next_balance` is
+constructed as the MINIMUM, over every domain in the hierarchy, of that
+domain's own `last_balance + get_sd_balance_interval(...)` due-time
+(`fair.c:13775-13835`'s `next_balance`/`update_next_balance` bookkeeping,
+recomputed on every `sched_balance_domains()` call; `sched_balance_
+newidle()`'s own `update_next_balance()` calls, `fair.c:14390-14414`,
+only ever pull it EARLIER, never later). So `jiffies >= rq->next_balance`
+becomes true at EXACTLY the moment the soonest-due domain becomes due --
+not later than a naive "check every domain every tick" scheme would find
+it, and `sched_balance_domains()`, once it does run, walks every domain
+in the chain checking each one's OWN interval (`fair.c:13798-13816`)
+exactly like `periodic_balance()`'s `while d is not None` loop does. This
+is a pure work-saving fast path (skip the O(levels) walk on ticks where
+the cached minimum proves nothing can be due), not a timing difference:
+no domain becomes due at a different jiffy/sim-ms under one scheme vs
+the other. The only real difference is per-tick WORK: this sim's
+`periodic_balance()` does an O(levels) walk on every core on every tick
+(interval comparisons cost nothing to compute but still happen); real
+Linux does an O(1) pointer comparison on most ticks and only pays the
+O(levels) walk on the (rare) ticks something is actually due. Reclassified
+MATCH (timing) accordingly. This does NOT affect row 2 below (the
+missing `busy_factor` scaling) -- that is a separate, still-real mismatch
+in the VALUE of the interval each domain computes, not in whether the
+check happens every tick.
 
 **Measured impact of the busy_factor gap (Toggle A, `development/fidelity_audit/task8_pre_audit_impact_measurements.py`, 10 seeds 50000-50009, baseline only, `checker_model="kernel"`):**
 
@@ -123,7 +156,7 @@ for that branch specifically. The rest, freshly read this session
 | sim | Linux | status | bias | affects |
 |---|---|---|---|---|
 | No `migrate_misfit`/`migrate_util`(overloaded-case)/`migrate_task`(asym)/`migrate_task`(smt_balance)/`migrate_llc_task` branches | `calculate_imbalance()`'s first ~50 lines (`fair.c:12583-12622`) dispatch on `busiest->group_type` for misfit/asym_packing/smt_balance/llc_balance BEFORE ever reaching the has_spare/overloaded logic our sim ports | NOT MODELED | neutral (same reason as §4: none of these group types exist in this sim's 3-type classification, so there's nothing to dispatch to) | periodic, burst |
-| `_balance_domain`'s `local_type == GROUP_OVERLOADED` block (`LoadBalancer.py:351-357`): 3 checks, then falls to the generic `min()`-trick migrate_load formula | Real "both overloaded" path (`fair.c:12718-12753`): same 3 gate checks (`local->avg_load >= busiest->avg_load` / `>= sds.avg_load` / `100*busiest<=imbalance_pct*local`) then the same `min()` migrate_load formula (`fair.c:12748-12752`) -- **MATCH**, already correctly ported | MATCH | neutral | periodic, burst |
+| `_balance_domain`'s `local_type == GROUP_OVERLOADED` block (`LoadBalancer.py:351-357`): 3 checks, then falls to the generic `min()`-trick migrate_load formula | Real "both overloaded" path (`fair.c:12718-12753`): same 3 gate checks (`local->avg_load >= busiest->avg_load` / `>= sds.avg_load` / `100*busiest<=imbalance_pct*local`) then the same `min()` migrate_load formula (`fair.c:12748-12752`) -- **MATCH**, already correctly ported | MATCH for the gate checks and formula shape; **see §8's new row** for a NUMA-adjustment step this branch applies that real Linux's overloaded-vs-overloaded path never does | neutral for the checks/formula; the NUMA adjustment (only relevant when `domain.is_numa`) is a separate, additional mismatch, see §8 | periodic, burst |
 | No `sched_balance_find_src_group()`-level `out_balanced` pre-filter before `calculate_imbalance()` is even called | `fair.c:12871-12908`: several early bail-outs BEFORE `calculate_imbalance()` runs -- `is_rd_overutilized`/EAS check, `local->group_type > busiest->group_type` re-check, and critically: **`if (busiest->group_type != group_overloaded) { if (!env->idle) goto out_balanced; ... }`** (`fair.c:12871-12881`) -- on a BUSY checking CPU, real Linux refuses to balance at all unless busiest is genuinely overloaded (or the SMT/idle-diff/`sum_h_nr_running==1` carve-outs at `fair.c:12881-12905` apply) | UNDOCUMENTED MISMATCH | earlier/more often (sim balances from busy checkers even when busiest isn't overloaded; real Linux mostly refuses to) | periodic, burst |
 
 **Measured impact of the `!idle` out_balanced gate (Toggle B, same
@@ -171,16 +204,61 @@ high-priority on this evidence alone.
 | `_migrate_tasks`/`try_newidle`: oldest-first, `src_core.rq[0]` | `detach_tasks()` walks `list_last_entry(tasks, ..., se.group_node)` -- the CFS runqueue's own list order (tail), not literally FIFO by arrival but functionally close for this sim's append-ordered `rq` list (`fair.c:10937`) | MATCH (documented in-code as an intentional fix, `LoadBalancer.py:626-638`) | neutral | periodic, burst, newidle |
 | `_migrate_load`: **heaviest**-first, `max(candidates, key=weight)` | Same `detach_tasks()` list-order walk applies to EVERY `migration_type`, including `migrate_load` -- real Linux does NOT reorder by weight; it walks the list and applies a running `env->imbalance -= load` decrement per candidate in LIST order, skipping (not reordering) ones that don't fit (`fair.c:10942-10960`) | UNDOCUMENTED MISMATCH | more selective/different set migrated (heaviest-first converges to the imbalance target in fewer, larger migrations than Linux's list-order-with-skip would) | periodic, burst |
 | `_migrate_load`'s tiny-task skip: `min_task_weight = 16 if failed==0 else max(1, 16>>min(failed,4))`, applied as a pre-filter over ALL candidates at once | `sched_feat(LB_MIN) && load < 16 && !nr_balance_failed: goto next` (`fair.c:10951-10953`) -- same threshold (16), but applied per-candidate DURING the list walk, with `shr_bound(load, nr_balance_failed)` (a bit-shift, not the sim's `16 >> min(failed,4)` approximation) gating the "too big for remaining budget" skip separately (`fair.c:10955-10960`) | DOCUMENTED SIMPLIFICATION | neutral (threshold value matches; only the exact shape of the `nr_balance_failed` relaxation curve differs, already flagged in-code as "verified: load<16 unless nr_balance_failed") | periodic, burst |
-| **No cache-hot check anywhere** in `_migrate_load`/`_migrate_tasks`/`_migrate_util`/`_do_migrate` | `can_migrate_task()` calls `task_hot(p, env)` (`fair.c:10291-10329`, `10823`): a task is cache-hot (and normally NOT migrated) if `rq_clock_task(env->src_rq) - p->se.exec_start < sysctl_sched_migration_cost` (**500,000 ns = 0.5 sim-ms**, `fair.c:82`) -- exceptions only for active-balance, NUMA-preferred destination, or `nr_balance_failed>0` (`fair.c:10796+`) | UNDOCUMENTED MISMATCH | more migrations than Linux would ever allow (sim is willing to migrate a task that just started running on its current core; real Linux normally refuses for 0.5ms after a task starts running there) | periodic, burst, newidle |
+| **No cache-hot check anywhere** in `_migrate_load`/`_migrate_tasks`/`_migrate_util`/`_do_migrate` | `can_migrate_task()` calls `task_hot(p, env)` (`fair.c:10291-10329`, `10823`): a task is cache-hot (and normally NOT migrated) if `rq_clock_task(env->src_rq) - p->se.exec_start < sysctl_sched_migration_cost` (**500,000 ns = 0.5 sim-ms**, `fair.c:82`) -- exceptions only for active-balance, NUMA-preferred destination, or `nr_balance_failed>0` (`fair.c:10796+`) | UNDOCUMENTED MISMATCH, now MEASURED (see below) | more migrations than Linux would allow, but on a MUCH SMALLER SLICE of total migrations than initially assumed -- measured at 2.8%-10.1% across 5 workloads, not "every migration" | periodic, burst, newidle |
 | No `task_is_ineligible_on_dst_cpu` EEVDF-eligibility soft-limit | `can_migrate_task()` (`fair.c:10736-10739`): non-eligible tasks (see §10) are refused unless `nr_balance_failed != 0` | NOT MODELED | more migrations (no EEVDF-eligibility-based migration refusal at all) | periodic, burst, newidle |
 
-The cache-hot gap is the second-largest-magnitude candidate in this
-audit by construction (it applies to literally every migration in every
-path), but unlike §1's busy_factor it is NOT cheaply monkeypatchable
-without editing simulator files: `Task`/`Core` don't currently track
-"time since this task last started running on its current core," so
-measuring `task_hot()`'s effect would require adding that state to
-`Core.py`/`Task.py` first. Marked **needs code change to measure**.
+**Scope, verified this session (`fair.c:4568` [`core.c`], `fair.c:2150-
+2156`):** `task_hot()`'s exceptions were re-checked before measuring.
+`__sched_fork()` sets `p->se.exec_start = 0` at fork time (`core.c:
+4568`); only `update_stats_curr_start()` (`fair.c:2150-2156`, called
+when a task is actually PICKED to run) overwrites it with a real
+timestamp. So `delta = rq_clock_task(...) - p->se.exec_start` is huge
+(current clock minus 0) for a task that has been forked but never yet
+run -- `task_hot()` returns false, NOT cache-hot, freely migratable.
+Real Linux's cache-hot refusal therefore only ever applies to tasks that
+have ACTUALLY RUN within the last 0.5ms, never to freshly-queued,
+never-run tasks -- which this sim's `_migrate_util` path (§5, sized in
+util_avg, "each candidate task costs its OWN util_avg, near-zero for a
+task that's never run") specifically targets. This meant the original
+framing above ("applies to literally every migration") overstated the
+gap's scope before it was measured.
+
+**Measured (Task 8 pre-audit, Step 4, 2026-09-29):** a TRACKING-ONLY
+field, `Task.last_ran_until` (`Task.py`, set in `Core.run()` to
+`env.now` at the moment a task stops running; `None` if never run since
+fork -- the sim's direct analog of `exec_start`), was added and verified
+BYTE-IDENTICAL before/after via a throwaway fingerprint script (12 runs,
+2 balancers x 2 workloads x 3 seeds, full migration-event sequences +
+summary metrics hashed with sha256: `fe3a33c3...` before AND after the
+addition -- the field changes no decision). Then
+`development/fidelity_audit/task8_step4_cache_hot_scope.py` (read-only
+monkeypatch of `_do_migrate`, records but never alters the would-be-hot
+verdict) measured, for every migration in baseline + burst-aware, 5
+workloads (`stacked_medium`, `stacked_high`, `rate3.0_s12`,
+`bursty_high_s24`, `bursty_high_s64`), 10 seeds (50000-50009),
+`checker_model="kernel"` held constant, what fraction would have been
+refused as cache-hot (< 0.5ms since last ran) by real Linux:
+
+| workload | baseline: total / would-be-hot | burst-aware: total / would-be-hot | never-run-at-migration-time (both, roughly) |
+|---|---|---|---|
+| stacked_medium | 3861 / 178 (4.6%) | 3744 / 215 (5.7%) | ~55-58% |
+| stacked_high | 4711 / 132 (2.8%) | 4334 / 176 (4.1%) | ~62-66% |
+| rate3.0_s12 | 3038 / 125 (4.1%) | 3019 / 136 (4.5%) | ~54-60% |
+| bursty_high_s24 | 801 / 81 (10.1%) | 801 / 81 (10.1%) | ~70% |
+| bursty_high_s64 | 16295 / 890 (5.5%) | 17153 / 933 (5.4%) | ~16-17% |
+
+Full detail (breakdown by `periodic`/`newidle`/`burst` trigger) in
+`results_task8_step4_cache_hot_scope_by_trigger.csv` -- notably,
+burst-triggered migrations are 88-99.8% never-run tasks with correspondingly
+near-zero cache-hot exposure (0-5.6%), since the burst path's `_migrate_
+util` mechanism specifically targets freshly-queued tasks (§5/§6). This
+is an UPPER BOUND on real Linux's refusal rate, not the true rate: it
+doesn't account for `task_hot()`'s own exceptions (active-balance,
+NUMA-preferred destination, `nr_balance_failed>0`, `fair.c:10796+`) that
+let real Linux migrate a hot task anyway in some of these cases -- the
+true fraction real Linux would additionally refuse (beyond what those
+exceptions already permit) is `<= these percentages`. Real, but modest
+-- see the revised §14 ranking.
 
 ---
 
@@ -192,6 +270,7 @@ session" (`LoadBalancer.py:36-41`). Now opened and verified:
 | sim | Linux | status | bias | affects |
 |---|---|---|---|---|
 | `NUMA_IMBALANCE_MIN = 32` (compared directly against a raw task-count `imbalance`/`raw` value in both `_balance_domain` and `_balance_has_spare_kernel`) | `#define NUMA_IMBALANCE_MIN 2` (`fair.c:2177`), compared against the SAME raw pre-halving task-count `imbalance` (`fair.c:2195-2196`) -- **the sim's threshold is 16x too large** | UNDOCUMENTED MISMATCH (was flagged "unverified"; now confirmed wrong by a factor of 16) | less balancing at NUMA levels (sim forgives NUMA imbalances up to 32 excess tasks; real Linux forgives at most 2) | periodic, burst (onehop/machine levels only) |
+| `_balance_domain`'s GENERIC migrate_load path (`LoadBalancer.py:386-387`) also calls `self._adjust_numa_imbalance(imbalance, local_run)` whenever `domain.is_numa`, on the `min()`-trick's LOAD-unit `imbalance` value -- reached both from the "both overloaded" case (§5, local_type==GROUP_OVERLOADED) and from the legacy `imbalance_model="legacy"` has-spare-fallthrough case | **Checked directly this session: within `calculate_imbalance()` (`fair.c:12577-12753`), there is EXACTLY ONE call to `adjust_numa_imbalance()`** (`fair.c:12693`, verified by `awk`-restricting the grep to the function's own line range), and it is INSIDE the `local->group_type == group_has_spare` branch only (`fair.c:12636-12703`). The "both overloaded" migrate_load branch (`fair.c:12718-12753`) never calls `adjust_numa_imbalance()` at all -- real Linux does not forgive small NUMA imbalances in that case, ever | UNDOCUMENTED MISMATCH (missed in this file's first pass; added per direct instruction to re-check) | less balancing at NUMA levels specifically in the overloaded-vs-overloaded case -- an ADDITIONAL bias on top of §5's already-flagged `!idle` out_balanced gap and this section's `NUMA_IMBALANCE_MIN` magnitude error, all three pulling the "both overloaded, NUMA domain" scenario toward less balancing than real Linux | periodic, burst (onehop/machine, `local_type==GROUP_OVERLOADED` specifically -- and also the non-default `imbalance_model="legacy"` has-spare-fallthrough case) |
 | `NUMA_DST_BUSY_THRESHOLD = 2` | `imb_numa_nr` is NOT a constant -- computed per-topology by `topology.c:adjust_numa_imbalance()` (`topology.c:2870-2934`). For THIS sim's topology (4 nodes x 8 cores, 3-node onehop, single LLC per node): `nr_llcs = onehop_span/node_span = 24/8 = 3` (not 1, so `imb = nr_llcs = 3`, `topology.c:2903-2906`); both onehop's and machine's upward-propagation `factor = max(1, span/imb_span)` evaluate to 1 (`imb_span` is set from the machine-level NUMA domain, `topology.c:2921-2929`), so **`imb_numa_nr = 3`** at both onehop and machine for this topology, not 2 | UNDOCUMENTED MISMATCH (minor -- was flagged "unverified"; now confirmed off by 1) | slightly less balancing (destination-busy gate trips one task-count sooner in the sim than in real Linux) | periodic, burst |
 
 **Measured impact of correcting both constants (Toggle C, `NUMA_IMBALANCE_MIN=2`, `NUMA_DST_BUSY_THRESHOLD=3`), same 10 seeds:**
@@ -247,9 +326,28 @@ the last newidle search cost" state at all -- `pick_next()`/
 
 | sim | Linux | status | bias | affects |
 |---|---|---|---|---|
-| `Core.py` `TIME_SLICE = 4` (sim-ms, fixed for every task) | `sysctl_sched_base_slice = 700000ULL` (`fair.c:79`) = **0.7ms** in nanoseconds, likewise a single global default (per-task `se->slice` can override via `custom_slice`, not used by default either) | DOCUMENTED SIMPLIFICATION, magnitude now verified | neutral-ish (uniform scaling of ALL tasks' slice stretches absolute rescheduling granularity ~5.7x but does not distort RELATIVE deadline ordering between same-weight tasks, since `deadline = vruntime + slice*(NICE_0/weight)` scales identically for every task under a flat global slice) | in-core scheduling only, not balancing |
+| `Core.py` `TIME_SLICE = 4` (sim-ms) -- used BOTH for `_set_deadline()`'s deadline formula AND as the actual run quantum (`Core.run():281`, `slice_len = min(TIME_SLICE, task.remaining_time)` -- how long a core holds a task before re-picking) | `sysctl_sched_base_slice`'s RAW default is `700000ULL` ns = 0.7ms (`fair.c:79`), but this is NOT the effective value at runtime: `sched_init_granularity()` (`fair.c:223-226`, called at boot) calls `update_sysctl()` (`fair.c:213-221`), which does `sysctl_sched_base_slice = factor * normalized_sysctl_sched_base_slice` where `factor = get_update_sysctl_factor()` (`fair.c:192-211`). Under the DEFAULT `sysctl_sched_tunable_scaling = SCHED_TUNABLESCALING_LOG` (`fair.c:72`): `factor = 1 + ilog2(min(num_online_cpus(), 8))`. For this sim's 32-cpu topology (or any machine with >= 8 online CPUs -- the `min(..., 8)` caps the scaling input): `factor = 1 + ilog2(8) = 1 + 3 = 4`. **Effective `sysctl_sched_base_slice` = 4 x 0.7ms = 2.8ms**, not 0.7ms -- and this SCALED value is what `update_deadline()` actually reads (`se->slice = sysctl_sched_base_slice`, `fair.c:1249`, the global variable, not the `normalized_` one) | DOCUMENTED SIMPLIFICATION, but magnitude and bias corrected 2026-09-29 (see note below) | **NOT neutral**: `TIME_SLICE` sets how long a core holds its current task before a newly-queued task on a piled-up core gets its first chance to run -- directly on the p95_wait critical path, not just an internal deadline-ordering detail. Sim's 4ms quantum is ~1.43x the real EFFECTIVE 2.8ms (not ~5.7x vs the raw, unscaled 0.7ms figure this row previously compared against) -- biasing the sim toward SLIGHTLY LONGER per-task-turn hold times, and therefore slightly WORSE (higher) p95_wait for tasks queued behind a running one, than real Linux's actual scaled slice would produce | in-core scheduling, and now understood to reach p95_wait, this audit's own headline balancing metric |
 | `_set_deadline()`: `deadline = vruntime + TIME_SLICE*(NICE_0_WEIGHT/weight)` | `update_deadline()` (`fair.c:1238-1254`): `se->deadline = se->vruntime + calc_delta_fair(se->slice, se)`, where `calc_delta_fair` scales `delta` by `NICE_0_LOAD/se->load.weight` when weight != `NICE_0_LOAD` (`fair.c:297-302`) -- same formula shape | MATCH | neutral | scheduling |
 | `avg_vruntime()` / `EevdfTree` (ported `pick_eevdf()`) | `vruntime_eligible()` (`fair.c:894-925`): `avg >= key*load` where `avg = cfs_rq->sum_w_vruntime` (weighted sum) and `key = vruntime - zero_vruntime` -- a weighted-average-vs-V comparison | Previously confirmed MATCH (earlier session; "real augmented rbtree, ported from `pick_eevdf()`") -- not re-verified line-by-line this session, no new evidence either way | neutral (no change from prior finding) | scheduling |
+
+**Correction, 2026-09-29:** this row previously compared the sim's
+`TIME_SLICE=4` against `sysctl_sched_base_slice`'s raw, un-booted-scaled
+default (0.7ms) and called the ~5.7x gap "neutral-ish" on the theory that
+a uniform slice only stretches absolute granularity, never relative
+fairness ordering. Both halves of that were wrong: (1) the raw 0.7ms
+figure is not what runs on any real >=8-CPU machine -- `sched_init_
+granularity()` scales it by `1+ilog2(min(ncpus,8))=4` at boot under the
+default tunable-scaling policy, so the true comparison is 4ms (sim) vs
+2.8ms (real, effective) -- a ~1.43x gap, not ~5.7x; and (2) "relative
+fairness ordering" was the wrong lens -- `TIME_SLICE` isn't just a
+deadline-formula input here, it's literally `Core.run()`'s dispatch
+quantum (`slice_len = min(TIME_SLICE, task.remaining_time)`), so it
+directly sets how long a queued task waits behind whichever task is
+currently running, which is exactly p95_wait, this audit's own primary
+metric. Not independently measured this session (would need a `TIME_
+SLICE`-scaling toggle run the same way as Toggle A/B/C); flagged as a
+real, now-correctly-characterized, and non-trivial candidate for a
+future measurement -- see the revised §14.
 
 ---
 
@@ -258,30 +356,53 @@ the last newidle search cost" state at all -- `pick_next()`/
 | sim | Linux | status | bias | affects |
 |---|---|---|---|---|
 | `Placement.hierarchical_new_task_placement(machine, entry_core)`: custom top-down domain descent (least-loaded child domain, then `select_idle_sibling`-style bottom search) -- NOT a literal port of any single v7.2 function (v7.2 has no function literally named `sched_balance_find_dst_group`/`_cpu`; the fork path in this kernel version goes through `select_task_rq_fair()` -> `wake_affine()`/domain descent -> `select_idle_sibling()`, `fair.c:8802` and surrounding) | Functionally analogous but not a byte-for-byte port -- already the documented state (Topology.py/Placement.py docstrings) | DOCUMENTED SIMPLIFICATION | neutral (no new finding; consistent with prior sessions) | placement |
-| `hierarchical_new_task_placement(machine, entry_core)`'s `machine` parameter is always `machines[0]` (`Main.py`'s `place()` closure calls `select_core_for_task(task, entry_core, cores_by_id, machine=machine)` with the single `machine` from `build_topology()`, which IS the one true machine root in this sim -- re-checked this session: this sim only ever builds ONE `machine` object, `Main.py:36-37`, `machine, cores = build_topology(...)`) | n/a -- **re-verified this session and this specific claim needs a correction**: the earlier-session "Placement.py machines[0]-fixed-root" finding referred to a DIFFERENT, still-real bug -- `hierarchical_new_task_placement` descending through `domain_chain`/`.parent` relationships that are anchored to a fixed root perspective for node1/node3-forked tasks, not to a literal `machines[0]` array-indexing bug (there is only one machine object, not an array of machines to index wrong). See the correction note below. | -- | -- | placement |
+| `Topology.build_topology()` builds one `machine` `Domain` PER NODE (`machines = []` accumulator, one appended per iteration of `for i in range(num_nodes): ... machines.append(machine)`, `Topology.py:434-456`), then `return machines[0], all_cores` (`Topology.py:458`) -- `machines[0]` (node 0's own machine domain) is the ONLY one ever handed back to a caller; `Main.py:36-37` receives just that single `machine` object and every task's placement (`Main.py`'s `place()` closure, `select_core_for_task(..., machine=machine)`) descends from it regardless of which node the task's `entry_core` is actually on | n/a -- this is the sim's own placement entry point, not a Linux function; the finding is about the sim's fidelity to its OWN documented per-node-anchored design (module docstring points 1-2, `Topology.py:36-47`), not a kernel comparison | **UNDOCUMENTED MISMATCH (real, confirmed this session, RETRACTING last session's incorrect "correction")** | placement only bias: node1/node3-forked tasks' top-level "local" domain resolves to node0's onehop (`onehop0`) instead of their own (`onehop1`/`onehop3`) -- see below | placement |
 
-**Correction to a prior-session finding, made during this audit's
-re-read of `Placement.py` (124 lines, read in full):** the earlier
-"Phase 10" finding described this as `machine` param "always
-`machines[0]`" implying multiple machine objects exist and the wrong one
-gets picked. Re-reading `Main.py` this session shows there is only ONE
-`machine` object in this sim (`build_topology()` returns a single
-`machine, cores` pair) -- there is no `machines[]` array to index into.
-The REAL asymmetry (still present, still unfixed, still worth the
-caveat) is that `Domain.home_children`-based ring topology gives node1/
-node3-rooted tasks a `domain_chain()` that climbs through a onehop
-domain whose `.parent` was fixed relative to node0's perspective when
-the ring was built -- not a `machines[0]` indexing bug, but a "which
-onehop domain object does this core's climb actually resolve to"
-asymmetry from `build_topology()`'s ring construction. This is a
-restatement/correction of the earlier finding's mechanism, not a new bug
-and not a retraction of the underlying asymmetry -- both are logged here
-per the ledger-discipline rule (see `docs/NOTEBOOK.md` for where the
-original finding was first entered) rather than silently overwritten.
+**RETRACTION, 2026-09-29 (this is a correction OF a correction -- the
+wrong entry from last session is left below per ledger discipline, not
+deleted):** last session's §11 claimed "there is only ONE `machine`
+object in this sim -- no `machines[]` array to index into," and used
+that to retract the original Phase-10 finding as a mischaracterization.
+That claim was checked against `Main.py` alone (which only ever sees a
+single `machine` variable) and was WRONG -- `Topology.build_topology()`
+was never actually read before making it, and does exactly what the
+original finding said: it builds a `machines = []` list with one
+`Domain` PER NODE (`Topology.py:434-456`, one loop iteration per node,
+`machines.append(machine)` each time) and returns only `machines[0]`
+(`Topology.py:458`) to every caller. Node 0's machine domain is
+literally the "fixed root every caller descends from," in `build_
+topology()`'s OWN docstring wording (`Topology.py:356-358`, unchanged
+since before this session and never itself in question).
+
+The user's counter-mechanism is also confirmed exactly right:
+`home_children` does NOT anchor onehop `.parent` relative to node 0 for
+everyone -- each onehop is built with `home_children=[nodes[i]]`
+(`Topology.py:406-418`, the "Pass 1" loop), so `nodes[i].parent` is set
+to `onehop_i`, i's OWN onehop, for every `i` -- confirmed by re-reading
+that loop directly. `domain_chain()`-based BALANCING is therefore
+correctly per-node-anchored, exactly as both the original finding and
+the CAVEAT already written into `Topology.py`'s own docstring
+(`Topology.py:369-387`, dated 2026-09-29, i.e. already present in the
+codebase BEFORE this audit task even started) say. The bug is
+PLACEMENT-only: `machines[0].children == [onehop0, onehop2]` (verified
+by tracing `build_topology()`'s Pass 2 for `i=0`: `neighbor_idx={1,3}`,
+`far_idx=[2]`, so `machine0 = Domain(..., [onehop0] + [onehop2], ...)`),
+and `hierarchical_new_task_placement()`'s local-domain lookup takes the
+FIRST child whose `.cores()` contains `entry_core` -- since `onehop0`'s
+span is `{node0,node1,node3}` (self + `ring_neighbors(0,4,2)={1,3}`) and
+`onehop2`'s span is `{node1,node2,node3}`, a node1- or node3-forked
+task's top-level "local" is `onehop0` (listed first, and it already
+contains both), NEVER `onehop1`/`onehop3` -- exactly matching `Topology.
+py`'s own in-code CAVEAT text ("node0->onehop0, node1->onehop0,
+node2->onehop2, node3->onehop0"). The original finding stands, unaltered
+in substance; only last session's retraction of it is now itself
+retracted. See `docs/NOTEBOOK.md`'s dated correction-of-the-correction
+entry for the ledger trail.
 
 Not independently measured this session (out of scope -- item 11 was to
-audit and clarify the finding, not re-measure it; Placement fixes remain
-explicitly not-yet-implemented per prior sessions).
+audit and now correctly restate the finding, not re-measure it;
+Placement fixes remain explicitly not-yet-implemented per prior
+sessions).
 
 ---
 
@@ -342,35 +463,48 @@ burst-aware react earlier than periodic" comparison, and (b) how cheaply
 each could be fixed as a follow-up opt-in flag consistent with this
 project's established pattern (Fix A/B/C/D).
 
+**Note (2026-09-29 corrections pass):** the numbered labels below (Rank
+1, Rank 2, ...) are kept as originally assigned rather than renumbered
+after Step 4's measurement demoted cache-hot's priority -- Rank 2's own
+text says so explicitly. Read the numbers as historical/audit-trail, the
+prose as current.
+
 ### Rank 1 -- FIX before the re-run: missing `busy_factor` (§1)
 
 Measured: +26% to +48% p95_wait, -29% to -69% migrations when corrected,
 both highly significant (sign_p <= 0.022, wilcoxon_p <= 0.008) at TWO
 high-intensity workloads. This is not a minor nuisance -- it is
 currently inflating the periodic path's own reactivity by checking busy
-cores ~16x more often than real Linux would. Because the paper's central
-claim is comparative ("burst-aware reacts earlier than periodic"), an
-artificially fast periodic baseline can only work AGAINST that claim
-being visible -- meaning current results are very likely a conservative
-(under-)estimate of burst-aware's true advantage. Fixing this (opt-in,
-`checker_busy_factor` flag following the established Fix pattern) before
-the re-run would let the paper report the TRUE gap rather than a
-narrowed one, which is directly in the user's interest, not just a
-fidelity nicety.
+cores ~16x more often than real Linux would (`get_sd_balance_interval()`,
+`fair.c:13565-13586`, `sd_init()`'s `busy_factor=16`, `topology.c:1958`).
+The reason to fix it is fidelity, full stop: the simulator claims to
+model `sched_balance_domains()`'s interval-gating and currently doesn't
+apply one of that function's two multiplicative factors. Separately, and
+regardless of which direction any given comparison moves once fixed: the
+paper's central claim is comparative ("burst path reacts earlier than
+periodic"), and an artificially fast periodic baseline mechanically
+narrows the measured gap between the two paths, whichever way that gap
+would otherwise point -- so the current confirmation-run numbers should
+not be read as the true magnitude of that comparison until this is
+fixed or explicitly accounted for.
 
-### Rank 2 -- FIX before the re-run (if tractable): cache-hot / `task_hot()` (§7)
+### Rank 2 -- lower priority than first assumed: cache-hot / `task_hot()` (§7), now MEASURED
 
-Not measured this session (needs new `Task`/`Core` state -- "time since
-this task started running on its current core" -- which doesn't exist
-today). Judged high-priority anyway because it applies to literally
-every migration on every path (periodic, newidle, burst), and its
-absence can only ever bias toward MORE migrations than real Linux,
-never fewer -- a systematic, one-directional bias on the paper's other
-headline metric (migration count). Recommend implementing the necessary
-`Task`/`Core` timestamp as a small, targeted addition (not a "no
-simulator changes" violation of THIS task, but of the NEXT one) and
-re-running this section's measurement before deciding whether it's
-large enough to matter, rather than shipping the re-run without knowing.
+Originally ranked #2 sight-unseen ("applies to literally every
+migration"). Now measured (Step 4, 2026-09-29, tracking-only `Task.
+last_ran_until`, verified byte-identical before/after via fingerprint
+hash): only 2.8%-10.1% of migrations across 5 workloads would actually
+be refused as cache-hot -- most sim migrations are either already-cold
+(ran >0.5ms ago) or, especially on the burst path (88-99.8%), of tasks
+that have NEVER run since being queued, which real `task_hot()` would
+never block either (`exec_start=0` at fork, `core.c:4568`). Still a
+real, one-directional (more-migrations-than-Linux) bias, and still
+one-directional in the same way §1's busy_factor gap is -- but an order
+of magnitude smaller in apparent reach than originally assumed.
+Demoted from "fix before the re-run" to: worth implementing the actual
+`can_migrate_task()` refusal (not just tracking) as a future opt-in
+flag, but not urgent enough to block the Task 8 re-run on, given the
+measured scope.
 
 ### Rank 3 -- FIX, cheap and zero-risk: `NUMA_IMBALANCE_MIN`/`NUMA_DST_BUSY_THRESHOLD` (§8)
 
@@ -437,7 +571,7 @@ most balancing logic in this kernel version lives in `fair.c`, not
 `core.c`). Reused from Task 7: `/tmp/fair_v72.c` (15461 lines),
 `/tmp/topology_v72.c` (3504 lines), `/tmp/sched_v72.h` (4216 lines).
 
-## Appendix: measurement script
+## Appendix: measurement scripts
 
 `development/fidelity_audit/task8_pre_audit_impact_measurements.py` --
 monkeypatch-based, no simulator file edited, no default changed. 10
@@ -446,3 +580,12 @@ seeds (50000-50009), `stacked_high` + `bursty_high_s64`, baseline
 default and toggled runs so each toggle's effect is isolated from Task
 7's already-measured checker fix. Output:
 `development/fidelity_audit/results_task8_pre_audit_impact.csv`.
+
+`development/fidelity_audit/task8_step4_cache_hot_scope.py` -- the ONE
+script in this audit that DOES touch simulator files, per explicit
+instruction (Step 4): `Task.py`/`Core.py` gained a tracking-only
+`last_ran_until` field (verified byte-identical decisions before/after
+via a throwaway fingerprint hash, not committed). Baseline + burst-aware,
+5 workloads, 10 seeds (50000-50009), `checker_model="kernel"` held
+constant. Output: `development/fidelity_audit/results_task8_step4_cache_
+hot_scope.csv` and `_by_trigger.csv`.

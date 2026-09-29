@@ -12,6 +12,7 @@ class Task:
         "task_id", "arrival_time", "cpu_time", "remaining_time",
         "vruntime", "weight", "prev_core", "util_avg",
         "start_time", "finish_time", "migrations", "deadline", "sched_deadline",
+        "last_ran_until",
     )
 
     def __init__(self, task_id, arrival_time, cpu_time, weight=NICE_0_WEIGHT, deadline=None):
@@ -38,3 +39,16 @@ class Task:
         self.migrations = 0
         self.deadline = deadline   # APPLICATION deadline, only for the deadline-driven profile
         self.sched_deadline = 0.0  # EEVDF's internal VIRTUAL scheduling deadline (unrelated to above)
+
+        # TRACKING-ONLY (Task 8 pre-audit, Step 4, 2026-09-29): when this
+        # task last STOPPED running (env.now at the end of its most
+        # recent slice), or None if it has never run since being forked
+        # -- analog of real Linux's se.exec_start (fair.c:2156,
+        # update_stats_curr_start()) becoming a real timestamp only once
+        # a task is actually picked to run, vs. __sched_fork()'s
+        # p->se.exec_start=0 at fork (core.c:4568) leaving a never-run
+        # task's task_hot() delta enormous (not cache-hot). Set by
+        # Core.run() below; read only by the audit's cache-hot impact
+        # measurement (development/fidelity_audit/) -- no scheduling or
+        # balancing decision anywhere reads this field.
+        self.last_ran_until = None
