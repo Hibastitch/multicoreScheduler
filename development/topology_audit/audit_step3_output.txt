@@ -1,0 +1,64 @@
+stacked_medium   seed=30000 legacy p95=14.00 migs=290  |  kernel p95=14.00 migs=356
+stacked_medium   seed=30001 legacy p95=14.33 migs=322  |  kernel p95=13.00 migs=351
+stacked_medium   seed=30002 legacy p95=15.33 migs=297  |  kernel p95=13.33 migs=388
+stacked_medium   seed=30003 legacy p95=13.00 migs=305  |  kernel p95=13.67 migs=374
+stacked_medium   seed=30004 legacy p95=16.00 migs=321  |  kernel p95=15.33 migs=375
+stacked_medium   seed=30005 legacy p95=15.67 migs=318  |  kernel p95=14.67 migs=388
+stacked_medium   seed=30006 legacy p95=16.33 migs=315  |  kernel p95=13.00 migs=409
+stacked_medium   seed=30007 legacy p95=15.00 migs=280  |  kernel p95=13.00 migs=353
+stacked_medium   seed=30008 legacy p95=12.67 migs=289  |  kernel p95=14.00 migs=384
+stacked_medium   seed=30009 legacy p95=13.67 migs=304  |  kernel p95=13.00 migs=400
+stacked_high     seed=30000 legacy p95=26.93 migs=443  |  kernel p95=20.40 migs=465
+stacked_high     seed=30001 legacy p95=28.60 migs=375  |  kernel p95=21.87 migs=462
+stacked_high     seed=30002 legacy p95=19.27 migs=383  |  kernel p95=23.53 migs=477
+stacked_high     seed=30003 legacy p95=15.67 migs=310  |  kernel p95=22.60 migs=478
+stacked_high     seed=30004 legacy p95=21.40 migs=347  |  kernel p95=19.87 migs=437
+stacked_high     seed=30005 legacy p95=34.40 migs=433  |  kernel p95=19.47 migs=472
+stacked_high     seed=30006 legacy p95=36.67 migs=376  |  kernel p95=30.20 migs=639
+stacked_high     seed=30007 legacy p95=22.13 migs=361  |  kernel p95=33.80 migs=652
+stacked_high     seed=30008 legacy p95=39.73 migs=390  |  kernel p95=24.33 migs=588
+stacked_high     seed=30009 legacy p95=34.73 migs=369  |  kernel p95=28.20 migs=584
+rate3.0_s12      seed=30000 legacy p95=16.33 migs=227  |  kernel p95=16.67 migs=283
+rate3.0_s12      seed=30001 legacy p95=15.67 migs=241  |  kernel p95=17.33 migs=295
+rate3.0_s12      seed=30002 legacy p95=24.00 migs=251  |  kernel p95=18.67 migs=339
+rate3.0_s12      seed=30003 legacy p95=18.33 migs=236  |  kernel p95=17.00 migs=318
+rate3.0_s12      seed=30004 legacy p95=17.67 migs=227  |  kernel p95=19.33 migs=317
+rate3.0_s12      seed=30005 legacy p95=20.00 migs=226  |  kernel p95=22.33 migs=301
+rate3.0_s12      seed=30006 legacy p95=20.00 migs=222  |  kernel p95=18.33 migs=287
+rate3.0_s12      seed=30007 legacy p95=16.67 migs=239  |  kernel p95=18.00 migs=293
+rate3.0_s12      seed=30008 legacy p95=16.67 migs=250  |  kernel p95=20.00 migs=289
+rate3.0_s12      seed=30009 legacy p95=16.67 migs=228  |  kernel p95=20.67 migs=289
+bursty_high_s64  seed=30000 legacy p95=62.67 migs=648  |  kernel p95=53.87 migs=1777
+bursty_high_s64  seed=30001 legacy p95=69.13 migs=651  |  kernel p95=56.27 migs=1672
+bursty_high_s64  seed=30002 legacy p95=59.73 migs=655  |  kernel p95=53.87 migs=1558
+bursty_high_s64  seed=30003 legacy p95=59.27 migs=619  |  kernel p95=53.60 migs=1533
+bursty_high_s64  seed=30004 legacy p95=76.20 migs=676  |  kernel p95=58.40 migs=1530
+bursty_high_s64  seed=30005 legacy p95=59.80 migs=684  |  kernel p95=52.67 migs=1538
+bursty_high_s64  seed=30006 legacy p95=65.73 migs=670  |  kernel p95=54.67 migs=1630
+bursty_high_s64  seed=30007 legacy p95=71.40 migs=595  |  kernel p95=59.60 migs=1598
+bursty_high_s64  seed=30008 legacy p95=64.87 migs=628  |  kernel p95=60.93 migs=1690
+bursty_high_s64  seed=30009 legacy p95=65.93 migs=692  |  kernel p95=47.73 migs=1617
+
+Wrote checker_audit_after_perseed.csv
+
+=== AFTER (checker_model=kernel): invalid-checker rate by level ===
+machine    events=   18094  invalid=       0  pct_invalid= 0.00%
+node       events=   56942  invalid=       0  pct_invalid= 0.00%
+onehop     events=   24155  invalid=       0  pct_invalid= 0.00%
+pair       events=  177758  invalid=       0  pct_invalid= 0.00%
+
+Wrote checker_model_compare_perseed.csv
+
+=== legacy vs kernel, baseline only, penalty=0, paired by seed ===
+p95_wait         stacked_medium   legacy=    14.60 kernel=    13.70 ( -6.16%)  wins= 7 harms= 2 ties= 1  sign_p=  0.1797  wilcoxon_p=  0.0756
+p95_wait         stacked_high     legacy=    27.95 kernel=    24.43 (-12.62%)  wins= 7 harms= 3 ties= 0  sign_p=  0.3438  wilcoxon_p=  0.3081
+p95_wait         rate3.0_s12      legacy=    18.20 kernel=    18.83 ( +3.48%)  wins= 3 harms= 7 ties= 0  sign_p=  0.3438  wilcoxon_p=  0.2622
+p95_wait         bursty_high_s64  legacy=    65.47 kernel=    55.16 (-15.75%)  wins=10 harms= 0 ties= 0  sign_p=  0.0020  wilcoxon_p=  0.0059
+migrations       stacked_medium   legacy=   304.10 kernel=   377.80 (+24.24%)  wins= 0 harms=10 ties= 0  sign_p=  0.0020  wilcoxon_p=  0.0059
+migrations       stacked_high     legacy=   378.70 kernel=   525.40 (+38.74%)  wins= 0 harms=10 ties= 0  sign_p=  0.0020  wilcoxon_p=  0.0059
+migrations       rate3.0_s12      legacy=   234.70 kernel=   301.10 (+28.29%)  wins= 0 harms=10 ties= 0  sign_p=  0.0020  wilcoxon_p=  0.0059
+migrations       bursty_high_s64  legacy=   651.80 kernel=  1614.30 (+147.67%)  wins= 0 harms=10 ties= 0  sign_p=  0.0020  wilcoxon_p=  0.0059
+cores_scanned    stacked_medium   legacy= 94947.10 kernel= 52718.70 (-44.48%)  wins=10 harms= 0 ties= 0  sign_p=  0.0020  wilcoxon_p=  0.0059
+cores_scanned    stacked_high     legacy= 32270.40 kernel= 19294.80 (-40.21%)  wins=10 harms= 0 ties= 0  sign_p=  0.0020  wilcoxon_p=  0.0059
+cores_scanned    rate3.0_s12      legacy= 86985.90 kernel= 46222.40 (-46.86%)  wins=10 harms= 0 ties= 0  sign_p=  0.0020  wilcoxon_p=  0.0059
+cores_scanned    bursty_high_s64  legacy=139042.20 kernel=109924.80 (-20.94%)  wins=10 harms= 0 ties= 0  sign_p=  0.0020  wilcoxon_p=  0.0059

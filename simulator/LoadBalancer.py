@@ -22,7 +22,7 @@ Simplifications, stated explicitly:
 
 import random
 
-from Topology import GROUP_HAS_SPARE, GROUP_OVERLOADED, CAPACITY_SCALE, classify_group, STATS
+from Topology import GROUP_HAS_SPARE, GROUP_OVERLOADED, CAPACITY_SCALE, classify_group, STATS, Domain, domain_chain
 
 # VERIFIED (2026-09-27, Linux v7.2, kernel/sched/sched.h): sysctl_sched_
 # nr_migrate defaults to SCHED_NR_MIGRATE_BREAK (core.c:191), which is 32
@@ -66,7 +66,7 @@ class LoadBalancer:
     # to reproduce pre-2026-09-27i behavior exactly.
     def __init__(self, machine_domain, cores_by_id, logger=None, migration_penalty=0.0,
                  newidle_mode="transition", seed=0, per_cpu_last_balance=True,
-                 imbalance_model="kernel"):
+                 imbalance_model="kernel", checker_model="legacy"):
         self.machine = machine_domain
         self.cores_by_id = cores_by_id
         self.migrations = 0
@@ -145,6 +145,35 @@ class LoadBalancer:
         # migrate_util's sizing and per-task cost.
         self.imbalance_model = imbalance_model
 
+        # FIX D (2026-09-29, see Readme.md): "legacy" (default) elects the
+        # periodic-balance checker from domain.cores() -- the domain's
+        # WHOLE SPAN, including neighbor cores counted in it (via ring
+        # reuse, Topology.py's home_children) that never actually climb
+        # this exact domain object. At onehop/machine levels, where spans
+        # overlap, this can elect a checker that is_designated_checker()
+        # will NEVER see call itself in -- the periodic pass for that
+        # domain is then structurally, silently skipped forever (verified
+        # directly: development/topology_audit/, up to ~70% of onehop/
+        # machine-level checks under heavy load). "kernel" ports
+        # should_we_balance() (fair.c:13162-13221, v7.2): elect from the
+        # LOCAL GROUP containing the asking core (`env->sd->groups`, the
+        # per-cpu-oriented first group) restricted to that group's real
+        # "balance mask" -- cores whose OWN home chain resolves to that
+        # exact group, matching build_balance_mask()'s cpumask_equal()
+        # check (topology.c:1199-1225) that excludes reused-neighbor
+        # cores the same way. Election within that restricted candidate
+        # set: first fully-idle-CORE (both SMT threads idle) at levels
+        # without SD_SHARE_CPUCAPACITY, else first idle SMT-busy CPU, else
+        # group_balance_cpu() (lowest core_id in the balance mask) --
+        # should_we_balance()'s exact 3-tier preference. At the pair/SMT
+        # level itself (SD_SHARE_CPUCAPACITY set), the local group is
+        # degenerate (just the asking core itself), so BOTH siblings
+        # independently pass -- matches should_we_balance() returning
+        # true unconditionally at the base level, real Linux's actual
+        # behavior, not modeled by "legacy" at all. Opt-in: "legacy"
+        # remains the default until this is verified end to end.
+        self.checker_model = checker_model
+
     def _balance_state(self, core, domain):
         """Only meaningful when per_cpu_last_balance=True. One entry per
         (core, domain) pair actually visited by that core's own climb --
@@ -180,15 +209,66 @@ class LoadBalancer:
 
     # ---------------- should_we_balance()-lite ----------------
 
-    def _find_checker(self, domain):
-        siblings = domain.cores()
+    def _is_core_idle(self, core):
+        """Real is_core_idle(cpu): are ALL of this cpu's SMT siblings
+        idle too, not just this one cpu -- core.parent is always the
+        pair/SMT-level Domain for a raw Core."""
+        return all(sib.is_idle() for sib in core.parent.cores())
+
+    def _balance_mask(self, group):
+        """build_balance_mask()-lite (topology.c:1199-1225): the subset
+        of `group`'s span whose OWN home chain resolves to this exact
+        group object -- excludes cores merely counted in `group`'s span
+        as a reused ring neighbor (Domain.home_children), matching the
+        kernel's cpumask_equal(sg_span, sibling->child span) check.
+        `group` may be a raw Core (pair-level, degenerate single-CPU
+        group) or a Domain."""
+        if not isinstance(group, Domain):
+            return [group]
+        candidates = [c for c in group.cores() if group in domain_chain(c)]
+        return candidates or [min(group.cores(), key=lambda c: c.core_id)]
+
+    def _find_checker_kernel(self, domain, from_core):
+        """should_we_balance()-lite (fair.c:13162-13221, v7.2): elect
+        from the LOCAL GROUP containing `from_core` (env->sd->groups is
+        always the asking cpu's own per-cpu-oriented first group),
+        restricted to that group's real balance mask. First fully-idle
+        CORE at levels without SD_SHARE_CPUCAPACITY (only the pair/SMT
+        level has it here), else first idle-but-SMT-busy cpu, else
+        group_balance_cpu() (lowest core_id in the mask)."""
+        local_group = self._find_group_containing(domain.groups(), from_core)
+        candidates = self._balance_mask(local_group)
         STATS.checker_calls += 1
-        STATS.checker_cores_scanned += len(siblings)
-        idle = [c for c in siblings if c.is_idle()]
-        return idle[0] if idle else min(siblings, key=lambda c: c.core_id)
+        STATS.checker_cores_scanned += len(candidates)
+
+        share_cpu_capacity = (domain.level == Domain.LEVEL_PAIR)
+        idle_smt = None
+        for c in candidates:
+            if not c.is_idle():
+                continue
+            if not share_cpu_capacity and not self._is_core_idle(c):
+                if idle_smt is None:
+                    idle_smt = c
+                continue
+            return c
+        if idle_smt is not None:
+            return idle_smt
+        return min(candidates, key=lambda c: c.core_id)
+
+    def _find_checker(self, domain, from_core=None):
+        # "legacy" (default), or the burst path's existing no-from_core
+        # call (BurstScheduler.py, left unchanged): whole-span election,
+        # byte-for-byte the original behavior.
+        if self.checker_model != "kernel" or from_core is None:
+            siblings = domain.cores()
+            STATS.checker_calls += 1
+            STATS.checker_cores_scanned += len(siblings)
+            idle = [c for c in siblings if c.is_idle()]
+            return idle[0] if idle else min(siblings, key=lambda c: c.core_id)
+        return self._find_checker_kernel(domain, from_core)
 
     def is_designated_checker(self, domain, core):
-        return self._find_checker(domain).core_id == core.core_id
+        return self._find_checker(domain, core).core_id == core.core_id
 
     # ---------------- periodic pass ----------------
 

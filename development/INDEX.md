@@ -2,6 +2,13 @@
 
 Real, correct findings — just not the final paper numbers (those are in `final_results/`).
 
+## topology_audit/ — Fix D: periodic-checker election vs. real should_we_balance()
+
+- `task7_checker_election_audit.py` — STEP 1, measures BEFORE (no code change): elects a checker the current ("legacy") way, then asks whether that checker actually climbs the domain it was elected for. Baseline + burst-aware, 4 workloads, 10 seeds (30000+), penalty=0.
+- `checker_audit_perseed.csv` / `_summary.csv` — its output: onehop/node23-30% and machine ~23-29% of periodic checks (per node/onehop, up to 70% under heavy load on a single workload) elect a checker that never asks the question itself — the pass is structurally, silently skipped. Pair and node levels: 0% (no span overlap there).
+- `task7_checker_election_after.py` — STEP 3, re-measures with the new `checker_model="kernel"` flag (`simulator/LoadBalancer.py`, opt-in, default stays `"legacy"`) on the same seeds, plus a paired legacy-vs-kernel comparison (migrations, p95_wait, cores scanned), baseline only.
+- `checker_audit_after_perseed.csv`, `checker_model_compare_perseed.csv` — its output: 0% invalid at every level under `checker_model="kernel"`.
+
 ## rng_isolation/ — Fix 3d: paired-seed workload isolation
 
 - `control3c_legacy_check.py` — control run confirming the pre-fix RNG contamination was real.

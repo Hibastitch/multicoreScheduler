@@ -1,0 +1,147 @@
+baseline     stacked_medium   seed=30000 done, p95_wait=14.00
+baseline     stacked_medium   seed=30001 done, p95_wait=14.33
+baseline     stacked_medium   seed=30002 done, p95_wait=15.33
+baseline     stacked_medium   seed=30003 done, p95_wait=13.00
+baseline     stacked_medium   seed=30004 done, p95_wait=16.00
+baseline     stacked_medium   seed=30005 done, p95_wait=15.67
+baseline     stacked_medium   seed=30006 done, p95_wait=16.33
+baseline     stacked_medium   seed=30007 done, p95_wait=15.00
+baseline     stacked_medium   seed=30008 done, p95_wait=12.67
+baseline     stacked_medium   seed=30009 done, p95_wait=13.67
+baseline     stacked_high     seed=30000 done, p95_wait=26.93
+baseline     stacked_high     seed=30001 done, p95_wait=28.60
+baseline     stacked_high     seed=30002 done, p95_wait=19.27
+baseline     stacked_high     seed=30003 done, p95_wait=15.67
+baseline     stacked_high     seed=30004 done, p95_wait=21.40
+baseline     stacked_high     seed=30005 done, p95_wait=34.40
+baseline     stacked_high     seed=30006 done, p95_wait=36.67
+baseline     stacked_high     seed=30007 done, p95_wait=22.13
+baseline     stacked_high     seed=30008 done, p95_wait=39.73
+baseline     stacked_high     seed=30009 done, p95_wait=34.73
+baseline     rate3.0_s12      seed=30000 done, p95_wait=16.33
+baseline     rate3.0_s12      seed=30001 done, p95_wait=15.67
+baseline     rate3.0_s12      seed=30002 done, p95_wait=24.00
+baseline     rate3.0_s12      seed=30003 done, p95_wait=18.33
+baseline     rate3.0_s12      seed=30004 done, p95_wait=17.67
+baseline     rate3.0_s12      seed=30005 done, p95_wait=20.00
+baseline     rate3.0_s12      seed=30006 done, p95_wait=20.00
+baseline     rate3.0_s12      seed=30007 done, p95_wait=16.67
+baseline     rate3.0_s12      seed=30008 done, p95_wait=16.67
+baseline     rate3.0_s12      seed=30009 done, p95_wait=16.67
+baseline     bursty_high_s64  seed=30000 done, p95_wait=62.67
+baseline     bursty_high_s64  seed=30001 done, p95_wait=69.13
+baseline     bursty_high_s64  seed=30002 done, p95_wait=59.73
+baseline     bursty_high_s64  seed=30003 done, p95_wait=59.27
+baseline     bursty_high_s64  seed=30004 done, p95_wait=76.20
+baseline     bursty_high_s64  seed=30005 done, p95_wait=59.80
+baseline     bursty_high_s64  seed=30006 done, p95_wait=65.73
+baseline     bursty_high_s64  seed=30007 done, p95_wait=71.40
+baseline     bursty_high_s64  seed=30008 done, p95_wait=64.87
+baseline     bursty_high_s64  seed=30009 done, p95_wait=65.93
+burst_aware  stacked_medium   seed=30000 done, p95_wait=11.67
+burst_aware  stacked_medium   seed=30001 done, p95_wait=13.00
+burst_aware  stacked_medium   seed=30002 done, p95_wait=13.00
+burst_aware  stacked_medium   seed=30003 done, p95_wait=13.00
+burst_aware  stacked_medium   seed=30004 done, p95_wait=14.67
+burst_aware  stacked_medium   seed=30005 done, p95_wait=14.00
+burst_aware  stacked_medium   seed=30006 done, p95_wait=14.00
+burst_aware  stacked_medium   seed=30007 done, p95_wait=10.33
+burst_aware  stacked_medium   seed=30008 done, p95_wait=13.67
+burst_aware  stacked_medium   seed=30009 done, p95_wait=12.67
+burst_aware  stacked_high     seed=30000 done, p95_wait=18.07
+burst_aware  stacked_high     seed=30001 done, p95_wait=20.87
+burst_aware  stacked_high     seed=30002 done, p95_wait=17.80
+burst_aware  stacked_high     seed=30003 done, p95_wait=17.13
+burst_aware  stacked_high     seed=30004 done, p95_wait=14.67
+burst_aware  stacked_high     seed=30005 done, p95_wait=17.60
+burst_aware  stacked_high     seed=30006 done, p95_wait=14.40
+burst_aware  stacked_high     seed=30007 done, p95_wait=23.40
+burst_aware  stacked_high     seed=30008 done, p95_wait=19.60
+burst_aware  stacked_high     seed=30009 done, p95_wait=16.20
+burst_aware  rate3.0_s12      seed=30000 done, p95_wait=14.00
+burst_aware  rate3.0_s12      seed=30001 done, p95_wait=17.00
+burst_aware  rate3.0_s12      seed=30002 done, p95_wait=20.00
+burst_aware  rate3.0_s12      seed=30003 done, p95_wait=11.00
+burst_aware  rate3.0_s12      seed=30004 done, p95_wait=13.67
+burst_aware  rate3.0_s12      seed=30005 done, p95_wait=14.67
+burst_aware  rate3.0_s12      seed=30006 done, p95_wait=16.33
+burst_aware  rate3.0_s12      seed=30007 done, p95_wait=13.00
+burst_aware  rate3.0_s12      seed=30008 done, p95_wait=14.00
+burst_aware  rate3.0_s12      seed=30009 done, p95_wait=9.33
+burst_aware  bursty_high_s64  seed=30000 done, p95_wait=71.33
+burst_aware  bursty_high_s64  seed=30001 done, p95_wait=82.27
+burst_aware  bursty_high_s64  seed=30002 done, p95_wait=62.93
+burst_aware  bursty_high_s64  seed=30003 done, p95_wait=69.93
+burst_aware  bursty_high_s64  seed=30004 done, p95_wait=60.67
+burst_aware  bursty_high_s64  seed=30005 done, p95_wait=68.27
+burst_aware  bursty_high_s64  seed=30006 done, p95_wait=68.60
+burst_aware  bursty_high_s64  seed=30007 done, p95_wait=67.00
+burst_aware  bursty_high_s64  seed=30008 done, p95_wait=69.60
+burst_aware  bursty_high_s64  seed=30009 done, p95_wait=68.40
+
+Wrote checker_audit_perseed.csv
+Wrote checker_audit_summary.csv
+
+scheduler    domain     level      events  invalid  %invalid  valid+self  starved
+baseline     machine0   machine      4372      200      4.6%         371         
+baseline     machine1   machine      4509     1371     30.4%         283         
+baseline     machine2   machine      4572     1310     28.6%         294         
+baseline     machine3   machine      4660     1327     28.5%         282         
+baseline     node0      node        17612        0      0.0%        1679         
+baseline     node1      node        18040        0      0.0%        1667         
+baseline     node2      node        18150        0      0.0%        1595         
+baseline     node3      node        18524        0      0.0%        1593         
+baseline     onehop0    onehop       5772      195      3.4%         551         
+baseline     onehop1    onehop       6036     1864     30.9%         423         
+baseline     onehop2    onehop       6048     1687     27.9%         375         
+baseline     onehop3    onehop       6182     1771     28.6%         386         
+baseline     n0-pair0   pair        14283        0      0.0%        5504         
+baseline     n0-pair1   pair        13728        0      0.0%        5534         
+baseline     n0-pair2   pair        14925        0      0.0%        5494         
+baseline     n0-pair3   pair        14719        0      0.0%        5458         
+baseline     n1-pair0   pair        14864        0      0.0%        5543         
+baseline     n1-pair1   pair        15112        0      0.0%        5528         
+baseline     n1-pair2   pair        14200        0      0.0%        5498         
+baseline     n1-pair3   pair        14886        0      0.0%        5481         
+baseline     n2-pair0   pair        14360        0      0.0%        5488         
+baseline     n2-pair1   pair        14549        0      0.0%        5480         
+baseline     n2-pair2   pair        15209        0      0.0%        5492         
+baseline     n2-pair3   pair        15126        0      0.0%        5490         
+baseline     n3-pair0   pair        14964        0      0.0%        5497         
+baseline     n3-pair1   pair        15087        0      0.0%        5494         
+baseline     n3-pair2   pair        14494        0      0.0%        5503         
+baseline     n3-pair3   pair        15365        0      0.0%        5475         
+burst_aware  machine0   machine      4499      244      5.4%         365         
+burst_aware  machine1   machine      4589     1332     29.0%         287         
+burst_aware  machine2   machine      4641     1321     28.5%         290         
+burst_aware  machine3   machine      4683     1373     29.3%         286         
+burst_aware  node0      node        17604        0      0.0%        1556         
+burst_aware  node1      node        17943        0      0.0%        1612         
+burst_aware  node2      node        17937        0      0.0%        1557         
+burst_aware  node3      node        18400        0      0.0%        1566         
+burst_aware  onehop0    onehop       5988      201      3.4%         521         
+burst_aware  onehop1    onehop       6066     1828     30.1%         396         
+burst_aware  onehop2    onehop       6125     1710     27.9%         381         
+burst_aware  onehop3    onehop       6191     1841     29.7%         361         
+burst_aware  n0-pair0   pair        14559        0      0.0%        5442         
+burst_aware  n0-pair1   pair        13989        0      0.0%        5477         
+burst_aware  n0-pair2   pair        14156        0      0.0%        5467         
+burst_aware  n0-pair3   pair        14719        0      0.0%        5430         
+burst_aware  n1-pair0   pair        14560        0      0.0%        5436         
+burst_aware  n1-pair1   pair        14500        0      0.0%        5467         
+burst_aware  n1-pair2   pair        14449        0      0.0%        5475         
+burst_aware  n1-pair3   pair        14443        0      0.0%        5451         
+burst_aware  n2-pair0   pair        15071        0      0.0%        5446         
+burst_aware  n2-pair1   pair        13950        0      0.0%        5465         
+burst_aware  n2-pair2   pair        14442        0      0.0%        5460         
+burst_aware  n2-pair3   pair        14546        0      0.0%        5457         
+burst_aware  n3-pair0   pair        14811        0      0.0%        5441         
+burst_aware  n3-pair1   pair        15088        0      0.0%        5452         
+burst_aware  n3-pair2   pair        14366        0      0.0%        5469         
+burst_aware  n3-pair3   pair        14992        0      0.0%        5440         
+
+=== by level, both schedulers combined ===
+machine    events=   36525  invalid=    8478  pct_invalid= 23.2%
+node       events=  144210  invalid=       0  pct_invalid=  0.0%
+onehop     events=   48408  invalid=   11097  pct_invalid= 22.9%
+pair       events=  468512  invalid=       0  pct_invalid=  0.0%

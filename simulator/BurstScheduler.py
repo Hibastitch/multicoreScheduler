@@ -29,11 +29,13 @@ class BurstAwareLoadBalancer(LoadBalancer):
     # pre-2026-09-27i behavior.
     def __init__(self, machine_domain, cores_by_id, logger=None, migration_penalty=0.0,
                  newidle_mode="transition", seed=0, per_cpu_last_balance=True,
-                 imbalance_model="kernel", burst_resets_timer=False, **detector_kwargs):
+                 imbalance_model="kernel", checker_model="legacy",
+                 burst_resets_timer=False, **detector_kwargs):
         super().__init__(machine_domain, cores_by_id, migration_penalty=migration_penalty,
                           newidle_mode=newidle_mode, seed=seed,
                           per_cpu_last_balance=per_cpu_last_balance,
-                          imbalance_model=imbalance_model)
+                          imbalance_model=imbalance_model,
+                          checker_model=checker_model)
         self.detector = BurstDetector(**detector_kwargs)
         self.logger = logger
         self.burst_triggers = 0

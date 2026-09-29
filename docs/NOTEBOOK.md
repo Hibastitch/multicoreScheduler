@@ -2581,3 +2581,160 @@ perseed.csv` / `_summary.csv` (16 each), `results_task6_confirmation_
 MAIN_TABLE.csv` (the paper's main table), `confirmation_run_analysis.txt`
 (full condensed grid + RQ4 + secondary-variant tables),
 `figure_p95wait_vs_arrival_rate.png`.
+
+## Task 7 (2026-09-29) — Fix D: periodic-checker election didn't match should_we_balance()
+
+**Fidelity gap, found by inspection, confirmed by direct measurement
+before any code changed.** `LoadBalancer._find_checker()` elects from
+`domain.cores()` -- the domain's WHOLE SPAN. Real `should_we_balance()`
+(`fair.c:13162-13221`, v7.2) elects from `env->sd->groups` -- the
+LOCAL GROUP containing the asking CPU (`sd->groups` is always oriented
+per-CPU, local group first) -- restricted further to that group's
+`group_balance_mask()` (`sched.h:2227-2262`, built by
+`build_balance_mask()`, `topology.c:1199-1225`): the subset of the
+group's span whose OWN per-CPU child-domain span equals the group's
+span exactly, i.e. cores genuinely "home" to that group, not merely
+counted in it. `group_balance_cpu(sg) = cpumask_first(group_balance_mask(sg))`
+(`topology.c:1090-1092`) is the fallback when nobody's idle. Newly-idle:
+every CPU allowed (`env->idle == CPU_NEWLY_IDLE` returns 1
+unconditionally, `fair.c:13179-13183`) -- unaffected by this fix.
+
+**Consequence, exactly as hypothesized before measuring:** at
+onehop/machine levels, where `Domain.home_children` means a domain's
+span legitimately includes ring-neighbor cores that never climb that
+exact domain object (see the 2026-09-29 `build_topology()` CAVEAT this
+investigation follows on from), `_find_checker()` can elect one of
+those neighbor cores. Since `is_designated_checker()` is only ever
+asked by cores that DO climb the domain, an invalid election means NO
+core ever answers "yes" for that domain that cycle -- not "this core's
+turn was skipped," but "this domain's periodic pass did not run at
+all," silently, indefinitely (until idle-cpu-ordering luck changes it).
+
+### STEP 1 — measured BEFORE (no code change)
+
+`development/topology_audit/task7_checker_election_audit.py`: baseline
++ burst-aware, penalty=0, `stacked_medium`/`stacked_high`/`rate3.0_s12`/
+`bursty_high_s64`, 10 seeds each (30000-30009). Read-only
+instrumentation (monkey-patches `is_designated_checker` for the
+duration of each run, restored after -- same pattern as
+`diagnostics.py`), no simulator logic touched.
+
+A single-seed spot check on `stacked_medium` alone showed 0% invalid --
+misleadingly clean, because `Domain.cores()`'s iteration order happens
+to list the home node's own cores first (an accidental side effect of
+`build_topology()`'s `span_nodes = [nodes[i]] + neighbors` ordering),
+so `idle[0]` picks a home core whenever ANY of them is idle. The bug
+only shows up once the fallback path (nobody in the span idle -> lowest
+core_id globally) actually fires, which needs real load. Checked
+directly before trusting the light-load result: `stacked_high` showed
+47.8% invalid, `bursty_high_s64` showed 70.6% invalid on that same
+single seed -- confirming this is load-dependent, not absent.
+
+**Full 80-run result** (2 schedulers x 4 workloads x 10 seeds,
+`checker_audit_summary.csv`):
+
+| level | events | invalid | % invalid |
+|---|---|---|---|
+| pair | 468,512 | 0 | 0.0% |
+| node | 144,210 | 0 | 0.0% |
+| onehop | 48,408 | 11,097 | 22.9% |
+| machine | 36,525 | 8,478 | 23.2% |
+
+Pair and node levels are exactly 0% -- `home_children` defaults to ALL
+children there (pairs/nodes never overlap), so this bug structurally
+cannot occur below onehop. Per-domain rates vary sharply within a
+level: `onehop0`/`machine0` sit at 3.4%/5.4% (their home cores happen
+to win the iteration-order coincidence above more often) vs. 28-31% for
+`onehop1-3`/`machine1-3`. **0 domains were "fully starved"** (every
+domain got a valid check at least once across the whole run) -- this is
+a large, real efficiency/correctness loss, not a permanent freeze.
+
+### STEP 2 — `checker_model="kernel"`, opt-in (`simulator/LoadBalancer.py`)
+
+Ports the election above: `_find_group_containing(domain.groups(),
+from_core)` for the local group (always unambiguous here, unlike
+`Placement.py`'s fixed-root bug from the previous task -- `periodic_
+balance()`'s `d` already comes from `core.parent`'s own climb, so
+`from_core` is always genuinely home to `domain`); `_balance_mask()`
+restricts to cores whose own `domain_chain()` passes through that exact
+group object; degenerate case (`group` is a raw `Core`, at the pair
+level) returns `[group]` -- matching real Linux, where the SMT-level
+group is a single CPU and `should_we_balance()` trivially returns true
+for whichever CPU asks (verified directly: pair-level `is_self` rate
+under `checker_model="kernel"` is 100%, i.e. BOTH siblings
+independently pass, not one elected over the other). `_is_core_idle()`
+checks all of `core.parent.cores()` (the real SMT-sibling check).
+`share_cpu_capacity = (domain.level == Domain.LEVEL_PAIR)` -- the only
+level with `SD_SHARE_CPUCAPACITY` in this topology, verified already in
+Fix C's ledger entry.
+
+**`_find_checker(domain, from_core=None)`: legacy behavior is the
+exact fallback whenever `checker_model != "kernel"` OR `from_core is
+None`.** The burst path (`BurstScheduler.on_task_placed()`) calls
+`self._find_checker(domain)` with no second argument -- per
+instruction, left untouched, and its behavior is IDENTICAL regardless
+of `checker_model`, since it never passes `from_core`.
+
+**Q: is "the CPU's own child group" the right approximation for this
+4-node ring, per `build_overlap_sched_groups()`/`find_descended_
+sibling()` (`topology.c:1315-1420`)?** Yes, with one condition that
+already holds here: it must be evaluated via the asking core's OWN
+anchored `domain_chain()` (as `periodic_balance()` already does),
+never a fixed foreign root. Real Linux's `sd->groups` is ALSO always
+per-CPU-oriented -- every CPU has its own `sd` copy, so "the CPU's own
+child group" is not an approximation there, it's the actual mechanism.
+`find_descended_sibling()` only matters when a sibling's child-domain
+span extends OUTSIDE the domain being built (diameter>=3 topologies,
+per the kernel's own linear-chain example in that function's comment)
+-- this sim's ring never hits that case: every machine domain's reused
+far-onehop is, by `build_topology()`'s own construction, already a
+subset of the machine's span. Not needed here, but worth knowing if
+the ring topology is ever generalized to more hops.
+
+**Q: should the burst path change too, for consistency?** Not done
+(per instruction), but likely yes on the same reasoning: `_balance_
+domain(domain, checker, ...)` uses `checker` to find "the local group"
+for imbalance purposes (`_find_group_containing`), and a checker
+elected from a non-climbing neighbor branch would misrepresent which
+side is actually "local" to the arriving burst -- the same structural
+risk as periodic's skipped passes, just manifesting as a possibly-wrong
+imbalance direction instead of a silently-skipped pass. Unlike
+periodic's fix, this changes actual scheduling decisions for every
+burst-aware run, not just diagnostics, and deserves its own dedicated
+verification (ablation, not just an audit) -- a separate follow-up.
+
+### STEP 3 — measured AFTER, `checker_model="kernel"`, same seeds, baseline only
+
+`development/topology_audit/task7_checker_election_after.py`.
+**Invalid-checker rate: exactly 0.0% at every level** (pair, node,
+onehop, machine -- `checker_audit_after_perseed.csv`), confirming the
+fix works structurally, not just for the cases it was designed around.
+
+**Legacy vs. kernel, paired by seed, penalty=0 (`checker_model_
+compare_perseed.csv`):**
+
+| metric | workload | legacy | kernel | change | sign_p |
+|---|---|---|---|---|---|
+| p95_wait | stacked_medium | 14.60 | 13.70 | -6.2% | 0.18 (n.s.) |
+| p95_wait | stacked_high | 27.95 | 24.43 | -12.6% | 0.34 (n.s.) |
+| p95_wait | rate3.0_s12 | 18.20 | 18.83 | **+3.5%** | 0.34 (n.s.) |
+| p95_wait | bursty_high_s64 | 65.47 | 55.16 | **-15.8%** | **0.002**, 10/10 wins |
+| migrations | all 4 | -- | -- | **+24% to +148%** | **0.002** every workload |
+| cores_scanned | all 4 | -- | -- | **-20% to -47%** | **0.002** every workload |
+
+More migrations AND less scanning work together make sense: legacy's
+wasted (invalid-checker) opportunities never reach the backoff-update
+code (`periodic_balance()` only grows `balance_interval` inside the
+`if is_designated_checker` block), so those core+domain pairs keep
+re-checking at `min_interval` forever without ever backing off --
+real, if lower-value, overhead. `checker_model="kernel"`'s checks
+mostly succeed, so backoff works as designed, and the extra migrations
+come from onehop/machine levels actually running instead of being
+silently skipped. One workload (`rate3.0_s12`) shows a small,
+non-significant p95_wait REGRESSION -- not explained further here, a
+candidate follow-up question if `checker_model="kernel"` is pursued.
+
+**Not done, per instruction:** the default was NOT changed
+(`checker_model="legacy"` remains it), and neither the calibration
+grid nor the confirmation run was re-run under the new model. This
+entry is a fidelity-gap finding and its opt-in fix, not a new baseline.
