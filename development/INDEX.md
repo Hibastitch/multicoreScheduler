@@ -47,6 +47,26 @@ Real, correct findings — just not the final paper numbers (those are in `final
 - `task4_observer_effect_check.py` — confirms `diagnostics.py`'s live samplers don't change scheduling behavior.
 - `task4_verify_one_seed.py` — single-seed sanity check of the diagnostics/metrics pipeline.
 
+## fidelity_audit/ — Task 8 pre-audit: 13-area Linux-fidelity comparison
+
+Real, correct findings, but strictly an AUDIT — no simulator logic was changed here.
+See `docs/FIDELITY_AUDIT.md` for the full report; this folder holds only the
+cheap, monkeypatch-based impact measurements for the mismatches that were
+togglable without editing simulator files.
+
+- `task8_pre_audit_impact_measurements.py` — three monkeypatch toggles (each
+  measured independently against the current default, `checker_model="kernel"`
+  held constant): busy_factor (periodic-check interval x16 when the checking
+  core is busy, `fair.c` `get_sd_balance_interval()`), the `!idle` out_balanced
+  gate (`sched_balance_find_src_group()`), and the corrected
+  `NUMA_IMBALANCE_MIN`/`NUMA_DST_BUSY_THRESHOLD` constants (`adjust_numa_
+  imbalance()`). 10 seeds (50000+), `stacked_high` + `bursty_high_s64`,
+  baseline only.
+- `results_task8_pre_audit_impact.csv` — its output. Headline: the missing
+  busy_factor scaling is large and highly significant (+26% to +48% p95_wait
+  when corrected); the idle-gate and NUMA-constant fixes both measured zero
+  effect at these two high-intensity workloads.
+
 ## sweeps_precalibration/ — burst-size / interval sweeps before the detector was calibrated
 
 - `task6_sweeps_v2.py` — corrected-duration burst-size and inter-burst-interval sweeps.

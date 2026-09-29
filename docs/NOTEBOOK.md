@@ -2738,3 +2738,101 @@ candidate follow-up question if `checker_model="kernel"` is pursued.
 (`checker_model="legacy"` remains it), and neither the calibration
 grid nor the confirmation run was re-run under the new model. This
 entry is a fidelity-gap finding and its opt-in fix, not a new baseline.
+
+## 2026-09-29 — Task 8 pre-audit: full 13-area Linux-fidelity audit (no code changes)
+
+Full audit requested BEFORE the Task 8 grid/confirmation re-run, explicitly
+audit-and-measure-only (no simulator logic changed). Result:
+`docs/FIDELITY_AUDIT.md` (one row per mechanism: sim function file:line |
+Linux function file:line | status | bias direction | affects), covering
+all 13 requested areas against fresh v7.2 kernel source (`fair.c`,
+`core.c`, `topology.c`, `sched.h`, `pelt.c` -- `pelt.c` and `core.c` newly
+fetched this session; `fair.c`/`topology.c`/`sched.h` reused from Task 7's
+cache). Full report and citations live in that file, not duplicated here;
+this entry is the ledger pointer plus the headline numbers.
+
+**Three UNDOCUMENTED MISMATCHES were cheaply measurable** via monkeypatch
+(`development/fidelity_audit/task8_pre_audit_impact_measurements.py`, no
+simulator file edited, 10 seeds 50000-50009, `stacked_high` +
+`bursty_high_s64`, baseline only, `checker_model="kernel"` held constant):
+
+- **Missing `busy_factor` (real: x16 periodic-check interval scaling when
+  the checking core is busy, `get_sd_balance_interval()`, `fair.c:13565-
+  13586`, `sd_init()` busy_factor=16, `topology.c:1958`) -- LARGEST finding
+  in the audit.** Correcting it costs +26% to +48% p95_wait, buys -29% to
+  -69% fewer migrations, both highly significant (sign_p <= 0.022,
+  wilcoxon_p <= 0.008) at both tested workloads. The current simulator's
+  periodic path checks busy cores ~16x more often than real Linux would --
+  meaning the CURRENT gap between burst-aware and baseline periodic is
+  very likely an UNDER-estimate of the true gap in real Linux (an
+  artificially fast periodic baseline can only narrow, not widen, an
+  observed "burst-aware reacts earlier" effect). Ranked #1 to fix before
+  the re-run.
+- **`!idle` out_balanced gate** (`sched_balance_find_src_group()`,
+  `fair.c:12871-12881`: on a busy checking CPU, real Linux refuses to
+  balance at all unless busiest is genuinely overloaded) -- measured
+  **zero effect** at both workloads (byte-identical across all 10 seeds
+  each): busiest was essentially always `GROUP_OVERLOADED` whenever a
+  periodic check actually ran under this much sustained/bursty load, so
+  the gate never triggered. Real gap, dormant at these intensities;
+  documented rather than ranked for an immediate fix.
+- **`NUMA_IMBALANCE_MIN`/`NUMA_DST_BUSY_THRESHOLD`** (previously flagged
+  in-code as "never opened this session, unverified stand-ins" -- now
+  opened: real values are 2 and a topology-derived 3 for this sim's
+  4-node/8-core-per-node/3-node-onehop layout, `fair.c:2177`,
+  `topology.c:2870-2934`; the sim used 32 and 2, i.e. 16x too forgiving)
+  -- measured **no significant effect** at either workload (small,
+  non-significant swings at stacked_high; byte-identical at
+  bursty_high_s64). Verified-wrong by a large factor but low measured
+  leverage for these specific high-intensity conditions -- recommend
+  fixing anyway (one-line, zero-risk) but don't expect it to move
+  headline numbers.
+
+**Also found, not cheaply measurable without new simulator state (marked
+"needs code change to measure" in the full report, NOT implemented here):**
+missing cache-hot/`task_hot()` gate on every migration path (`fair.c:
+10291-10329`, `sysctl_sched_migration_cost`=0.5ms) -- ranked #2 to fix,
+since it applies to every migration everywhere and can only bias toward
+MORE migrations than real Linux, never fewer; `update_sd_pick_busiest()`'s
+type-first-then-metric busiest selection vs. the sim's load-only `max()`
+(`fair.c:11918-11990` vs `LoadBalancer.py:339`) -- entangled with the
+already-accepted 3-type `group_classify()` simplification, documented not
+fixed; NOHZ/idle-load-balancer tickless modeling (`fair.c:13920-14254`);
+`sched_balance_newidle()`'s `avg_idle`/`max_newidle_lb_cost` cost-budget
+gating (already partly documented in-code, magnitude now cited exactly,
+`fair.c:14347-14420`); `sched_balance_find_src_rq()`'s `migrate_util` case
+selecting by util rather than load (`fair.c:13024-13039` vs
+`_migrate_util`'s load-based pick).
+
+**Correction to an earlier-session finding, made in `docs/FIDELITY_AUDIT.
+md` §11** (not a new bug, not a retraction -- see that file for the full
+wording): the Phase 10 "Placement.py machines[0]-fixed-root" description
+was re-checked against `Main.py` this session and found to describe the
+mechanism imprecisely -- there is only ONE `machine` object in this sim
+(no `machines[]` array to index wrong). The real, still-unfixed asymmetry
+is in how `build_topology()`'s ring construction anchors node1/node3
+`domain_chain()` climbs to a fixed-perspective onehop domain, not an
+array-indexing bug. The underlying finding (the asymmetry is real and
+unfixed) stands; only its description is corrected here.
+
+**checker_model="kernel" (Task 7) reconfirmed complete for the periodic
+path** by re-reading current `LoadBalancer.py`, but **the burst path was
+found to NOT benefit from it at all** (`BurstScheduler.py:105` calls
+`_find_checker(domain)` with no `from_core`, which always takes the
+legacy whole-span-election branch regardless of `checker_model` --
+`LoadBalancer.py:262`'s `from_core is None` guard). Already flagged as a
+known follow-up in Task 7's entry; not actioned here (no code changes).
+
+Ranked recommendation for the Task 8 re-run (full reasoning in
+`docs/FIDELITY_AUDIT.md` §14): **fix busy_factor** (Rank 1, large +
+significant + directly relevant to the paper's central claim) and
+**consider fixing cache-hot** (Rank 2, not yet measurable) before
+re-running the grid/confirmation; fix `NUMA_IMBALANCE_MIN` regardless
+(Rank 3, cheap/zero-risk, low measured leverage); document the rest
+(`update_sd_pick_busiest` ordering, the `!idle` gate, NOHZ/ILB, newidle
+cost-gating, `migrate_util` rq-selection) as known simplifications rather
+than fixing before the re-run.
+
+**Not done, per instruction:** no simulator logic was changed, no fixes
+were implemented, and neither the calibration grid nor the confirmation
+run was re-run. This entry is the audit's findings, not a new baseline.
