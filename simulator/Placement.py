@@ -104,14 +104,36 @@ def select_idle_sibling(candidate_core):
     return candidate_core
 
 
-def select_core_for_task(task, waker_core, cores_by_id, machine=None):
+def select_core_for_task(task, waker_core, cores_by_id, machine=None, placement_root="fixed"):
     if task.prev_core is None:
         # brand-new task (fork-like path, per the kernel comment: "usually
         # only true for WF_EXEC and WF_FORK") -- descend the hierarchy
         # with a local-vs-idlest bias, same pattern as
         # sched_balance_find_dst_group()/_group_cpu()
         if machine is not None:
-            return hierarchical_new_task_placement(machine, entry_core=waker_core)
+            # TASK 8 FIX 3 (2026-09-29, docs/FIDELITY_AUDIT.md §11,
+            # NOTEBOOK.md 2026-09-29b's STEP 1 retraction-of-a-retraction):
+            # "fixed" (default) is the pre-existing, byte-identical
+            # behavior -- always descend from the single `machine` object
+            # every caller was handed (Topology.build_topology()'s
+            # machines[0], the fixed root). "own" ignores that shared
+            # object and descends from `waker_core`'s OWN top-level
+            # domain instead (domain_chain(waker_core)[-1] -- the last
+            # entry in a core's bottom-up domain chain is always its own
+            # per-node machine domain, since Domain.home_children
+            # correctly anchors every onehop/machine to its own node
+            # regardless of which node's machine build_topology()
+            # happened to return, verified in the STEP 1 correction
+            # above). Fixes the node1/node3 asymmetry where
+            # machines[0].children==[onehop0,onehop2] made those nodes'
+            # forked tasks always resolve their top-level "local" to
+            # onehop0, never their own onehop1/onehop3.
+            root = machine
+            if placement_root == "own":
+                chain = domain_chain(waker_core)
+                if chain:
+                    root = chain[-1]
+            return hierarchical_new_task_placement(root, entry_core=waker_core)
         idle = [c for c in cores_by_id.values() if c.is_idle()]
         if idle:
             return idle[0]

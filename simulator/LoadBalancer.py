@@ -40,6 +40,24 @@ MAX_MIGRATE_PER_PASS = 32
 NUMA_IMBALANCE_MIN = 32          # capacity-scale units; below this, forgive small imbalances
 NUMA_DST_BUSY_THRESHOLD = 2      # running tasks; above this, skip the forgiveness check
 
+# TASK 8 FIX 5 (2026-09-29, docs/FIDELITY_AUDIT.md §8, NOTEBOOK.md
+# 2026-09-29c): the corrected values, verified against fair.c:2177
+# (#define NUMA_IMBALANCE_MIN 2, hardcoded) and this topology's own
+# adjust_numa_imbalance() derivation (topology.c:2870-2934: nr_llcs=3 at
+# the onehop level for this 4-node/8-core-per-node/3-node-onehop layout,
+# both onehop's and machine's upward-propagation factor=1, giving
+# imb_numa_nr=3 at both NUMA levels). Selected by
+# LoadBalancer._adjust_numa_imbalance() when numa_fix=True, in place of
+# the legacy NUMA_IMBALANCE_MIN/NUMA_DST_BUSY_THRESHOLD above.
+NUMA_IMBALANCE_MIN_KERNEL = 2
+NUMA_DST_BUSY_THRESHOLD_KERNEL = 3
+
+# TASK 8 FIX 4 (2026-09-29, docs/FIDELITY_AUDIT.md §7): task_hot()'s
+# cache-hot window (fair.c:10291-10329) -- sysctl_sched_migration_cost =
+# 500,000 ns = 0.5 sim-ms (fair.c:82). Read by
+# LoadBalancer._cache_hot_blocked() when cache_hot=True.
+CACHE_HOT_THRESHOLD_MS = 0.5
+
 # RNG ISOLATION (Fix 3d, 2026-09-26, see Readme.md and WorkloadGenerator.py's
 # module docstring for the full story): the legacy_ema newidle gate's
 # random.random() call must NOT share Python's global `random` module with
@@ -66,7 +84,8 @@ class LoadBalancer:
     # to reproduce pre-2026-09-27i behavior exactly.
     def __init__(self, machine_domain, cores_by_id, logger=None, migration_penalty=0.0,
                  newidle_mode="transition", seed=0, per_cpu_last_balance=True,
-                 imbalance_model="kernel", checker_model="legacy"):
+                 imbalance_model="kernel", checker_model="kernel",
+                 busy_factor=16, cache_hot=True, numa_fix=True):
         self.machine = machine_domain
         self.cores_by_id = cores_by_id
         self.migrations = 0
@@ -170,9 +189,55 @@ class LoadBalancer:
         # degenerate (just the asking core itself), so BOTH siblings
         # independently pass -- matches should_we_balance() returning
         # true unconditionally at the base level, real Linux's actual
-        # behavior, not modeled by "legacy" at all. Opt-in: "legacy"
-        # remains the default until this is verified end to end.
+        # behavior, not modeled by "legacy" at all.
+        #
+        # DEFAULT CHANGED 2026-09-29 (Task 8, see NOTEBOOK.md 2026-09-29c/d
+        # and docs/FIDELITY_AUDIT.md): "kernel" is now the default,
+        # following the Step 2 baseline-only ablation
+        # (development/fidelity_audit/task8_step2_baseline_ablation.py).
+        # Pass checker_model="legacy" explicitly to reproduce pre-Task-8
+        # behavior exactly.
         self.checker_model = checker_model
+
+        # TASK 8 FIX 2 (2026-09-29, docs/FIDELITY_AUDIT.md §1, NOTEBOOK.md
+        # 2026-09-29c): get_sd_balance_interval(sd, cpu_busy) (fair.c:
+        # 13565-13586) multiplies the periodic-check interval by
+        # sd->busy_factor when the checking CPU is busy. busy_factor=1 is
+        # a pure no-op multiplier -- exact pre-Task-8 behavior.
+        # busy_factor=16 (DEFAULT since 2026-09-29) matches sd_init()'s
+        # real default (topology.c:1958). See _get_balance_interval()
+        # below for the exact application (check-time only, never
+        # persisted). Pass busy_factor=1 explicitly to reproduce
+        # pre-Task-8 behavior exactly.
+        self.busy_factor = busy_factor
+
+        # TASK 8 FIX 4 (2026-09-29, docs/FIDELITY_AUDIT.md §7): False
+        # never consults Task.last_ran_until -- exact pre-Task-8 behavior
+        # (every candidate task is migratable regardless of how recently
+        # it ran). True (DEFAULT since 2026-09-29) enables
+        # can_migrate_task()'s cache-hot refusal (fair.c:10291-10329,
+        # 10817-10832) via _cache_hot_blocked() below, applied as a
+        # candidate filter in every path that selects a queued task to
+        # migrate (periodic, newidle, burst -- all share this balancer's
+        # migrate_* methods). Pass cache_hot=False explicitly to
+        # reproduce pre-Task-8 behavior exactly.
+        self.cache_hot = cache_hot
+
+        # TASK 8 FIX 5 (2026-09-29, docs/FIDELITY_AUDIT.md §8): False
+        # keeps the legacy NUMA_IMBALANCE_MIN=32/NUMA_DST_BUSY_
+        # THRESHOLD=2 constants AND keeps calling
+        # _adjust_numa_imbalance() from the generic migrate_load path in
+        # _balance_domain() (the pre-Task-8, if undocumented, behavior).
+        # True (DEFAULT since 2026-09-29) switches _adjust_numa_
+        # imbalance() to the corrected NUMA_IMBALANCE_MIN_KERNEL/
+        # NUMA_DST_BUSY_THRESHOLD_KERNEL constants above AND stops
+        # calling it from that generic path -- real calculate_imbalance()
+        # (fair.c:12577-12753) only ever calls adjust_numa_imbalance()
+        # from the group_has_spare branch (fair.c:12693), never from the
+        # "both overloaded" migrate_load branch (fair.c:12718-12753) --
+        # see _balance_domain() below. Pass numa_fix=False explicitly to
+        # reproduce pre-Task-8 behavior exactly.
+        self.numa_fix = numa_fix
 
     def _balance_state(self, core, domain):
         """Only meaningful when per_cpu_last_balance=True. One entry per
@@ -272,6 +337,32 @@ class LoadBalancer:
 
     # ---------------- periodic pass ----------------
 
+    def _get_balance_interval(self, base_interval, core):
+        """
+        TASK 8 FIX 2: get_sd_balance_interval(sd, cpu_busy) (fair.c:
+        13565-13586). busy_factor multiplies the CHECK-TIME interval
+        only -- never the persisted backoff state (periodic_balance()'s
+        new_interval computation below uses the UNSCALED `interval`,
+        matching real Linux: sd->balance_interval's own doubling/reset,
+        fair.c:13507/13556-13557, is unaffected by busy_factor). -1 when
+        busy (fair.c:13581-13582): real Linux applies this in jiffies
+        AFTER the busy_factor multiply, a ~1-jiffy anti-alignment offset
+        to desynchronize near-multiple domain periods -- this sim's "ms"
+        units already map 1:1 to jiffies elsewhere (sysctl_sched_
+        migration_cost=0.5ms, Task.last_ran_until's threshold), so the
+        same -1 is applied here, floored at 1. msecs_to_jiffies
+        (fair.c:13574) is a no-op at that 1:1 mapping. max_load_balance_
+        interval (fair.c:13584, = HZ*ncpus/10, ~3200 "ms" for this
+        32-core topology at the implicit HZ=1000 this sim already
+        assumes elsewhere) is NOT implemented: every domain's own
+        max_interval here (<=64) is already far below it -- a structural
+        no-op at this scale, documented rather than coded (docs/
+        FIDELITY_AUDIT.md §1).
+        """
+        if self.busy_factor == 1 or core.is_idle():
+            return base_interval
+        return max(base_interval * self.busy_factor - 1, 1)
+
     def periodic_balance(self, core, now):
         STATS.periodic_calls += 1
         d = core.parent
@@ -289,7 +380,11 @@ class LoadBalancer:
 
             # ADDED 2026-09-24: checked against balance_interval, not the
             # static min_interval -- see the backoff adjustment below.
-            if now - last_balance >= interval:
+            # TASK 8 FIX 2: `interval` itself (used below for the
+            # persisted backoff state) stays UNSCALED; only the
+            # comparison uses the busy_factor-scaled check_interval.
+            check_interval = self._get_balance_interval(interval, core)
+            if now - last_balance >= check_interval:
                 if self.per_cpu_last_balance:
                     state["last_balance"] = now
                 else:
@@ -371,7 +466,7 @@ class LoadBalancer:
                 imbalance_tasks = max(0, (local_idle - b_idle)) // 2  # verified >>=1 halving
                 if imbalance_tasks <= 0:
                     return 0
-                return self._migrate_tasks(busiest, local_core, imbalance_tasks, now, tag)
+                return self._migrate_tasks(busiest, local_core, imbalance_tasks, now, tag, domain)
             # legacy + busiest overloaded: falls through to the generic
             # min()-trick below -- this is the mismatch Fix C corrects
             # (see Readme.md: that formula's real use is overloaded-vs-
@@ -383,14 +478,21 @@ class LoadBalancer:
             (domain_avg - local_avg) * local_cap,
         ) / CAPACITY_SCALE
 
-        if domain.is_numa:
+        # TASK 8 FIX 5: real calculate_imbalance() (fair.c:12577-12753)
+        # never calls adjust_numa_imbalance() from this "both overloaded"
+        # generic migrate_load branch -- ONLY from the group_has_spare
+        # branch (fair.c:12693, ported in _balance_has_spare_kernel()
+        # below). numa_fix=False keeps the legacy (if undocumented)
+        # behavior of calling it here too; numa_fix=True matches real
+        # Linux by skipping it.
+        if domain.is_numa and not self.numa_fix:
             imbalance = self._adjust_numa_imbalance(imbalance, local_run)
         if imbalance <= 0:
             return 0
         if 100 * busiest_avg <= domain.imbalance_pct * local_avg:
             return 0  # same imbalance_pct conservatism check as the overloaded path
 
-        return self._migrate_load(busiest, local_core, imbalance, now, tag)
+        return self._migrate_load(busiest, local_core, imbalance, now, tag, domain)
 
     def _balance_has_spare_kernel(self, domain, local_core, local_group, busiest, b_type,
                                    local_idle, b_idle, local_run, b_run, now, tag):
@@ -431,7 +533,7 @@ class LoadBalancer:
         already applied to its one branch.
         """
         if b_type == GROUP_OVERLOADED and not domain.share_llc:
-            return self._migrate_util(busiest, local_group, local_core, now, tag)
+            return self._migrate_util(busiest, local_group, local_core, now, tag, domain)
 
         busiest_weight_one = not hasattr(busiest, "cores")  # raw Core group == pair level
         prefer_sibling = not getattr(busiest, "is_numa", False)
@@ -448,9 +550,9 @@ class LoadBalancer:
         imbalance_tasks = raw // 2
         if imbalance_tasks <= 0:
             return 0
-        return self._migrate_tasks(busiest, local_core, imbalance_tasks, now, tag)
+        return self._migrate_tasks(busiest, local_core, imbalance_tasks, now, tag, domain)
 
-    def _migrate_util(self, busiest_group, local_group, dst_core, now, tag):
+    def _migrate_util(self, busiest_group, local_group, dst_core, now, tag, domain=None):
         """
         FIX C, branch 1 of _balance_has_spare_kernel(): fill local's
         spare capacity when busiest is overloaded and the domain doesn't
@@ -499,7 +601,12 @@ class LoadBalancer:
                 break
             if not force_one and moved_util >= imbalance:
                 break
-            task = src_core.rq[0]
+            # TASK 8 FIX 4: filter cache-hot candidates before picking --
+            # can_migrate_task() (fair.c:10291-10329, 10817-10832).
+            pool = self._filter_cache_hot(src_core.rq, src_core, domain, now)
+            if not pool:
+                break
+            task = pool[0]
             self._do_migrate(task, src_core, dst_core, now, tag)
             moved_util += task.util_avg
             n_migrated += 1
@@ -507,25 +614,68 @@ class LoadBalancer:
                 break
         return n_migrated
 
+    def _cache_hot_blocked(self, task, src_core, domain, now):
+        """
+        TASK 8 FIX 4 (2026-09-29, docs/FIDELITY_AUDIT.md §7): can_migrate_
+        task()'s cache-hot gate (fair.c:10291-10329, condition at
+        10817-10832: `if (!hot || nr_balance_failed > cache_nice_tries)
+        return 1 (allow);`). A task is hot if
+        `now - task.last_ran_until < CACHE_HOT_THRESHOLD_MS` --
+        never-run tasks (last_ran_until is None) are never hot, matching
+        __sched_fork()'s p->se.exec_start=0 at fork (core.c:4568), only
+        overwritten by update_stats_curr_start() (fair.c:2150-2156) once
+        a task actually runs. Bypassed once this (src_core, domain
+        level)'s failure count exceeds cache_nice_tries (real per-level
+        default, topology.c:2002-2023: pair=0, node=1, onehop/machine=2,
+        Topology.Domain.cache_nice_tries). Real Linux's other two
+        bypasses -- active balance, NUMA-preferred destination -- are
+        not modeled; this sim has neither concept.
+        """
+        if not self.cache_hot or domain is None:
+            return False
+        if task.last_ran_until is None:
+            return False
+        if (now - task.last_ran_until) >= CACHE_HOT_THRESHOLD_MS:
+            return False
+        failed = self.nr_balance_failed.get(id(src_core), 0)
+        return failed <= domain.cache_nice_tries
+
+    def _filter_cache_hot(self, tasks, src_core, domain, now):
+        """Candidate pool with cache-hot (and not bypassed) tasks
+        removed, preserving queue order. A no-op (returns `tasks`
+        unchanged) when cache_hot=False -- the default -- so every
+        existing call site/positional caller that predates this
+        parameter is unaffected."""
+        if not self.cache_hot:
+            return tasks
+        return [t for t in tasks if not self._cache_hot_blocked(t, src_core, domain, now)]
+
     def _adjust_numa_imbalance(self, imbalance, dst_running):
         """
-        Verified two-gate logic from adjust_numa_imbalance():
+        Verified two-gate logic from adjust_numa_imbalance() (fair.c:
+        2179-2198):
           Gate 1: destination already busy enough -> skip forgiveness,
                   return imbalance unchanged.
           Gate 2: (only reached if Gate 1 doesn't apply) small imbalance
                   -> forgive it entirely, protecting a communicating pair
                   of tasks that should stay local.
-        Thresholds (NUMA_IMBALANCE_MIN, NUMA_DST_BUSY_THRESHOLD) are our
-        own stand-ins -- the real numeric values were never opened this
-        session, so treat these as approximations, not verified numbers.
+        TASK 8 FIX 5 (2026-09-29): numa_fix=False (default) keeps the
+        legacy NUMA_IMBALANCE_MIN/NUMA_DST_BUSY_THRESHOLD stand-ins.
+        numa_fix=True switches to the verified constants
+        (NUMA_IMBALANCE_MIN_KERNEL=2, fair.c:2177;
+        NUMA_DST_BUSY_THRESHOLD_KERNEL=3, this topology's own imb_numa_nr
+        derivation, topology.c:2870-2934 -- see the module-level comment
+        above those constants).
         """
-        if dst_running > NUMA_DST_BUSY_THRESHOLD:
+        min_threshold = NUMA_IMBALANCE_MIN_KERNEL if self.numa_fix else NUMA_IMBALANCE_MIN
+        busy_threshold = NUMA_DST_BUSY_THRESHOLD_KERNEL if self.numa_fix else NUMA_DST_BUSY_THRESHOLD
+        if dst_running > busy_threshold:
             return imbalance
-        if imbalance <= NUMA_IMBALANCE_MIN:
+        if imbalance <= min_threshold:
             return 0
         return imbalance
 
-    def _migrate_load(self, busiest_group, dst_core, imbalance, now, tag):
+    def _migrate_load(self, busiest_group, dst_core, imbalance, now, tag, domain=None):
         busiest_cores = busiest_group.cores() if hasattr(busiest_group, "cores") else [busiest_group]
         busiest_cores = [c for c in busiest_cores if c.rq]
         if not busiest_cores:
@@ -544,7 +694,12 @@ class LoadBalancer:
             # anti-livelock: destination idle + this would empty the source -> stop
             if dst_core.is_idle() and len(src_core.rq) <= 1:
                 break
-            candidates = [t for t in src_core.rq if t.weight >= min_task_weight] or src_core.rq
+            # TASK 8 FIX 4: filter cache-hot candidates first, THEN apply
+            # the existing tiny-task-weight preference within what's left.
+            pool = self._filter_cache_hot(src_core.rq, src_core, domain, now)
+            if not pool:
+                break
+            candidates = [t for t in pool if t.weight >= min_task_weight] or pool
             task = max(candidates, key=lambda t: t.weight)
             self._do_migrate(task, src_core, dst_core, now, tag)
             moved += task.weight
@@ -556,7 +711,7 @@ class LoadBalancer:
             self.nr_balance_failed[key] = 0
         return n_migrated
 
-    def _migrate_tasks(self, busiest_group, dst_core, n_tasks, now, tag):
+    def _migrate_tasks(self, busiest_group, dst_core, n_tasks, now, tag, domain=None):
         busiest_cores = busiest_group.cores() if hasattr(busiest_group, "cores") else [busiest_group]
         busiest_cores = [c for c in busiest_cores if c.rq]
         if not busiest_cores:
@@ -568,7 +723,11 @@ class LoadBalancer:
         while src_core.rq and moved < n_tasks and moved < loop_max:
             if dst_core.is_idle() and len(src_core.rq) <= 1:
                 break
-            task = src_core.rq[0]
+            # TASK 8 FIX 4: filter cache-hot candidates before peeking.
+            pool = self._filter_cache_hot(src_core.rq, src_core, domain, now)
+            if not pool:
+                break
+            task = pool[0]
             self._do_migrate(task, src_core, dst_core, now, tag)
             moved += 1
         return moved
@@ -636,6 +795,11 @@ class LoadBalancer:
         # of real Linux's preference, and inconsistent with
         # _migrate_tasks()'s src_core.rq[0] elsewhere in this file,
         # which already got this right.
-        task = src.rq[0]  # peek; _do_migrate performs the actual removal
+        # TASK 8 FIX 4: filter cache-hot candidates before peeking --
+        # same can_migrate_task() gate as the periodic/burst paths above.
+        pool = self._filter_cache_hot(src.rq, src, domain, now)
+        if not pool:
+            return False
+        task = pool[0]  # peek; _do_migrate performs the actual removal
         self._do_migrate(task, src, core, now, "newidle")
         return True

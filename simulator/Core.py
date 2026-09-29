@@ -35,10 +35,25 @@ PELT_DECAY_PER_TICK = 0.5 ** (1 / PELT_HALFLIFE_PERIODS)  # ~0.9781, verified fr
 
 
 class Core:
-    def __init__(self, core_id, load_model="legacy"):
+    def __init__(self, core_id, load_model="legacy", time_slice=TIME_SLICE):
         self.core_id = core_id
         self.env = None
         self.parent = None          # set by Domain
+
+        # TASK 8 FIX 6 (2026-09-29, docs/FIDELITY_AUDIT.md §10): per-
+        # instance slice, defaulting to the module constant so any
+        # direct Core(...) construction that doesn't pass this stays
+        # byte-identical to before this parameter existed. Real Linux's
+        # EFFECTIVE sysctl_sched_base_slice for a >=8-CPU machine under
+        # default tunable scaling is 2.8ms (4x the raw 0.7ms default,
+        # get_update_sysctl_factor()/update_sysctl(), fair.c:192-226),
+        # not the module TIME_SLICE=4 this sim used unconditionally
+        # before -- Main.run_simulation()'s time_slice kwarg (default
+        # 2.8) is the intended way to use the corrected value; the
+        # module constant itself is deliberately left unedited so old
+        # call sites that construct topology directly (bypassing
+        # run_simulation) keep reproducing exactly as before.
+        self.time_slice = time_slice
 
         self.rq = TrackedRunQueue()  # plain list + a real augmented rbtree kept in sync (EevdfTree.py)
         self.current_task = None
@@ -109,7 +124,7 @@ class Core:
 
     def _set_deadline(self, task):
         """deadline = vruntime + slice/weight   """
-        vslice = TIME_SLICE * (NICE_0_WEIGHT / task.weight)
+        vslice = self.time_slice * (NICE_0_WEIGHT / task.weight)
         task.sched_deadline = task.vruntime + vslice
 
 
@@ -278,7 +293,7 @@ class Core:
                     task.start_time = env.now
 
             task = self.current_task
-            slice_len = min(TIME_SLICE, task.remaining_time)
+            slice_len = min(self.time_slice, task.remaining_time)
 
             self.tick_load(slice_len)
             yield env.timeout(slice_len)

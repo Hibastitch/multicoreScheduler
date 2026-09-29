@@ -563,6 +563,110 @@ beyond the documentation already present in this file.
 
 ---
 
+## STATUS UPDATE (2026-09-29d/e): all six fixes above implemented and made DEFAULT
+
+Every "UNDOCUMENTED MISMATCH" row above whose fix is one of the six
+listed in `docs/NOTEBOOK.md`'s 2026-09-29c pre-registration (§1 row 2
+busy_factor, §3 checker_model, §7 cache-hot, §8 both NUMA rows, §10
+TIME_SLICE, §11 placement_root) is now **FIXED and DEFAULT** as of
+2026-09-29e -- implemented behind opt-in flags (Step 1), measured
+baseline-only (Step 2, §15 below), then made the plain constructor/
+`run_simulation()` defaults (Step 3). The legacy value of each remains
+explicitly reachable (see `README.md`'s "Final configuration" section
+and each flag's own docstring in `simulator/LoadBalancer.py`/`Main.py`/
+`Placement.py`/`Core.py`/`Topology.py`). Findings NOT among these six
+(§4's `update_sd_pick_busiest` ordering, §5's `!idle` out_balanced gate,
+§6's `migrate_util` rq-selection metric, §9's NOHZ/ILB and newidle
+cost-gating) remain exactly as documented above -- unfixed, per §14's
+original ranking, which is left unedited below as the historical record
+of the decision at the time it was made.
+
+## 15. Task 8 Step 2: baseline-only ablation of the 6 fixes (2026-09-29d)
+
+LoadBalancer only (burst-aware not run anywhere in this task), penalty=0,
+10 seeds (60000-60009), 5 workloads. Configurations: `a_all_legacy`
+(every fix at its pre-Task-8 value), each fix ALONE on top of `a`, and
+`c_all_six` (every fix corrected). Full per-seed and per-metric data:
+`development/fidelity_audit/results_task8_step2_ablation_perseed.csv`
+and `_summary.csv`. `*` = significant by the corrected sign test
+(`harms>wins` required) at p<0.05; `sig_p` shown when significant.
+
+**p95_wait, % change vs all-legacy:**
+
+| workload | checker | busy_factor | placement_root | cache_hot | numa_fix | time_slice | **all six** |
+|---|---|---|---|---|---|---|---|
+| stacked_medium | -1.9% | +1.2% | 0.0% | -1.9% | -0.9% | **-14.8%\*** (p=.021) | **-19.5%\*** (p=.002) |
+| stacked_high | -8.4% | +4.1% | 0.0% | -1.4% | +0.5% | -10.3% | +1.2% |
+| rate3.0_s12 | -6.5% | -11.2% | 0.0% | -5.2% | -0.2% | **-21.8%\*** (p=.002) | **-26.4%\*** (p=.002) |
+| bursty_high_s24 | +0.5% | -1.1% | +3.8% | +7.0% | 0.0% | -11.4% | **-17.3%\*** (p=.021) |
+| bursty_high_s64 | **-17.3%\*** (p=.002) | **+18.7%\*** (p=.002, HARM) | -1.3% | **-5.8%\*** (p=.021) | 0.0% | **-21.9%\*** (p=.021) | **-10.3%\*** (p=.021) |
+
+**total_migrations, % change vs all-legacy:**
+
+| workload | checker | busy_factor | placement_root | cache_hot | numa_fix | time_slice | **all six** |
+|---|---|---|---|---|---|---|---|
+| stacked_medium | **+23.7%\*** (p=.002, HARM by migration count) | **-7.5%\*** (p=.002) | 0.0% | -1.3% | +0.9% | +3.4% | **-9.5%\*** (p=.002) |
+| stacked_high | +20.3% | **-11.2%\*** (p=.002) | 0.0% | -0.6% | -1.3% | +2.1% | **-12.7%\*** (p=.002) |
+| rate3.0_s12 | **+31.2%\*** (p=.002, HARM) | -5.3% | 0.0% | -1.1% | +0.4% | +0.5% | **-10.6%\*** (p=.002) |
+| bursty_high_s24 | +2.3% | -1.4% | +0.1% | -0.7% | 0.0% | -1.7% | **-12.2%\*** (p=.004) |
+| bursty_high_s64 | **+147.4%\*** (p=.002, HARM) | **-31.1%\*** (p=.002) | +1.7% | -6.0% | 0.0% | -3.4% | **-20.0%\*** (p=.002) |
+
+**Headline observations, reported as measured (no cherry-picking):**
+
+- **`time_slice` (Fix 6) is the single largest, most consistent driver of
+  p95_wait/avg_wait reduction** -- significant in 4/5 workloads (all but
+  stacked_high, which is directionally the same, -10.3%, just short of
+  significance at n=10), -11% to -24% on avg_wait everywhere. It also
+  shows a small but significant avg_slowdown INCREASE in 2/5 workloads
+  (stacked_medium +3.0%, bursty_high_s64 +2.6%) -- shorter absolute wait,
+  slightly worse when normalized by service time. Reported, not hidden.
+- **`busy_factor` (Fix 2) is a genuine trade-off, not a pure win**:
+  significantly FEWER migrations in every workload (-5% to -31%), but a
+  significant p95_wait HARM specifically on `bursty_high_s64` (+18.7%,
+  the one workload where bursts create the most sustained busy-core
+  load) -- consistent with the earlier Task-8-audit finding
+  (`docs/FIDELITY_AUDIT.md` §1) that this fix trades periodic
+  responsiveness for fewer, more deliberate checks.
+- **`checker_model` (Fix 1, already known from Task 7) is confirmed
+  again here**: consistently MORE migrations (significantly so in 3/5
+  workloads, up to +147%), with p95_wait improving where that matters
+  most (bursty_high_s64, -17.3%\*) and roughly neutral elsewhere.
+- **`placement_root` (Fix 3) measured ESSENTIALLY ZERO effect** on
+  `stacked_medium`/`stacked_high`/`rate3.0_s12` (10/10 seeds byte-
+  identical -- `wins=0 harms=0 ties=10` on every metric) and small,
+  non-significant effects on the two `bursty_*` workloads. This does
+  NOT mean the fix is inert or buggy: a targeted synthetic test (crafted
+  imbalance forcing a node1-anchored entry core through both roots)
+  confirms it genuinely changes the resulting placement decision when
+  the scenario calls for it (`fixed` -> node0, `own` -> node3 for one
+  such constructed case) -- it simply almost never gets triggered by
+  these workload generators' actual load patterns at these seeds. A
+  real, structurally-fixed asymmetry with apparently low practical
+  leverage for THIS paper's workloads.
+- **`numa_fix` (Fix 5) measured near-zero effect** everywhere (mostly
+  ties or small non-significant swings), consistent with the
+  Task-8-audit's own earlier finding (§8) -- most balancing under these
+  workloads happens below the NUMA (onehop/machine) levels this fix
+  touches.
+- **`cache_hot` (Fix 4) measured small, mostly non-significant effects**
+  (one exception: `bursty_high_s64` p95_wait -5.8%\*), consistent with
+  the Task-8-audit's own earlier finding (§7) that only 2.8%-10.1% of
+  migrations are actually cache-hot-eligible for refusal under these
+  workloads.
+- **`c_all_six` (all fixes together)**: significant p95_wait improvement
+  in 4/5 workloads (`stacked_medium` -19.5%\*, `rate3.0_s12` -26.4%\*,
+  `bursty_high_s24` -17.3%\*, `bursty_high_s64` -10.3%\*), and NO
+  significant change on `stacked_high` (+1.2%, n.s.) -- the one
+  workload where `busy_factor`'s harm and `checker_model`'s benefit are
+  closest to canceling out. Migrations significantly REDUCED in all 5
+  workloads (-9.5% to -20.0%). avg_slowdown shows small, mixed,
+  sometimes-significant movement in either direction (stacked_medium
+  +2.1%\*, bursty_high_s64 +3.6%\*, both technically a slight harm on
+  that one normalized metric even as absolute wait improves) --
+  reported for completeness, not smoothed over.
+
+---
+
 ## Appendix: kernel source cached this session
 
 `/tmp/pelt_v72.c` (490 lines, newly fetched), `/tmp/core_v72.c` (11284

@@ -3010,3 +3010,110 @@ re-run shows is reported as-is, including if burst-aware's measured
 benefit shrinks, disappears, or reverses relative to the original
 confirmation run. This is a fidelity correction, not a search for a
 result.
+
+## 2026-09-29d — Task 8 Steps 1-2: implemented, verified, and measured (baseline only)
+
+**STEP 1 (implementation).** All 6 fixes from the pre-registration above
+implemented behind opt-in flags, each citing kernel file:line in its own
+code comment (`simulator/LoadBalancer.py`, `Main.py`, `Placement.py`,
+`Core.py`, `Topology.py`, `BurstScheduler.py`):
+
+- `busy_factor` (`LoadBalancer._get_balance_interval()`): multiplies the
+  check-time periodic interval by `busy_factor` when the checking core
+  is busy, `-1` floored at 1 when busy (`get_sd_balance_interval()`,
+  fair.c:13565-13586) -- applied at check-time only, never baked into
+  the persisted backoff state. The `max_load_balance_interval` clamp
+  (fair.c:13584, ~3200 "ms" for this topology) is NOT implemented --
+  every domain's own `max_interval` here (<=64) is already far below
+  it, a structural no-op at this scale, documented rather than coded.
+- `cache_hot` (`LoadBalancer._cache_hot_blocked()`/`_filter_cache_hot()`):
+  filters cache-hot candidates (< 0.5ms since `Task.last_ran_until`) out
+  of every migration path's candidate pool (`_migrate_load`,
+  `_migrate_tasks`, `_migrate_util`, `_newidle_attempt`), bypassed once
+  `nr_balance_failed > domain.cache_nice_tries` (real per-level default,
+  `topology.c:2002-2023`, added as `Topology.Domain.cache_nice_tries`:
+  pair=0, node=1, onehop/machine=2) -- `can_migrate_task()`,
+  fair.c:10291-10329/10817-10832.
+- `numa_fix` (`LoadBalancer._adjust_numa_imbalance()`): switches to the
+  verified `NUMA_IMBALANCE_MIN_KERNEL=2`/`NUMA_DST_BUSY_THRESHOLD_
+  KERNEL=3` constants, AND removes the call to `_adjust_numa_imbalance()`
+  from `_balance_domain()`'s generic "both overloaded" migrate_load
+  path -- real `calculate_imbalance()` only ever calls it from the
+  `group_has_spare` branch.
+- `placement_root` (`Placement.select_core_for_task()`): `"own"`
+  descends from `domain_chain(waker_core)[-1]` (the entry core's own
+  top-level machine domain) instead of the fixed `machine` object every
+  caller was handed.
+- `time_slice` (`Main.run_simulation()` -> `Topology.build_topology()`/
+  `build_node()` -> `Core.__init__`): a new per-run parameter, NOT a
+  module constant edit -- `Core.TIME_SLICE` stays 4 as the fallback
+  default for any direct `Core(...)` construction that doesn't pass it.
+  `run_simulation()`'s OWN default is 2.8 (an explicit, deliberate
+  exception to "legacy by default" for this one parameter, per
+  instruction) -- pass `time_slice=4` to reproduce a pre-Task-8 run.
+- `checker_model` already existed (Task 7); only its DEFAULT changes in
+  this task (see Step 3 below).
+
+**Verification (byte-identical when off):** a fingerprint script (2
+balancer classes x 2 workloads x 3 seeds each, full migration-event
+sequences + summary metrics, sha256) with every new flag pinned to its
+legacy value reproduced the EXACT SAME hash
+(`fe3a33c37f180f8492d1c5b350a47910f3d06b818a4a7fa602a1b5edcdd188e8`) as
+the reference captured two entries above (2026-09-29c's Step 4 tracking
+field, itself already verified against the code before this task) --
+run once right after Step 1's implementation, and again after Step 3's
+default flip (with every flag still explicitly pinned to legacy),
+confirming "legacy stays reachable" holds both before and after the
+default change. Exceeds the requested "3 stacked + 2 bursty seeds" bar
+(3+3 across 2 balancer classes).
+
+**Sanity check (flags aren't silently inert):** each fix, turned on
+alone against the same seed/workload, visibly moved p95_wait and/or
+migrations relative to legacy -- except `placement_root`, which produced
+IDENTICAL output on that one spot-check. Investigated directly (not
+assumed a bug): a targeted synthetic scenario (entry core on node 1,
+its own node heavily loaded, every other node idle) confirms the fix
+DOES produce different placements depending on root (`fixed` -> node0,
+`own` -> node3) -- it just doesn't get triggered by ordinary
+seed/workload combinations often enough to show up in a single
+spot-check. Step 2's full ablation (below) confirms this is a genuine,
+if low-leverage-for-these-workloads, pattern -- not a wiring bug.
+
+**STEP 2 (baseline-only ablation).**
+`development/fidelity_audit/task8_step2_baseline_ablation.py` --
+LoadBalancer only, penalty=0, 10 seeds (60000-60009), 5 workloads
+(`stacked_medium`, `stacked_high`, `rate3.0_s12`, `bursty_high_s24`,
+`bursty_high_s64`), 8 configurations (all-legacy, each fix alone, all
+six together). Full results and the headline table:
+`docs/FIDELITY_AUDIT.md` §15. Summary: `time_slice` is the single
+largest, most consistent p95_wait/avg_wait driver (significant in 4/5
+workloads); `busy_factor` is a genuine trade-off (fewer migrations
+everywhere, but a significant p95_wait HARM on `bursty_high_s64`
+specifically, +18.7%); `checker_model` reconfirms Task 7's pattern (more
+migrations, p95_wait improves most where it matters, `bursty_high_s64`);
+`placement_root` and `numa_fix` both measured near-zero effect at these
+workloads/seeds (real fixes, low practical leverage here); `cache_hot`
+measured small, mostly non-significant effects, consistent with its own
+2.8%-10.1% measured scope (§7). All six together: significant p95_wait
+improvement in 4/5 workloads, no significant change on `stacked_high`
+(where `busy_factor`'s harm and `checker_model`'s benefit roughly
+cancel), significant migration reduction in all 5.
+
+## 2026-09-29e — Task 8 Step 3: all six fixes made DEFAULT
+
+`simulator/LoadBalancer.py` (`checker_model="kernel"`, `busy_factor=16`,
+`cache_hot=True`, `numa_fix=True`), `simulator/BurstScheduler.py`
+(mirrored, for the same balancer-level attributes -- `checker_model`'s
+default flip has NO effect on the burst path's own checker election, by
+design, see `docs/FIDELITY_AUDIT.md` §13), `simulator/Main.py`
+(`placement_root="own"`; `time_slice=2.8` was already the Step 1
+default, per instruction). `README.md`'s "Final configuration" section
+and every changed flag's own docstring updated to state the new default
+and how to reproduce the old one. `docs/FIDELITY_AUDIT.md` gained a
+STATUS UPDATE note above §15 marking the six now-fixed rows without
+rewriting their original (still-accurate-as-history) table entries.
+
+**Not done, per instruction:** burst-aware was not run anywhere in
+Steps 1-3. The calibration grid and confirmation run were not re-run
+(Step 4 prepares, but does not execute, the v2 commands for the user to
+run themselves).

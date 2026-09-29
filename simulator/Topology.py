@@ -107,6 +107,21 @@ class Domain:
         LEVEL_MACHINE: 117,
     }
 
+    # TASK 8 FIX 4 (2026-09-29, docs/FIDELITY_AUDIT.md §7/NOTEBOOK.md
+    # 2026-09-29c): sd_init()'s per-level cache_nice_tries
+    # (topology.c:2002-2023) -- SD_SHARE_CPUCAPACITY (pair) leaves the
+    # struct-literal default of 0 (topology.c:1961) untouched; SD_SHARE_LLC
+    # (node) sets 1; SD_NUMA (onehop/machine) sets 2. Read by
+    # LoadBalancer._cache_hot_blocked()'s bypass condition
+    # (`nr_balance_failed > cache_nice_tries`, fair.c:10828) when
+    # cache_hot=True; unused (and harmless) otherwise.
+    CACHE_NICE_TRIES = {
+        LEVEL_PAIR: 0,
+        LEVEL_NODE: 1,
+        LEVEL_ONEHOP: 2,
+        LEVEL_MACHINE: 2,
+    }
+
     # verified: SD_SERIALIZE only on SD_NUMA domains. Both onehop and
     # machine represent inter-node distance here, so both carry it.
     NUMA_LEVELS = {LEVEL_ONEHOP, LEVEL_MACHINE}
@@ -147,6 +162,7 @@ class Domain:
         self.balance_interval = self.min_interval
         self.last_balance = 0
         self.imbalance_pct = self.IMBALANCE_PCT[level]
+        self.cache_nice_tries = self.CACHE_NICE_TRIES[level]
         self.is_numa = level in self.NUMA_LEVELS
         # FIX C (2026-09-27, see Readme.md): verified against sd_init()/
         # default_topology[] (kernel/sched/topology.c, v7.2, lines
@@ -320,12 +336,22 @@ def ring_neighbors(node_id, num_nodes, count):
     return neighbors[:count]
 
 
-def build_node(node_id, start_core_id, cores_per_pair=2, pairs_per_node=4, load_model="legacy"):
+def build_node(node_id, start_core_id, cores_per_pair=2, pairs_per_node=4, load_model="legacy",
+                time_slice=None):
     """One 8-core node: 4 SMT pairs, matching Figure 1's 'eight cores per node'."""
-    from Core import Core
+    from Core import Core, TIME_SLICE
 
+    # TASK 8 FIX 6 (2026-09-29, docs/FIDELITY_AUDIT.md §10): time_slice=None
+    # (default) -> each Core keeps using the module constant TIME_SLICE via
+    # its own default param, byte-identical to before this parameter
+    # existed. A caller passing a value here (run_simulation's time_slice
+    # kwarg) overrides it per-run, WITHOUT editing the module constant --
+    # so any direct Core()/build_topology() construction elsewhere that
+    # doesn't know about this parameter is unaffected.
     n_cores = cores_per_pair * pairs_per_node
-    cores = [Core(core_id=start_core_id + i, load_model=load_model) for i in range(n_cores)]
+    cores = [Core(core_id=start_core_id + i, load_model=load_model,
+                   time_slice=time_slice if time_slice is not None else TIME_SLICE)
+             for i in range(n_cores)]
 
     pairs = []
     for i in range(0, n_cores, cores_per_pair):
@@ -339,7 +365,7 @@ def build_node(node_id, start_core_id, cores_per_pair=2, pairs_per_node=4, load_
 
 
 def build_topology(num_cores=32, cores_per_pair=2, pairs_per_node=4,
-                    nodes_in_one_hop=3, load_model="legacy"):
+                    nodes_in_one_hop=3, load_model="legacy", time_slice=None):
     """
     Builds the Figure-1 shaped machine, now built PER NODE (the fix for
     the Scheduling Group Construction bug -- see module docstring):
@@ -395,7 +421,8 @@ def build_topology(num_cores=32, cores_per_pair=2, pairs_per_node=4,
     all_cores = []
     next_id = 0
     for n in range(num_nodes):
-        node, node_cores = build_node(n, next_id, cores_per_pair, pairs_per_node, load_model=load_model)
+        node, node_cores = build_node(n, next_id, cores_per_pair, pairs_per_node,
+                                       load_model=load_model, time_slice=time_slice)
         nodes.append(node)
         all_cores.extend(node_cores)
         next_id += cores_per_node

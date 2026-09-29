@@ -12,7 +12,21 @@ from Eventlog import EventLog
 
 def run_simulation(profile_name, balancer_cls, intensity_level="medium",
                     intensity_overrides=None, num_cores=32, n_tasks=200,
-                    seed=42, balancer_kwargs=None, extra_processes=None, load_model="runnable"):
+                    seed=42, balancer_kwargs=None, extra_processes=None, load_model="runnable",
+                    time_slice=2.8, placement_root="own"):
+    # TASK 8 FIX 6 (2026-09-29, docs/FIDELITY_AUDIT.md §10): time_slice
+    # defaults to 2.8 -- the EFFECTIVE sysctl_sched_base_slice for a
+    # >=8-CPU machine under default tunable scaling, not the module
+    # constant TIME_SLICE=4 every run before this task used
+    # unconditionally. Pass time_slice=4 explicitly to reproduce a
+    # pre-Task-8 run's exact scheduling granularity.
+    # TASK 8 FIX 3 (docs/FIDELITY_AUDIT.md §11): placement_root="own"
+    # (DEFAULT since 2026-09-29, following the Step 2 baseline-only
+    # ablation) descends from the entry core's own per-node machine
+    # domain. Pass placement_root="fixed" explicitly to reproduce
+    # pre-Task-8 behavior (always machines[0], the node-0-anchored root
+    # every caller used to be handed regardless of the task's actual
+    # node -- see Placement.py).
     # FINAL CONFIGURATION (2026-09-27i, see Readme.md): load_model
     # defaults to "runnable" (Fix C's queue-aware PELT signal, distinct
     # util_avg vs load_avg) -- "legacy" (the original conflated,
@@ -34,7 +48,7 @@ def run_simulation(profile_name, balancer_cls, intensity_level="medium",
     balancer_kwargs = balancer_kwargs or {}
 
     machine, cores = build_topology(num_cores, cores_per_pair=2, pairs_per_node=4, nodes_in_one_hop=3,
-                                     load_model=load_model)
+                                     load_model=load_model, time_slice=time_slice)
     cores_by_id = {c.core_id: c for c in cores}
 
     balancer = balancer_cls(machine, cores_by_id, logger=logger, seed=seed, **balancer_kwargs)
@@ -72,7 +86,8 @@ def run_simulation(profile_name, balancer_cls, intensity_level="medium",
                 "must always supply one now (Fix 3d); a None here means something bypassed "
                 "the generator's plan and would reintroduce shared-random contamination."
             )
-            target = select_core_for_task(task, entry_core, cores_by_id, machine=machine)
+            target = select_core_for_task(task, entry_core, cores_by_id, machine=machine,
+                                           placement_root=placement_root)
         target.enqueue(task, vruntime_baseline=target.avg_vruntime())
         logger.log(env.now, "arrival", task_id=task.task_id, core=target.core_id)
         balancer.on_task_placed(target, env.now)

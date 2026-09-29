@@ -18,8 +18,21 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "simulator"
 import csv
 import itertools
 import math
+import os
 import statistics
 import sys
+
+# TASK 8 v2 RE-RUN (2026-09-29, docs/NOTEBOOK.md 2026-09-29c pre-
+# registration, Step 4 "prepare, don't run"): TASK8_V2=1 in the
+# environment writes to _v2-suffixed output files instead of
+# overwriting the original grid CSVs -- SAME seeds as the original grid
+# (only the code's defaults changed, in Step 3, not this script), so
+# the v2 run automatically picks up checker_model="kernel"/
+# busy_factor=16/cache_hot=True/numa_fix=True (LoadBalancer/
+# BurstAwareLoadBalancer's own new defaults) and time_slice=2.8/
+# placement_root="own" (run_simulation()'s new defaults) without any
+# kwarg changes here.
+V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 
 from Main import run_simulation
 from LoadBalancer import LoadBalancer
@@ -202,17 +215,17 @@ def main():
                   f"harm={any_significant_harm}  fires={summary['detector_fires']:.1f} "
                   f"recall={summary['recall']}  precision={summary['precision']}")
 
-    with open(f"results_task6_threshold_grid_{workload_key}{chunk_suffix}_perseed.csv", "w", newline="") as f:
+    with open(f"results_task6_threshold_grid{V2_SUFFIX}_{workload_key}{chunk_suffix}_perseed.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(per_seed_rows[0].keys()))
         w.writeheader()
         w.writerows(per_seed_rows)
 
-    with open(f"results_task6_threshold_grid_{workload_key}{chunk_suffix}_summary.csv", "w", newline="") as f:
+    with open(f"results_task6_threshold_grid{V2_SUFFIX}_{workload_key}{chunk_suffix}_summary.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
         w.writeheader()
         w.writerows(summary_rows)
 
-    print(f"\nWrote results_task6_threshold_grid_{workload_key}{chunk_suffix}_perseed.csv and _summary.csv")
+    print(f"\nWrote results_task6_threshold_grid{V2_SUFFIX}_{workload_key}{chunk_suffix}_perseed.csv and _summary.csv")
 
 
 if __name__ == "__main__":

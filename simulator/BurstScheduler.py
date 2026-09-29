@@ -29,13 +29,35 @@ class BurstAwareLoadBalancer(LoadBalancer):
     # pre-2026-09-27i behavior.
     def __init__(self, machine_domain, cores_by_id, logger=None, migration_penalty=0.0,
                  newidle_mode="transition", seed=0, per_cpu_last_balance=True,
-                 imbalance_model="kernel", checker_model="legacy",
+                 imbalance_model="kernel", checker_model="kernel",
+                 busy_factor=16, cache_hot=True, numa_fix=True,
                  burst_resets_timer=False, **detector_kwargs):
+        # TASK 8 (2026-09-29, NOTEBOOK.md 2026-09-29c/d): busy_factor/
+        # cache_hot/numa_fix forwarded straight through to LoadBalancer --
+        # they affect the SHARED _balance_domain()/migrate_*() pipeline
+        # this class's on_task_placed() calls into (see FIDELITY_AUDIT.md
+        # §13), same as periodic/newidle. DEFAULTS CHANGED 2026-09-29 to
+        # match LoadBalancer's own new defaults (16/True/True) --
+        # pass busy_factor=1, cache_hot=False, numa_fix=False explicitly
+        # to reproduce pre-Task-8 behavior. Note: busy_factor only ever
+        # matters for periodic_balance()'s own interval check, which this
+        # class never calls -- forwarded here only so the SAME balancer
+        # instance's `self.busy_factor` attribute exists and is
+        # consistent, not because the burst trigger itself uses it.
+        # checker_model also defaults to "kernel" now for consistency,
+        # but (FIDELITY_AUDIT.md §13, §3) has NO effect on the burst
+        # path's own checker election -- on_task_placed() calls
+        # _find_checker(domain) with no from_core (BurstScheduler.py
+        # below), which always takes the legacy whole-span-election
+        # branch regardless of this setting. Unchanged, by design (see
+        # NOTEBOOK.md 2026-09-29c's pre-registration: "Burst path:
+        # UNCHANGED").
         super().__init__(machine_domain, cores_by_id, migration_penalty=migration_penalty,
                           newidle_mode=newidle_mode, seed=seed,
                           per_cpu_last_balance=per_cpu_last_balance,
                           imbalance_model=imbalance_model,
-                          checker_model=checker_model)
+                          checker_model=checker_model,
+                          busy_factor=busy_factor, cache_hot=cache_hot, numa_fix=numa_fix)
         self.detector = BurstDetector(**detector_kwargs)
         self.logger = logger
         self.burst_triggers = 0

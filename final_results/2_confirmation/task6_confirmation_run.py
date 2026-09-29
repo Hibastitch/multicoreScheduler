@@ -18,8 +18,21 @@ import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "simulator"))
 import csv
 import math
+import os
 import statistics
 import sys
+
+# TASK 8 v2 RE-RUN (2026-09-29, docs/NOTEBOOK.md 2026-09-29c pre-
+# registration, Step 4 "prepare, don't run"): TASK8_V2=1 in the
+# environment (a) shifts every workload's seed_base by +20000 -- FRESH
+# 40000+ seeds, 100 apart per workload, matching the existing spacing
+# pattern, never used by the original 20000+ confirmation run, Task 7's
+# 30000+ audit, or Task 8's own 50000+/60000+ audit scripts -- and (b)
+# writes to _v2-suffixed output files instead of overwriting the
+# original confirmation CSVs. The code's defaults already carry the six
+# fidelity fixes (Step 3) with no kwarg changes needed here.
+V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
+V2_SEED_OFFSET = 20000 if os.environ.get("TASK8_V2") else 0
 
 from Main import run_simulation
 from LoadBalancer import LoadBalancer
@@ -64,6 +77,10 @@ for _rate in [0.5, 0.75, 1.0, 1.5, 3.0]:
             n_tasks=_size * 10, seed_base=_RATE_SEED_BASE,
         )
         _RATE_SEED_BASE += 100
+
+if V2_SEED_OFFSET:
+    for _wl in WORKLOADS.values():
+        _wl["seed_base"] += V2_SEED_OFFSET
 
 METRICS = ["p95_wait", "p99_wait", "avg_wait", "avg_slowdown", "p95_slowdown", "makespan_excess"]
 COST_METRICS = ["sched_cores_scanned", "burst_balance_levels_walked", "total_migrations"]
@@ -185,17 +202,17 @@ def main():
                   f"harm={any_harm} fires={summary['detector_fires']:.1f} "
                   f"cores_scanned_pct={summary['sched_cores_scanned_pct']:+.1f}%")
 
-    with open(f"results_task6_confirmation_{workload_key}_perseed.csv", "w", newline="") as f:
+    with open(f"results_task6_confirmation{V2_SUFFIX}_{workload_key}_perseed.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(per_seed_rows[0].keys()))
         w.writeheader()
         w.writerows(per_seed_rows)
 
-    with open(f"results_task6_confirmation_{workload_key}_summary.csv", "w", newline="") as f:
+    with open(f"results_task6_confirmation{V2_SUFFIX}_{workload_key}_summary.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
         w.writeheader()
         w.writerows(summary_rows)
 
-    print(f"\nWrote results_task6_confirmation_{workload_key}_perseed.csv and _summary.csv")
+    print(f"\nWrote results_task6_confirmation{V2_SUFFIX}_{workload_key}_perseed.csv and _summary.csv")
 
 
 if __name__ == "__main__":

@@ -24,10 +24,16 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "simulator"
 import csv
 import glob
 import math
+import os
 
 from paired_compare import wilcoxon_signed_rank, format_p, TIE_TOLERANCE
 
 METRICS = ["p95_wait", "avg_wait", "avg_slowdown"]
+
+# TASK 8 v2 RE-RUN (2026-09-29, Step 4): TASK8_V2=1 reads the _v2-
+# suffixed grid CSVs. tradeoff.py and harm_breakdown.py both import
+# load_rows() from here, so this one change propagates to both.
+V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 
 
 def sign_p(wins, n):
@@ -40,7 +46,9 @@ def sign_p(wins, n):
 
 def load_rows():
     rows = []
-    for path in glob.glob("results_task6_threshold_grid_*_perseed.csv"):
+    for path in glob.glob(f"results_task6_threshold_grid{V2_SUFFIX}_*_perseed.csv"):
+        if V2_SUFFIX == "" and "_v2_" in path:
+            continue  # non-v2 mode must not also pick up v2 files
         with open(path, newline="") as f:
             rows.extend(csv.DictReader(f))
     return rows

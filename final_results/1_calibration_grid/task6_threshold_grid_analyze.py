@@ -8,9 +8,17 @@ the largest mean p95_wait reduction on stacked_burst medium/high.
 
 import csv
 import glob
+import os
+
+# TASK 8 v2 RE-RUN (2026-09-29, Step 4): TASK8_V2=1 reads the _v2-
+# suffixed grid CSVs instead of the original ones. No new simulations
+# either way -- this script only merges existing CSVs.
+V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 
 rows = []
-for path in glob.glob("results_task6_threshold_grid_*_summary.csv"):
+for path in glob.glob(f"results_task6_threshold_grid{V2_SUFFIX}_*_summary.csv"):
+    if V2_SUFFIX == "" and "_v2_" in path:
+        continue  # non-v2 mode must not also pick up v2 files
     rows.extend(csv.DictReader(open(path)))
 
 configs = sorted(set(r["config"] for r in rows))

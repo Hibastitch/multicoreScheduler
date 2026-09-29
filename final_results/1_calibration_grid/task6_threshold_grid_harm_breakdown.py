@@ -7,9 +7,15 @@ rather than a third copy of the same rule.
 """
 
 import csv
+import os
 
 from task6_threshold_grid_tradeoff import compute_results
 from paired_compare import format_p
+
+# TASK 8 v2 RE-RUN (2026-09-29, Step 4): TASK8_V2=1 writes a _v2-
+# suffixed output -- compute_results() already reads _v2 inputs via
+# task6_threshold_grid_recompute_harm.load_rows()'s own V2_SUFFIX.
+V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 
 
 def main():
@@ -26,12 +32,12 @@ def main():
                 ))
 
     rows.sort(key=lambda r: (r["workload"], r["penalty"], r["config"], r["metric"]))
-    with open("harm_breakdown.csv", "w", newline="") as f:
+    with open(f"harm_breakdown{V2_SUFFIX}.csv", "w", newline="") as f:
         cols = ["config", "workload", "penalty", "metric", "pct", "wins", "harms", "ties", "n_eff", "sign_p"]
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
         w.writerows(rows)
-    print(f"Wrote harm_breakdown.csv ({len(rows)} rows)")
+    print(f"Wrote harm_breakdown{V2_SUFFIX}.csv ({len(rows)} rows)")
 
     print("\n=== bursty_high_s64 penalty=2.0 ===")
     for r in rows:

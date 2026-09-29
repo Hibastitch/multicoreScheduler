@@ -12,6 +12,7 @@ loop body is reproduced exactly, not altered).
 """
 
 import csv
+import os
 import sys
 
 import matplotlib
@@ -20,6 +21,13 @@ import matplotlib.pyplot as plt
 
 from task6_threshold_grid_recompute_harm import sign_p, load_rows, METRICS
 from paired_compare import TIE_TOLERANCE
+
+# TASK 8 v2 RE-RUN (2026-09-29, Step 4): TASK8_V2=1 writes _v2-suffixed
+# outputs and SKIPS the EXPECTED_HARM/EXPECTED_BENEFIT mismatch gate
+# below -- those are v1-run reference values; a v2 run is expected to
+# differ (that's the whole point) and must not abort on a "mismatch"
+# that just means the fidelity fixes changed something.
+V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 
 EXPECTED_HARM = {
     "q2_a1.5_and": 0, "q4_a1.5_or": 0, "q8_a0.8_and": 0, "q8_a1.5_and": 0,
@@ -119,20 +127,24 @@ def main():
     for p in sorted(points, key=lambda p: p["config"]):
         print(f"{p['config']:16} {p['harm_count']:4}  {p['benefit_score']:6.2f}   {p['harmed_workloads']}")
 
-    if mismatches:
+    if V2_SUFFIX:
+        print(f"\n(TASK8_V2 mode: skipping the v1-reference mismatch gate below -- "
+              f"a v2 run is EXPECTED to differ from the original grid's values.)")
+    elif mismatches:
         print("\nMISMATCH between computed values and threshold_grid_analysis.txt -- STOPPING:")
         for m in mismatches:
             print("  " + m)
         sys.exit(1)
-    print("\nAll 12 harm_count and 4 benefit_score values match threshold_grid_analysis.txt exactly.")
+    else:
+        print("\nAll 12 harm_count and 4 benefit_score values match threshold_grid_analysis.txt exactly.")
 
-    with open("tradeoff_points.csv", "w", newline="") as f:
+    with open(f"tradeoff_points{V2_SUFFIX}.csv", "w", newline="") as f:
         cols = ["config", "combine", "q", "a", "harm_count", "harmed_workloads", "benefit_score",
                 "stacked_medium_p0", "stacked_medium_p2", "stacked_high_p0", "stacked_high_p2"]
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
         w.writerows(points)
-    print("Wrote tradeoff_points.csv")
+    print(f"Wrote tradeoff_points{V2_SUFFIX}.csv")
 
     make_plot(points)
 
@@ -242,9 +254,9 @@ def make_plot(points):
     for spine in ["top", "right"]:
         ax.spines[spine].set_visible(False)
     fig.tight_layout(pad=0.4)
-    fig.savefig("figure_threshold_grid_tradeoff.png", dpi=300)
-    fig.savefig("figure_threshold_grid_tradeoff.pdf")
-    print("Wrote figure_threshold_grid_tradeoff.png and .pdf")
+    fig.savefig(f"figure_threshold_grid_tradeoff{V2_SUFFIX}.png", dpi=300)
+    fig.savefig(f"figure_threshold_grid_tradeoff{V2_SUFFIX}.pdf")
+    print(f"Wrote figure_threshold_grid_tradeoff{V2_SUFFIX}.png and .pdf")
 
 
 if __name__ == "__main__":

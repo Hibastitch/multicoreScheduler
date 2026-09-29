@@ -10,12 +10,18 @@ import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "simulator"))
 import csv
 import glob
+import os
 
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from paired_compare import format_p
+
+# TASK 8 v2 RE-RUN (2026-09-29, Step 4): TASK8_V2=1 reads the _v2-
+# suffixed confirmation CSVs and writes _v2-suffixed outputs. No new
+# simulations either way -- this script only merges + plots.
+V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 
 METRICS = ["p95_wait", "p99_wait", "avg_wait", "avg_slowdown", "p95_slowdown", "makespan_excess"]
 COST_METRICS = ["sched_cores_scanned", "burst_balance_levels_walked", "total_migrations"]
@@ -31,7 +37,9 @@ WORKLOAD_ORDER = [
 
 def load_rows():
     rows = []
-    for path in glob.glob("results_task6_confirmation_*_summary.csv"):
+    for path in glob.glob(f"results_task6_confirmation{V2_SUFFIX}_*_summary.csv"):
+        if V2_SUFFIX == "" and "_v2_" in path:
+            continue  # non-v2 mode must not also pick up v2 files
         rows.extend(csv.DictReader(open(path)))
     return rows
 
@@ -44,7 +52,7 @@ def fnum(r, k):
 def main():
     rows = load_rows()
     print(f"Loaded {len(rows)} summary rows from "
-          f"{len(glob.glob('results_task6_confirmation_*_summary.csv'))} files")
+          f"{len(glob.glob(f'results_task6_confirmation{V2_SUFFIX}_*_summary.csv'))} files")
 
     def get(workload, penalty, variant):
         for r in rows:
@@ -79,11 +87,11 @@ def main():
             cols += [f"{m}_base", f"{m}_var", f"{m}_pct", f"{m}_sign_p", f"{m}_harm", f"{m}_floored"]
         for cm in COST_METRICS:
             cols += [f"{cm}_base", f"{cm}_var", f"{cm}_pct"]
-        with open("results_task6_confirmation_MAIN_TABLE.csv", "w", newline="") as f:
+        with open(f"results_task6_confirmation{V2_SUFFIX}_MAIN_TABLE.csv", "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
             w.writeheader()
             w.writerows(main_table_rows)
-        print("\nWrote results_task6_confirmation_MAIN_TABLE.csv")
+        print(f"\nWrote results_task6_confirmation{V2_SUFFIX}_MAIN_TABLE.csv")
 
     # ================= RQ4: cost vs benefit =================
     print("\n" + "=" * 130)
@@ -144,8 +152,8 @@ def main():
     axes[0].legend(fontsize=8, loc="best")
     fig.suptitle("Burst-aware p95_wait change vs arrival rate -- final (calibrated) vs original detector")
     fig.tight_layout()
-    fig.savefig("figure_p95wait_vs_arrival_rate.png", dpi=150)
-    print("\nWrote figure_p95wait_vs_arrival_rate.png")
+    fig.savefig(f"figure_p95wait_vs_arrival_rate{V2_SUFFIX}.png", dpi=150)
+    print(f"\nWrote figure_p95wait_vs_arrival_rate{V2_SUFFIX}.png")
 
 
 if __name__ == "__main__":

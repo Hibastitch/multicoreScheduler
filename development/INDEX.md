@@ -79,6 +79,13 @@ togglable without editing simulator files.
   blocks tasks that have ACTUALLY run recently), a much smaller scope than
   originally assumed in `docs/FIDELITY_AUDIT.md`'s first pass.
 
+- `task8_step2_baseline_ablation.py` — Task 8 Step 2: baseline-only ablation
+  of the 6 fidelity fixes (checker_model, busy_factor, placement_root,
+  cache_hot, numa_fix, time_slice), each alone and all six together, vs
+  all-legacy. LoadBalancer only (burst-aware not run), 10 seeds (60000+),
+  5 workloads. Headline table: `docs/FIDELITY_AUDIT.md` §15.
+- `results_task8_step2_ablation_perseed.csv`, `_summary.csv` — its output.
+
 ## sweeps_precalibration/ — burst-size / interval sweeps before the detector was calibrated
 
 - `task6_sweeps_v2.py` — corrected-duration burst-size and inter-burst-interval sweeps.

@@ -17,10 +17,25 @@ dated investigation; this file is only the map and the final answer.
   the busy→idle edge, not a polling EMA).
 - **Detector = `q2_a1.5_and`**: `queue_growth_threshold=2`,
   `arrival_rate_threshold=1.5`, `combine="and"`; `burst_resets_timer=False`.
-- All of the above are now the plain constructor defaults in
-  `simulator/` — no kwargs needed to get the final configuration; the
-  old (pre-2026-09-27i) values are still reachable by passing them
-  explicitly (see `simulator/LoadBalancer.py`/`BurstDetector.py`).
+- **Fidelity fixes 1-6 (2026-09-29, Task 8, see `docs/FIDELITY_AUDIT.md`
+  and `docs/NOTEBOOK.md`'s 2026-09-29c/d/e entries)**: `checker_model=
+  "kernel"` (real `should_we_balance()` election), `busy_factor=16`
+  (real `get_sd_balance_interval()` busy-CPU interval scaling),
+  `placement_root="own"` (fork-path placement anchored to the entry
+  core's own node, not a fixed node-0 root), `cache_hot=True` (real
+  `task_hot()`/`can_migrate_task()` cache-hot migration refusal),
+  `numa_fix=True` (corrected `NUMA_IMBALANCE_MIN`/`imb_numa_nr`
+  constants, and `adjust_numa_imbalance()` no longer applied outside its
+  real call site), `time_slice=2.8` (the EFFECTIVE, boot-scaled
+  `sysctl_sched_base_slice` for a >=8-CPU machine, not the raw 0.7ms
+  default). Baseline-only ablation of all six, individually and
+  together: `docs/FIDELITY_AUDIT.md` §15.
+- All of the above are now the plain constructor/`run_simulation()`
+  defaults in `simulator/` — no kwargs needed to get the final
+  configuration; every old (pre-2026-09-27i, and separately
+  pre-2026-09-29 for the six fidelity fixes) value is still reachable by
+  passing it explicitly (see `simulator/LoadBalancer.py`/
+  `BurstDetector.py`/`Main.py`'s `run_simulation()`).
 
 ## Folder guide
 

@@ -13,12 +13,13 @@ Nothing here recomputes harm with the old, direction-blind rule.
 
 import csv
 import glob
+import os
 
-from task6_confirmation_analyze import WORKLOAD_ORDER, METRICS, COST_METRICS, load_rows, fnum
+from task6_confirmation_analyze import WORKLOAD_ORDER, METRICS, COST_METRICS, load_rows, fnum, V2_SUFFIX
 
 VARIANT_TABLES = {
-    "original_q2_a0.8_or": "results_task6_confirmation_TABLE_original.csv",
-    "runner_up_q4_a1.5_or": "results_task6_confirmation_TABLE_runnerup.csv",
+    "original_q2_a0.8_or": f"results_task6_confirmation{V2_SUFFIX}_TABLE_original.csv",
+    "runner_up_q4_a1.5_or": f"results_task6_confirmation{V2_SUFFIX}_TABLE_runnerup.csv",
 }
 
 
@@ -249,14 +250,14 @@ def write_compact_markdown(compact_rows, out_path):
 def main():
     rows = load_rows()
     print(f"Loaded {len(rows)} summary rows from "
-          f"{len(glob.glob('results_task6_confirmation_*_summary.csv'))} files")
+          f"{len(glob.glob(f'results_task6_confirmation{V2_SUFFIX}_*_summary.csv'))} files")
 
     for variant, out_path in VARIANT_TABLES.items():
         write_variant_table(rows, variant, out_path)
 
     compact_rows = build_compact_table(rows)
-    write_compact_csv(compact_rows, "results_task6_confirmation_COMPACT_TABLE.csv")
-    write_compact_markdown(compact_rows, "results_task6_confirmation_COMPACT_TABLE.md")
+    write_compact_csv(compact_rows, f"results_task6_confirmation{V2_SUFFIX}_COMPACT_TABLE.csv")
+    write_compact_markdown(compact_rows, f"results_task6_confirmation{V2_SUFFIX}_COMPACT_TABLE.md")
 
     print("\nGroup counts:")
     from collections import Counter
