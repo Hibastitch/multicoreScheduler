@@ -86,6 +86,32 @@ togglable without editing simulator files.
   5 workloads. Headline table: `docs/FIDELITY_AUDIT.md` §15.
 - `results_task8_step2_ablation_perseed.csv`, `_summary.csv` — its output.
 
+## task9_gap_gate_diagnostic/ — what the gap gate is actually doing on the v3 confirmation harm cell
+
+Diagnostic only (2026-09-30, see `docs/NOTEBOOK.md`'s entry of the same
+date for the full writeup) -- no rule changed, no simulator file
+edited. Answers why `selected_gated` shows disqualifying harm on
+`bursty_high_s64`/penalty=0 (`avg_wait`) in the v3 confirmation but not
+on `stacked_high`.
+
+- `task9_gap_gate_diagnostic.py` — 5 fresh seeds (95000+/95100+, never
+  used elsewhere) per (workload, config, penalty); monkeypatches
+  `LoadBalancer._do_migrate` at the class level for the duration of
+  each run only (tag + `task.last_ran_until` observed, original
+  delegated to unchanged) to get a tag/already-ran breakdown no saved
+  CSV has. `selected_gated` vs `selected_ungated`, `bursty_high_s64`
+  vs `stacked_high`, penalties 0/0.5/2.
+- `results_task9_gap_gate_diagnostic_summary.csv`, `_perseed.csv` — its
+  output. Headline: the gate blocks few domains on either workload
+  (~4%); the real driver is Task 9a's `ran_only` exposure -- 82-90% of
+  `bursty_high_s64`'s burst-tagged migrations move an already-run
+  (warm) task (penalty charged), vs only 18-24% on `stacked_high`. The
+  gate does not reduce the `bursty_high_s64` harm (confirmation CSVs:
+  gated avg_wait +3.67%/significant vs ungated +0.22%/not significant,
+  penalty=0) -- if anything it makes this cell WORSE, moving more
+  already-warm tasks per triggered domain via its least-loaded-core
+  destination choice.
+
 ## sweeps_precalibration/ — burst-size / interval sweeps before the detector was calibrated
 
 - `task6_sweeps_v2.py` — corrected-duration burst-size and inter-burst-interval sweeps.

@@ -3311,3 +3311,71 @@ finds is what gets reported.
 
 **Not done, per instruction:** no code was changed before this entry was
 committed. Step 2 (implementation) follows as its own commit.
+
+## 2026-09-30 — Task 9 diagnostic: what the gap gate is actually doing on the one confirmation-harm cell
+
+Diagnostic only, run at the user's request after the v3 confirmation
+compact table fix (see the commit before this one) surfaced
+`selected_gated` (q4_a1.5_and, gated) showing significant disqualifying
+harm on `bursty_high_s64` at penalty=0 (`avg_wait` +3.67%, 22/30 seeds
+harmed, sign_p=0.016). **Not part of the confirmation or selection
+process -- no rule changed, no simulator file was edited.**
+`development/task9_gap_gate_diagnostic/task9_gap_gate_diagnostic.py`
+monkeypatches `LoadBalancer._do_migrate` at the class level for the
+duration of each run only (records `tag` + whether
+`task.last_ran_until is not None`, then calls the untouched original),
+restored immediately after -- every run's actual outcome is bit-for-bit
+what the unmodified simulator would have produced.
+
+No raw event logs exist on disk for the confirmation runs (the
+per-seed CSVs only ever saved summary metrics), so this ran 5 FRESH
+seeds per (workload, config, penalty) at 95000-95004
+(`bursty_high_s64`) and 95100-95104 (`stacked_high`), never used by any
+prior grid/confirmation/audit range in this repo. Two workloads: the
+one harmful cell (`bursty_high_s64`) and a clear "gated helps" cell
+(`stacked_high`), for contrast. Output:
+`development/task9_gap_gate_diagnostic/results_task9_gap_gate_diagnostic_{summary,perseed}.csv`.
+
+**Mean per run, penalty=0:**
+
+| workload | config | detector_fires | domains allowed/blocked | mig burst | of which already-ran |
+|---|---|---|---|---|---|
+| bursty_high_s64 | selected_gated | 200.8 | 123.2 / 5.6 | 126.6 | 103.8 (82.0%) |
+| bursty_high_s64 | selected_ungated | 179.6 | 125.6 / 0.0 | 102.4 | 91.6 (89.5%) |
+| stacked_high | selected_gated | 132.0 | 49.2 / 2.0 | 88.4 | 16.0 (18.1%) |
+| stacked_high | selected_ungated | 145.4 | 51.2 / 0.0 | 85.2 | 17.8 (20.9%) |
+
+(baseline's burst-tagged migrations are always exactly 0, structurally
+-- it never calls `BurstAwareLoadBalancer.on_task_placed`, not an
+empirical finding.)
+
+Two things stand out. First, the gate blocks very few domains on
+either workload (4.3% of `bursty_high_s64`'s domain visits, ~3.9% of
+`stacked_high`'s at gap<2) -- it is not doing much filtering here.
+Second, and this is the mechanistic answer to "why does bursty_high_s64
+harm": on `bursty_high_s64`, 82-90% of burst-tagged migrations move a
+task that has ALREADY run at least once, so under
+`penalty_model="ran_only"` almost every one of those migrations gets
+charged the penalty -- burst-triggered balancing here is mostly moving
+warm, already-running tasks, not fresh ones. On `stacked_high` the
+already-ran fraction is only 18-24%: most burst-tagged migrations there
+move a task that has never run, so `ran_only` waives the penalty on
+most of them. Same mechanism (Task 9a), opposite exposure, on the two
+workloads -- consistent with one showing harm and the other showing a
+clean win.
+
+**Did the gate reduce the avg_wait harm? No -- from the existing
+confirmation CSVs** (`results_task6_confirmation_v3_bursty_high_s64_summary.csv`,
+penalty=0.0): `selected_gated` avg_wait = +3.67% (22 harms / 8 wins,
+sign_p=0.016, `any_harm=True`); `selected_ungated` avg_wait = +0.22%
+(15/15 exact split, sign_p=1.0, `any_harm=False`). Gating made this
+cell WORSE, not better. The diagnostic is consistent with why: gated
+produces MORE burst migrations here (126.6 vs 102.4/run) and a similar
+already-ran fraction, i.e. more penalty-charged already-warm-task
+moves, not fewer -- because the gate's destination choice (the
+explicitly least-loaded core, replacing the legacy
+first-idle-or-lowest-id checker) measures a larger imbalance against
+`_balance_domain()`'s src, so more tasks get moved per domain that
+passes the gate, even though the gate itself skips very few domains.
+Reported here as a mechanistic finding, not adjudicated -- this does
+not change the confirmation result, the selection, or any default.
