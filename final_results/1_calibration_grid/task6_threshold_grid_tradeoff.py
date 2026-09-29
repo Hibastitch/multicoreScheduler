@@ -12,6 +12,7 @@ loop body is reproduced exactly, not altered).
 """
 
 import csv
+import json
 import os
 import sys
 
@@ -28,6 +29,31 @@ from paired_compare import TIE_TOLERANCE
 # differ (that's the whole point) and must not abort on a "mismatch"
 # that just means the fidelity fixes changed something.
 V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
+
+# TASK 9 v3 RE-RUN (2026-09-29, Step 4): TASK9_V3=1 writes _v3-suffixed
+# outputs, applies rule (e) (only penalties 0/0.5 count toward harm_count
+# and benefit_score; 2ms is still recorded in the CSV for visibility but
+# excluded from both), and reads SELECTED/RUNNER_UP from
+# selected_config_v3.json (written by task6_threshold_grid_recompute_
+# harm.py's v3 mode) instead of the hardcoded v1 constants -- also skips
+# the EXPECTED_HARM/EXPECTED_BENEFIT gate, same reasoning as v2.
+V3 = bool(os.environ.get("TASK9_V3"))
+V3_SUFFIX = "_v3" if V3 else ""
+SUFFIX = V3_SUFFIX or V2_SUFFIX
+RULE_PENALTIES = {"0.0", "0.5"} if V3 else {"0.0", "2.0"}
+ALL_PENALTIES = ["0.0", "0.5", "2.0"] if V3 else ["0.0", "2.0"]
+
+
+def _pen_key(pen):
+    # v1/v2 keeps the ORIGINAL "p0"/"p2" scheme (pen[0]) -- unambiguous
+    # there since penalties are only ever "0.0"/"2.0". v3 has 3
+    # penalties, where pen[0] would collide "0.0" and "0.5" both to
+    # "p0" -- uses "p0_0"/"p0_5"/"p2_0" instead.
+    return f"p{pen.replace('.', '_')}" if V3 else f"p{pen[0]}"
+
+
+SELECTED_DEFAULT = "q2_a1.5_and"  # v1's own pre-registered selection -- unused when V3
+RUNNER_UP_DEFAULT = "q4_a1.5_or"
 
 EXPECTED_HARM = {
     "q2_a1.5_and": 0, "q4_a1.5_or": 0, "q8_a0.8_and": 0, "q8_a1.5_and": 0,
@@ -99,37 +125,45 @@ def main():
     for cfg in configs:
         cfg_recs = [r for r in results if r["config"] == cfg]
 
-        harmed_workloads = sorted(set(r["workload"] for r in cfg_recs if r["any_new_harm"]))
+        # TASK 9 rule (e): only DISQUALIFYING penalties count toward
+        # harm_count/benefit_score -- a no-op filter in v1/v2
+        # (RULE_PENALTIES covers every penalty those grids have).
+        harmed_workloads = sorted(set(r["workload"] for r in cfg_recs
+                                       if r["any_new_harm"] and r["penalty"] in RULE_PENALTIES))
         harm_count = len(harmed_workloads)
 
         vals = {}
         for wl in ["stacked_medium", "stacked_high"]:
-            for pen in ["0.0", "2.0"]:
-                rec = next(r for r in cfg_recs if r["workload"] == wl and r["penalty"] == pen)
-                vals[f"{wl}_p{pen[0]}"] = rec["per_metric"]["p95_wait"]["pct"]
-        benefit_score = -sum(vals.values()) / len(vals)  # pct is negative for a reduction
+            for pen in ALL_PENALTIES:
+                rec = next((r for r in cfg_recs if r["workload"] == wl and r["penalty"] == pen), None)
+                if rec is not None:
+                    vals[f"{wl}_{_pen_key(pen)}"] = rec["per_metric"]["p95_wait"]["pct"]
+        benefit_vals = {k: v for k, v in vals.items()
+                         if any(k == f"{wl}_{_pen_key(pen)}" for wl in ["stacked_medium", "stacked_high"]
+                                for pen in RULE_PENALTIES)}
+        benefit_score = -sum(benefit_vals.values()) / len(benefit_vals)  # pct is negative for a reduction
 
         q, a, combine = parse_config(cfg)
         points.append(dict(
             config=cfg, combine=combine, q=q, a=a,
             harm_count=harm_count, harmed_workloads=";".join(harmed_workloads),
-            benefit_score=benefit_score,
-            stacked_medium_p0=vals["stacked_medium_p0"], stacked_medium_p2=vals["stacked_medium_p2"],
-            stacked_high_p0=vals["stacked_high_p0"], stacked_high_p2=vals["stacked_high_p2"],
+            benefit_score=benefit_score, **vals,
         ))
 
-        if EXPECTED_HARM.get(cfg) != harm_count:
-            mismatches.append(f"{cfg}: harm_count computed={harm_count} expected={EXPECTED_HARM.get(cfg)}")
-        if cfg in EXPECTED_BENEFIT and abs(EXPECTED_BENEFIT[cfg] - benefit_score) > 0.01:
-            mismatches.append(f"{cfg}: benefit_score computed={benefit_score:.2f} expected={EXPECTED_BENEFIT[cfg]}")
+        if not V3:
+            if EXPECTED_HARM.get(cfg) != harm_count:
+                mismatches.append(f"{cfg}: harm_count computed={harm_count} expected={EXPECTED_HARM.get(cfg)}")
+            if cfg in EXPECTED_BENEFIT and abs(EXPECTED_BENEFIT[cfg] - benefit_score) > 0.01:
+                mismatches.append(f"{cfg}: benefit_score computed={benefit_score:.2f} expected={EXPECTED_BENEFIT[cfg]}")
 
     print(f"{'config':16} harm  benefit   harmed_workloads")
     for p in sorted(points, key=lambda p: p["config"]):
         print(f"{p['config']:16} {p['harm_count']:4}  {p['benefit_score']:6.2f}   {p['harmed_workloads']}")
 
-    if V2_SUFFIX:
-        print(f"\n(TASK8_V2 mode: skipping the v1-reference mismatch gate below -- "
-              f"a v2 run is EXPECTED to differ from the original grid's values.)")
+    if V2_SUFFIX or V3:
+        tag = "TASK9_V3" if V3 else "TASK8_V2"
+        print(f"\n({tag} mode: skipping the v1-reference mismatch gate below -- "
+              f"a {tag} run is EXPECTED to differ from the original grid's values.)")
     elif mismatches:
         print("\nMISMATCH between computed values and threshold_grid_analysis.txt -- STOPPING:")
         for m in mismatches:
@@ -138,18 +172,34 @@ def main():
     else:
         print("\nAll 12 harm_count and 4 benefit_score values match threshold_grid_analysis.txt exactly.")
 
-    with open(f"tradeoff_points{V2_SUFFIX}.csv", "w", newline="") as f:
-        cols = ["config", "combine", "q", "a", "harm_count", "harmed_workloads", "benefit_score",
-                "stacked_medium_p0", "stacked_medium_p2", "stacked_high_p0", "stacked_high_p2"]
+    with open(f"tradeoff_points{SUFFIX}.csv", "w", newline="") as f:
+        cols = ["config", "combine", "q", "a", "harm_count", "harmed_workloads", "benefit_score"] + \
+               [f"{wl}_{_pen_key(pen)}" for wl in ["stacked_medium", "stacked_high"] for pen in ALL_PENALTIES]
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
         w.writerows(points)
-    print(f"Wrote tradeoff_points{V2_SUFFIX}.csv")
+    print(f"Wrote tradeoff_points{SUFFIX}.csv")
 
-    make_plot(points)
+    # TASK 9 v3: SELECTED/RUNNER_UP come from selected_config_v3.json
+    # (written by task6_threshold_grid_recompute_harm.py's v3 mode),
+    # not the hardcoded v1 constants -- None/None (no star, no bold
+    # label) if the file doesn't exist yet or no config was selected.
+    selected, runner_up = SELECTED_DEFAULT, RUNNER_UP_DEFAULT
+    if V3:
+        selected, runner_up = None, None
+        try:
+            with open("selected_config_v3.json") as f:
+                sel = json.load(f)
+            selected = sel["selected"]["config"] if sel.get("selected") else None
+            runner_up = sel["runner_up"]["config"] if sel.get("runner_up") else None
+        except FileNotFoundError:
+            print("\n(selected_config_v3.json not found -- run task6_threshold_grid_recompute_harm.py "
+                  "first. Plotting with no SELECTED/RUNNER_UP marker.)")
+
+    make_plot(points, selected, runner_up)
 
 
-def make_plot(points):
+def make_plot(points, selected=SELECTED_DEFAULT, runner_up=RUNNER_UP_DEFAULT):
     plt.rcParams.update({
         "font.size": 8, "axes.labelsize": 8, "xtick.labelsize": 7, "ytick.labelsize": 7,
         "legend.fontsize": 6.5, "font.family": "sans-serif",
@@ -160,8 +210,8 @@ def make_plot(points):
     ax.axvspan(-0.5, 0.5, color="0.90", zorder=0)
     ax.text(0, ax.get_ylim()[1], "", alpha=0)  # placeholder, ylim set after scatter
 
-    SELECTED = "q2_a1.5_and"
-    RUNNER_UP = "q4_a1.5_or"
+    SELECTED = selected
+    RUNNER_UP = runner_up
 
     # group near-identical points so overlapping dots get ONE marker + combined label
     def key(p):
@@ -254,9 +304,9 @@ def make_plot(points):
     for spine in ["top", "right"]:
         ax.spines[spine].set_visible(False)
     fig.tight_layout(pad=0.4)
-    fig.savefig(f"figure_threshold_grid_tradeoff{V2_SUFFIX}.png", dpi=300)
-    fig.savefig(f"figure_threshold_grid_tradeoff{V2_SUFFIX}.pdf")
-    print(f"Wrote figure_threshold_grid_tradeoff{V2_SUFFIX}.png and .pdf")
+    fig.savefig(f"figure_threshold_grid_tradeoff{SUFFIX}.png", dpi=300)
+    fig.savefig(f"figure_threshold_grid_tradeoff{SUFFIX}.pdf")
+    print(f"Wrote figure_threshold_grid_tradeoff{SUFFIX}.png and .pdf")
 
 
 if __name__ == "__main__":

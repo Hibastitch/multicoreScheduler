@@ -17,6 +17,7 @@ task6_confirmation_analyze.py.)
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "simulator"))
 import csv
+import json
 import math
 import os
 import statistics
@@ -34,6 +35,25 @@ import sys
 V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 V2_SEED_OFFSET = 20000 if os.environ.get("TASK8_V2") else 0
 
+# TASK 9 v3 RE-RUN (2026-09-29, docs/NOTEBOOK.md 2026-09-29h pre-
+# registration (f)/(g), Step 4 "prepare, don't run"): TASK9_V3=1 (a)
+# shifts every workload's seed_base by +60000 from its BASE (20000+)
+# value -- FRESH 80000+ seeds, 100 apart per workload; (b) writes to
+# _v3-suffixed outputs; (c) adds penalty=0.5ms; (d) sets penalty_model=
+# "ran_only" for baseline and every variant (Task 9a, applies
+# universally -- not one of the things compared); (e) replaces the
+# 3-variant VARIANTS dict with rule (g)'s 4: the selected config GATED,
+# the same thresholds UNGATED, the original q2_a0.8_or UNGATED, and the
+# runner-up UNGATED -- read from selected_config_v3.json, written by
+# ../1_calibration_grid/task6_threshold_grid_recompute_harm.py's v3
+# mode (run that first). If no config was selected there (rule (h)),
+# VARIANTS is empty and main() reports that plainly instead of running
+# anything.
+V3 = bool(os.environ.get("TASK9_V3"))
+V3_SUFFIX = "_v3" if V3 else ""
+SUFFIX = V3_SUFFIX or V2_SUFFIX
+V3_SEED_OFFSET = 60000 if V3 else 0
+
 from Main import run_simulation
 from LoadBalancer import LoadBalancer
 from BurstScheduler import BurstAwareLoadBalancer
@@ -41,14 +61,51 @@ from paired_compare import assert_same_workload, wilcoxon_signed_rank, format_p,
 import diagnostics
 
 N_REPS = 30
-PENALTIES = [0.0, 2.0]
+PENALTIES = [0.0, 0.5, 2.0] if V3 else [0.0, 2.0]
 
 # FINAL configuration is now the plain default for both classes (2026-09-27i)
 FINAL_KWARGS = {}
 ORIGINAL_KWARGS = dict(queue_growth_threshold=2, arrival_rate_threshold=0.8, combine="or")
 RUNNER_UP_KWARGS = dict(queue_growth_threshold=4, arrival_rate_threshold=1.5, combine="or")
 
-VARIANTS = {
+
+def _load_v3_variants():
+    """rule (g): 4 variants built from selected_config_v3.json (written
+    by ../1_calibration_grid/task6_threshold_grid_recompute_harm.py's v3
+    mode). Returns {} if that file doesn't exist yet or no config was
+    selected there (rule (h): nothing to confirm)."""
+    path = pathlib.Path(__file__).resolve().parents[1] / "1_calibration_grid" / "selected_config_v3.json"
+    try:
+        with open(path) as f:
+            sel = json.load(f)
+    except FileNotFoundError:
+        print(f"selected_config_v3.json not found at {path} -- run the v3 grid and "
+              f"task6_threshold_grid_recompute_harm.py first.")
+        return {}
+    if not sel.get("selected"):
+        print(f"selected_config_v3.json says NO CONFIG SELECTED (harm_free_configs="
+              f"{sel.get('harm_free_configs')}) -- nothing to confirm, per rule (h).")
+        return {}
+
+    def _thresholds(entry):
+        return dict(queue_growth_threshold=entry["queue_growth_threshold"],
+                    arrival_rate_threshold=entry["arrival_rate_threshold"], combine=entry["combine"])
+
+    selected = _thresholds(sel["selected"])
+    variants = {
+        "selected_gated": dict(selected, burst_gap_gate=True),
+        "selected_ungated": dict(selected, burst_gap_gate=False),
+        "original_q2_a0.8_or_ungated": dict(ORIGINAL_KWARGS, burst_gap_gate=False),
+    }
+    if sel.get("runner_up"):
+        variants["runner_up_ungated"] = dict(_thresholds(sel["runner_up"]), burst_gap_gate=False)
+    else:
+        print("selected_config_v3.json has no runner_up (fewer than 2 harm-free configs) "
+              "-- confirmation will run without a runner-up variant.")
+    return variants
+
+
+VARIANTS = _load_v3_variants() if V3 else {
     "final": FINAL_KWARGS,
     "original_q2_a0.8_or": ORIGINAL_KWARGS,
     "runner_up_q4_a1.5_or": RUNNER_UP_KWARGS,
@@ -78,9 +135,10 @@ for _rate in [0.5, 0.75, 1.0, 1.5, 3.0]:
         )
         _RATE_SEED_BASE += 100
 
-if V2_SEED_OFFSET:
+_SEED_OFFSET = V3_SEED_OFFSET or V2_SEED_OFFSET
+if _SEED_OFFSET:
     for _wl in WORKLOADS.values():
-        _wl["seed_base"] += V2_SEED_OFFSET
+        _wl["seed_base"] += _SEED_OFFSET
 
 METRICS = ["p95_wait", "p99_wait", "avg_wait", "avg_slowdown", "p95_slowdown", "makespan_excess"]
 COST_METRICS = ["sched_cores_scanned", "burst_balance_levels_walked", "total_migrations"]
@@ -95,9 +153,15 @@ def sign_p(wins, n):
 
 
 def run_baseline(profile, intensity, seed, penalty, overrides, n_tasks):
+    # TASK 9a: penalty_model="ran_only" applies to baseline too, per the
+    # pre-registration -- it's a cost-model correction, not one of the
+    # 4 things rule (g) compares.
+    kwargs = {"migration_penalty": penalty}
+    if V3:
+        kwargs["penalty_model"] = "ran_only"
     m, b, gt, migs, logger, plan = run_simulation(
         profile, LoadBalancer, intensity_level=intensity, seed=seed,
-        balancer_kwargs={"migration_penalty": penalty}, intensity_overrides=overrides, n_tasks=n_tasks,
+        balancer_kwargs=kwargs, intensity_overrides=overrides, n_tasks=n_tasks,
     )
     s = m.summary(balancer=b, ground_truth_bursts=gt, migration_events=migs)
     row = dict(plan=plan, gt=gt)
@@ -108,6 +172,8 @@ def run_baseline(profile, intensity, seed, penalty, overrides, n_tasks):
 
 def run_variant(profile, intensity, seed, penalty, overrides, n_tasks, variant_kwargs):
     kwargs = dict(variant_kwargs, migration_penalty=penalty)
+    if V3:
+        kwargs["penalty_model"] = "ran_only"  # burst_gap_gate is already IN variant_kwargs for v3
     m, b, gt, migs, logger, plan = run_simulation(
         profile, BurstAwareLoadBalancer, intensity_level=intensity, seed=seed,
         balancer_kwargs=kwargs, intensity_overrides=overrides, n_tasks=n_tasks,
@@ -123,6 +189,15 @@ def run_variant(profile, intensity, seed, penalty, overrides, n_tasks, variant_k
 def main():
     workload_key = sys.argv[1]
     wl = WORKLOADS[workload_key]
+
+    # TASK 9 rule (h): if no config was harm-free in the v3 grid,
+    # _load_v3_variants() already printed why and returned {} --
+    # nothing to confirm. Report and stop, don't crash on an empty
+    # per_seed_rows[0] below.
+    if V3 and not VARIANTS:
+        print(f"\nNO CONFIG SELECTED (see message above) -- {workload_key}: nothing to confirm, "
+              f"per rule (h). No output written.")
+        return
 
     per_seed_rows = []
     summary_rows = []
@@ -202,17 +277,17 @@ def main():
                   f"harm={any_harm} fires={summary['detector_fires']:.1f} "
                   f"cores_scanned_pct={summary['sched_cores_scanned_pct']:+.1f}%")
 
-    with open(f"results_task6_confirmation{V2_SUFFIX}_{workload_key}_perseed.csv", "w", newline="") as f:
+    with open(f"results_task6_confirmation{SUFFIX}_{workload_key}_perseed.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(per_seed_rows[0].keys()))
         w.writeheader()
         w.writerows(per_seed_rows)
 
-    with open(f"results_task6_confirmation{V2_SUFFIX}_{workload_key}_summary.csv", "w", newline="") as f:
+    with open(f"results_task6_confirmation{SUFFIX}_{workload_key}_summary.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
         w.writeheader()
         w.writerows(summary_rows)
 
-    print(f"\nWrote results_task6_confirmation{V2_SUFFIX}_{workload_key}_perseed.csv and _summary.csv")
+    print(f"\nWrote results_task6_confirmation{SUFFIX}_{workload_key}_perseed.csv and _summary.csv")
 
 
 if __name__ == "__main__":

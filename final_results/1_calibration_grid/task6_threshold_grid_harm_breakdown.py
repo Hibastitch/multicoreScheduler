@@ -17,6 +17,15 @@ from paired_compare import format_p
 # task6_threshold_grid_recompute_harm.load_rows()'s own V2_SUFFIX.
 V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 
+# TASK 9 v3 RE-RUN (2026-09-29, Step 4): TASK9_V3=1 writes a _v3-
+# suffixed output. This script deliberately does NOT filter by rule
+# (e)'s disqualifying penalties -- it shows every harmful (config,
+# workload, penalty, metric) cell, INCLUDING penalty=2ms's non-
+# disqualifying-but-still-real harm, which is exactly what rule (e)'s
+# "measured and reported in full" means.
+V3_SUFFIX = "_v3" if os.environ.get("TASK9_V3") else ""
+SUFFIX = V3_SUFFIX or V2_SUFFIX
+
 
 def main():
     results = compute_results()
@@ -32,12 +41,12 @@ def main():
                 ))
 
     rows.sort(key=lambda r: (r["workload"], r["penalty"], r["config"], r["metric"]))
-    with open(f"harm_breakdown{V2_SUFFIX}.csv", "w", newline="") as f:
+    with open(f"harm_breakdown{SUFFIX}.csv", "w", newline="") as f:
         cols = ["config", "workload", "penalty", "metric", "pct", "wins", "harms", "ties", "n_eff", "sign_p"]
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
         w.writerows(rows)
-    print(f"Wrote harm_breakdown{V2_SUFFIX}.csv ({len(rows)} rows)")
+    print(f"Wrote harm_breakdown{SUFFIX}.csv ({len(rows)} rows)")
 
     print("\n=== bursty_high_s64 penalty=2.0 ===")
     for r in rows:

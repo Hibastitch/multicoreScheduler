@@ -15,18 +15,42 @@ import csv
 import glob
 import os
 
-from task6_confirmation_analyze import WORKLOAD_ORDER, METRICS, COST_METRICS, load_rows, fnum, V2_SUFFIX
+from task6_confirmation_analyze import (
+    WORKLOAD_ORDER, METRICS, COST_METRICS, load_rows, fnum,
+    V2_SUFFIX, V3, SUFFIX, PENALTIES, HEADLINE_VARIANT, SECONDARY_VARIANTS,
+)
 
-VARIANT_TABLES = {
-    "original_q2_a0.8_or": f"results_task6_confirmation{V2_SUFFIX}_TABLE_original.csv",
-    "runner_up_q4_a1.5_or": f"results_task6_confirmation{V2_SUFFIX}_TABLE_runnerup.csv",
-}
+# TASK 9 v3 (2026-09-29, Step 4): under v1/v2 this writes tables for the
+# 2 non-headline variants (original_q2_a0.8_or, runner_up_q4_a1.5_or) --
+# "final" already has its own MAIN_TABLE from task6_confirmation_analyze.py.
+# Under v3 that generalizes to "every SECONDARY_VARIANTS entry except the
+# headline" -- 3 variants (selected_ungated, original_q2_a0.8_or_ungated,
+# runner_up_ungated) instead of 2.
+if V3:
+    VARIANT_TABLES = {
+        v: f"results_task6_confirmation{SUFFIX}_TABLE_{v}.csv"
+        for v in SECONDARY_VARIANTS if v != HEADLINE_VARIANT
+    }
+else:
+    VARIANT_TABLES = {
+        "original_q2_a0.8_or": f"results_task6_confirmation{V2_SUFFIX}_TABLE_original.csv",
+        "runner_up_q4_a1.5_or": f"results_task6_confirmation{V2_SUFFIX}_TABLE_runnerup.csv",
+    }
+
+# Compact-table comparison pair: headline vs the original detector
+# (ungated, under v3 -- the gate is what's being evaluated). Reuses
+# PENALTIES[0]/[-1] as the two comparison points, same choice as
+# task6_confirmation_analyze.py's plot section under v3 (0.0 and 2.0
+# unchanged for v1/v2).
+COMPACT_VARIANT_A = HEADLINE_VARIANT
+COMPACT_VARIANT_B = "original_q2_a0.8_or_ungated" if V3 else "original_q2_a0.8_or"
+COMPACT_PEN_LO, COMPACT_PEN_HI = PENALTIES[0], PENALTIES[-1]
 
 
 def write_variant_table(rows, variant, out_path):
     variant_rows = []
     for wl in WORKLOAD_ORDER:
-        for pen in ["0.0", "2.0"]:
+        for pen in PENALTIES:
             r = next((r for r in rows if r["workload"] == wl and r["penalty"] == pen
                        and r["variant"] == variant), None)
             if r is not None:
@@ -140,8 +164,8 @@ def build_compact_table(rows):
 
     compact_rows = []
     for wl in WORKLOAD_ORDER:
-        fin_p0, fin_p2 = get(wl, "0.0", "final"), get(wl, "2.0", "final")
-        orig_p0, orig_p2 = get(wl, "0.0", "original_q2_a0.8_or"), get(wl, "2.0", "original_q2_a0.8_or")
+        fin_p0, fin_p2 = get(wl, COMPACT_PEN_LO, COMPACT_VARIANT_A), get(wl, COMPACT_PEN_HI, COMPACT_VARIANT_A)
+        orig_p0, orig_p2 = get(wl, COMPACT_PEN_LO, COMPACT_VARIANT_B), get(wl, COMPACT_PEN_HI, COMPACT_VARIANT_B)
         if fin_p0 is None and fin_p2 is None:
             continue
 
@@ -250,14 +274,14 @@ def write_compact_markdown(compact_rows, out_path):
 def main():
     rows = load_rows()
     print(f"Loaded {len(rows)} summary rows from "
-          f"{len(glob.glob(f'results_task6_confirmation{V2_SUFFIX}_*_summary.csv'))} files")
+          f"{len(glob.glob(f'results_task6_confirmation{SUFFIX}_*_summary.csv'))} files")
 
     for variant, out_path in VARIANT_TABLES.items():
         write_variant_table(rows, variant, out_path)
 
     compact_rows = build_compact_table(rows)
-    write_compact_csv(compact_rows, f"results_task6_confirmation{V2_SUFFIX}_COMPACT_TABLE.csv")
-    write_compact_markdown(compact_rows, f"results_task6_confirmation{V2_SUFFIX}_COMPACT_TABLE.md")
+    write_compact_csv(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.csv")
+    write_compact_markdown(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.md")
 
     print("\nGroup counts:")
     from collections import Counter

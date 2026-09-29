@@ -34,6 +34,24 @@ import sys
 # kwarg changes here.
 V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 
+# TASK 9 v3 RE-RUN (2026-09-29, docs/NOTEBOOK.md 2026-09-29h pre-
+# registration, Step 4 "prepare, don't run"): TASK9_V3=1 in the
+# environment (a) writes to _v3-suffixed output files, (b) adds
+# penalty=0.5ms (the kernel's own sysctl_sched_migration_cost estimate)
+# to the penalty sweep, (c) sets penalty_model="ran_only" for BOTH
+# baseline and burst-aware (Task 9a: charge migration_penalty only to a
+# task that has already run) and burst_gap_gate=True for burst-aware
+# only (Task 9b: skip a burst-triggered domain unless the least-loaded
+# other core is >=2 nr_running behind), and (d) shifts every workload's
+# seed_base by +60000 -- FRESH 70000+ seeds, 100 apart per workload,
+# never used by any prior grid/confirmation/audit range in this repo.
+V3 = bool(os.environ.get("TASK9_V3"))
+V3_SUFFIX = "_v3" if V3 else ""
+SUFFIX = V3_SUFFIX or V2_SUFFIX
+V3_SEED_OFFSET = 60000 if V3 else 0
+V3_BASELINE_KWARGS = dict(penalty_model="ran_only") if V3 else {}
+V3_VARIANT_KWARGS = dict(penalty_model="ran_only", burst_gap_gate=True) if V3 else {}
+
 from Main import run_simulation
 from LoadBalancer import LoadBalancer
 from BurstScheduler import BurstAwareLoadBalancer
@@ -41,7 +59,7 @@ from paired_compare import assert_same_workload, wilcoxon_signed_rank, format_p,
 import diagnostics
 
 N_REPS = 30
-PENALTIES = [0.0, 2.0]
+PENALTIES = [0.0, 0.5, 2.0] if V3 else [0.0, 2.0]
 ABC_BASE = {"newidle_mode": "transition", "per_cpu_last_balance": True, "imbalance_model": "kernel",
             "burst_resets_timer": False}
 
@@ -79,6 +97,10 @@ WORKLOADS = {
                              n_tasks=120, seed_base=10800),
 }
 
+if V3_SEED_OFFSET:
+    for _wl in WORKLOADS.values():
+        _wl["seed_base"] += V3_SEED_OFFSET
+
 METRICS = ["p95_wait", "avg_wait", "avg_slowdown"]
 
 
@@ -91,7 +113,7 @@ def sign_p(wins, n):
 
 
 def run_baseline(profile, intensity, seed, penalty, overrides, n_tasks):
-    kwargs = dict(ABC_BASE, migration_penalty=penalty)
+    kwargs = dict(ABC_BASE, migration_penalty=penalty, **V3_BASELINE_KWARGS)
     del kwargs["burst_resets_timer"]  # baseline (LoadBalancer) doesn't take this
     m, b, gt, migs, logger, plan = run_simulation(
         profile, LoadBalancer, intensity_level=intensity, seed=seed,
@@ -102,7 +124,7 @@ def run_baseline(profile, intensity, seed, penalty, overrides, n_tasks):
 
 
 def run_variant(profile, intensity, seed, penalty, overrides, n_tasks, threshold_cfg):
-    kwargs = dict(ABC_BASE, migration_penalty=penalty, **threshold_cfg)
+    kwargs = dict(ABC_BASE, migration_penalty=penalty, **V3_VARIANT_KWARGS, **threshold_cfg)
     m, b, gt, migs, logger, plan = run_simulation(
         profile, BurstAwareLoadBalancer, intensity_level=intensity, seed=seed,
         balancer_kwargs=kwargs, load_model="runnable", intensity_overrides=overrides, n_tasks=n_tasks,
@@ -215,17 +237,17 @@ def main():
                   f"harm={any_significant_harm}  fires={summary['detector_fires']:.1f} "
                   f"recall={summary['recall']}  precision={summary['precision']}")
 
-    with open(f"results_task6_threshold_grid{V2_SUFFIX}_{workload_key}{chunk_suffix}_perseed.csv", "w", newline="") as f:
+    with open(f"results_task6_threshold_grid{SUFFIX}_{workload_key}{chunk_suffix}_perseed.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(per_seed_rows[0].keys()))
         w.writeheader()
         w.writerows(per_seed_rows)
 
-    with open(f"results_task6_threshold_grid{V2_SUFFIX}_{workload_key}{chunk_suffix}_summary.csv", "w", newline="") as f:
+    with open(f"results_task6_threshold_grid{SUFFIX}_{workload_key}{chunk_suffix}_summary.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
         w.writeheader()
         w.writerows(summary_rows)
 
-    print(f"\nWrote results_task6_threshold_grid{V2_SUFFIX}_{workload_key}{chunk_suffix}_perseed.csv and _summary.csv")
+    print(f"\nWrote results_task6_threshold_grid{SUFFIX}_{workload_key}{chunk_suffix}_perseed.csv and _summary.csv")
 
 
 if __name__ == "__main__":

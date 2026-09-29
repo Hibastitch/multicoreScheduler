@@ -17,14 +17,25 @@ favor harm by count, not just by mean) AND sign_p(harms, n_eff) < 0.05
 (equivalently sign_p(wins, n_eff) < 0.05, they're identical -- this
 just requires the split itself be significant) AND mean_var > mean_base
 + TIE_TOLERANCE (mean also moved in the harmful direction).
+
+TASK 9 v3 (docs/NOTEBOOK.md 2026-09-29h, when TASK9_V3=1): applies rule
+(e) -- only penalties 0 and 0.5 disqualify a config; 2ms is measured/
+reported but does not. This script's corrected `harms>wins` rule is the
+authoritative one in this project (standing practice since the
+2026-09-27h correction), so in v3 mode this is also the script that
+writes selected_config_v3.json (selected config's thresholds + runner-
+up, or nulls if none is harm-free) for task6_confirmation_run.py's v3
+mode to read.
 """
 
 import sys, pathlib
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2] / "simulator"))
 import csv
 import glob
+import json
 import math
 import os
+import re
 
 from paired_compare import wilcoxon_signed_rank, format_p, TIE_TOLERANCE
 
@@ -34,6 +45,13 @@ METRICS = ["p95_wait", "avg_wait", "avg_slowdown"]
 # suffixed grid CSVs. tradeoff.py and harm_breakdown.py both import
 # load_rows() from here, so this one change propagates to both.
 V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
+
+# TASK 9 v3 RE-RUN (2026-09-29, Step 4): TASK9_V3=1 reads the _v3-
+# suffixed grid CSVs and applies rule (e)'s penalty-based disqualification.
+V3 = bool(os.environ.get("TASK9_V3"))
+V3_SUFFIX = "_v3" if V3 else ""
+SUFFIX = V3_SUFFIX or V2_SUFFIX
+RULE_PENALTIES = {"0.0", "0.5"} if V3 else {"0.0", "2.0"}
 
 
 def sign_p(wins, n):
@@ -46,9 +64,9 @@ def sign_p(wins, n):
 
 def load_rows():
     rows = []
-    for path in glob.glob(f"results_task6_threshold_grid{V2_SUFFIX}_*_perseed.csv"):
-        if V2_SUFFIX == "" and "_v2_" in path:
-            continue  # non-v2 mode must not also pick up v2 files
+    for path in glob.glob(f"results_task6_threshold_grid{SUFFIX}_*_perseed.csv"):
+        if SUFFIX == "" and ("_v2_" in path or "_v3_" in path):
+            continue  # plain mode must not also pick up v2/v3 files
         with open(path, newline="") as f:
             rows.extend(csv.DictReader(f))
     return rows
@@ -134,25 +152,34 @@ def main():
     harm_free_new = []
     for cfg in configs:
         cfg_recs = [r for r in results if r["config"] == cfg]
-        harmful = [(r["workload"], r["penalty"]) for r in cfg_recs if r["any_new_harm"]]
+        # TASK 9 rule (e): only DISQUALIFYING penalties count here -- a
+        # no-op filter in v1/v2 (RULE_PENALTIES covers every penalty
+        # those grids have).
+        harmful = [(r["workload"], r["penalty"]) for r in cfg_recs
+                   if r["any_new_harm"] and r["penalty"] in RULE_PENALTIES]
+        reported_only = [(r["workload"], r["penalty"]) for r in cfg_recs
+                          if r["any_new_harm"] and r["penalty"] not in RULE_PENALTIES]
         status = "HARM" if harmful else "clean"
-        print(f"{cfg:16} {status:6} harmful_on={harmful if harmful else '-'}")
+        print(f"{cfg:16} {status:6} harmful_on={harmful if harmful else '-'}"
+              + (f"  (also harmful, NON-disqualifying: {reported_only})" if (V3 and reported_only) else ""))
         if not harmful:
             harm_free_new.append(cfg)
     print(f"\nHarm-free configs (corrected rule): {harm_free_new}")
 
     print("\nstacked_burst medium/high p95_wait %% change, harm-free (corrected) configs only")
-    best = None
+    ranked = []
     for cfg in harm_free_new:
         vals = []
         for wl in ["stacked_medium", "stacked_high"]:
             for rec in results:
-                if rec["config"] == cfg and rec["workload"] == wl:
+                if rec["config"] == cfg and rec["workload"] == wl and rec["penalty"] in RULE_PENALTIES:
                     vals.append(rec["per_metric"]["p95_wait"]["pct"])
         mean_pct = sum(vals) / len(vals) if vals else float("nan")
         print(f"{cfg:16} mean p95_wait %% change = {mean_pct:+.2f}%  (values: {[round(v,1) for v in vals]})")
-        if best is None or mean_pct < best[1]:
-            best = (cfg, mean_pct)
+        ranked.append((cfg, mean_pct))
+    ranked.sort(key=lambda t: t[1])
+    best = ranked[0] if ranked else None
+    runner_up = ranked[1] if len(ranked) > 1 else None
     # TASK 9 STEP 0 (2026-09-29): an empty harm-free-under-the-corrected-
     # rule set is a real, reportable outcome -- see docs/NOTEBOOK.md's
     # "Task 8 result" entry (the v2 grid found all 12 configs harmful) --
@@ -163,6 +190,33 @@ def main():
               "harm-free list above (empty).")
     else:
         print(f"\nSELECTED (corrected rule): {best[0]} ({best[1]:+.2f}%)")
+        if V3 and runner_up:
+            print(f"RUNNER-UP (corrected rule): {runner_up[0]} ({runner_up[1]:+.2f}%)")
+
+    # TASK 9 v3: this IS the authoritative (corrected-rule) selection --
+    # write it for task6_confirmation_run.py's v3 mode to read.
+    if V3:
+        def _thresholds_for(cfg_name):
+            m = re.match(r"^q(\d+)_a([\d.]+)_(or|and)$", cfg_name)
+            if not m:
+                return None
+            return dict(config=cfg_name, queue_growth_threshold=int(m.group(1)),
+                        arrival_rate_threshold=float(m.group(2)), combine=m.group(3))
+
+        out = dict(selected=None, selected_mean_p95_pct=None,
+                    runner_up=None, runner_up_mean_p95_pct=None,
+                    harm_free_configs=harm_free_new, rule_penalties=sorted(RULE_PENALTIES))
+        if best is not None:
+            out["selected"] = _thresholds_for(best[0])
+            out["selected_mean_p95_pct"] = best[1]
+        if runner_up is not None:
+            out["runner_up"] = _thresholds_for(runner_up[0])
+            out["runner_up_mean_p95_pct"] = runner_up[1]
+        with open("selected_config_v3.json", "w") as f:
+            json.dump(out, f, indent=2)
+        print(f"\nWrote selected_config_v3.json "
+              f"(selected={out['selected']['config'] if out['selected'] else None}, "
+              f"runner_up={out['runner_up']['config'] if out['runner_up'] else None})")
 
     # --- 3. old selection for comparison ---
     print("\n" + "=" * 100)
