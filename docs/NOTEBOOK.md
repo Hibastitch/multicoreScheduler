@@ -3223,3 +3223,91 @@ it" gap check (currently balances toward the LEAST-loaded core it can
 find, even when that core is only 1 task behind -- moving in that case
 cannot possibly finish the moved task any earlier, since the source
 would have gotten to it in the same or less time).
+
+## 2026-09-29h — Task 9 pre-registration (committed BEFORE any implementation)
+
+Two fixes, both motivated directly by the v2 grid result above, pre-
+registered in full before either is implemented.
+
+**(a) Cost model change** (applies to BASELINE and burst-aware alike --
+this is a simulator-wide migration-cost fix, not a burst-path-specific
+one): the migration penalty is charged only to tasks that have already
+run (`Task.last_ran_until` is set / the task has executed > 0 sim-ms).
+Rationale: a never-run task has no warm cache to lose -- its first cache
+misses happen on whichever core it first runs on, identically whether
+that's the core it was originally queued on or one it migrated to before
+ever running. Charging it a "lost warm cache" penalty it never had is
+not modeling a real cost. **Known simplification, to be added to
+`docs/FIDELITY_AUDIT.md`**: this does not model cross-node memory-
+locality cost for a fresh (never-run) task -- real NUMA effects (remote
+memory access latency for a task's first touches, independent of cache
+warmth) are a separate, still-unmodeled cost this change does not
+address either way. New flag: `penalty_model="ran_only"` (new) |
+`"all"` (legacy, current unconditional-charge behavior).
+
+**(b) Burst gap gate** (burst path only, `BurstScheduler.on_task_
+placed()`): for each domain in `domain_chain(core)`, `src` = the burst
+core, `dst` = the core in `domain.cores()` with the lowest `nr_running`
+(queued + running; ties broken by lowest `core_id`). Only call
+`_balance_domain(domain, dst, now, tag="burst")` if
+`nr_running(src) - nr_running(dst) >= 2`; otherwise skip this domain
+entirely. Rationale: with a gap of 1, a moved task starts no earlier
+than if it had stayed (the destination finishes its current/only extra
+task in the same time the source would have needed to reach the moved
+task) -- moving it is pure overhead (a migration, with its own cost
+under (a)) for zero benefit. A gap of >= 2 is the smallest gap where
+moving guarantees saving at least one full slice. This also changes WHO
+the destination is: previously the burst path's checker election
+(`_find_checker`, whole-span, no `from_core` -- unaffected by Task 8's
+`checker_model`, see `docs/FIDELITY_AUDIT.md` §13) picked the first idle
+core or lowest core-id as both the ACTING checker and the balance
+target; the gate makes the explicitly least-loaded core in the domain
+the destination instead. New flag: `burst_gap_gate=True` (new) | `False`
+(legacy, current unconditional per-domain balance attempt).
+
+**(c) Baseline Linux logic: UNCHANGED, frozen after Task 8.** No further
+fidelity fixes in this task -- (a) is a cost-model parameter, not a
+Linux-fidelity correction, and (b) only touches the burst path's own
+(non-Linux) mechanism. The threshold grid re-runs the same 12 configs
+(`queue_growth_threshold` in {2,4,8} x `arrival_rate_threshold` in
+{0.8,1.5} x `combine` in {or,and}) -- calibration itself is not being
+redone, only re-measured under the corrected cost model and gate.
+
+**(d) Penalties: 0, 0.5, 2 ms.** 0.5ms is new -- the kernel's own
+estimate, `sysctl_sched_migration_cost` (500,000ns, `fair.c:82`,
+already cited in `docs/FIDELITY_AUDIT.md` §7 for the cache-hot window);
+2ms remains the pessimistic stress-test value from every prior
+confirmation run.
+
+**(e) Selection rule** (stated before any v3 result exists): (1) no
+significant harm (corrected `harms>wins` rule) on any metric, any
+workload, AT PENALTIES 0 AND 0.5 ONLY; (2) among harm-free configs,
+largest mean `stacked_medium`+`stacked_high` `p95_wait` reduction,
+averaged over penalties 0 and 0.5. **Penalty=2ms results are measured
+and reported in full but do NOT disqualify a config** -- 2ms is kept as
+a deliberately pessimistic stress condition, not a realism target (real
+`sysctl_sched_migration_cost` is 0.5ms, per (d)).
+
+**(f) Seeds, kept disjoint from every prior range in this repo:** grid
+FRESH 70000+ (100 apart per workload, matching the existing spacing
+convention); confirmation FRESH 80000+. (Prior ranges: 10000+ original
+grid, 20000+ original confirmation, 30000+ Task 7 audit, 50000+/60000+
+Task 8 audit and ablation, 90000+ Task 8b invariant tests, 40000+ the
+now-moot v2 confirmation range.)
+
+**(g) Confirmation compares FOUR variants per workload/penalty**: the
+selected config WITH the gate (`burst_gap_gate=True`); the SAME
+thresholds WITHOUT the gate (`burst_gap_gate=False` -- isolates the
+gate's own effect, holding thresholds fixed); the original `q2_a0.8_or`
+WITHOUT the gate (the pre-calibration detector, as a historical
+reference point); and the runner-up WITHOUT the gate. All four run under
+`penalty_model="ran_only"` (the cost-model fix applies universally, per
+(a) -- it is not one of the four things being compared).
+
+**(h) If no config is harm-free under (e), that is the reported
+result** -- exactly as Task 8's v2 grid just was. No result is
+"fixed toward" a harm-free outcome; whatever the pre-registered rule
+finds is what gets reported.
+
+**Not done, per instruction:** no code was changed before this entry was
+committed. Step 2 (implementation) follows as its own commit.
