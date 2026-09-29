@@ -2951,3 +2951,62 @@ direction the fix happens to move any particular comparison.
 underlying mismatches; the calibration grid/confirmation run was not
 re-run. The `last_ran_until` field is tracking-only and read by nothing
 but this audit's own measurement script.
+
+## 2026-09-29c — Task 8 pre-registration (committed BEFORE any code change)
+
+Six fidelity fixes from `docs/FIDELITY_AUDIT.md` are being implemented
+behind opt-in flags, measured on the BASELINE ONLY, then made the
+defaults. This entry pre-registers the plan in full before any of it
+happens, per this project's standing discipline. **Burst-aware is not
+run anywhere in this task** -- no peeking at the baseline-vs-burst-aware
+comparison before the actual v2 re-run (a separate, future, explicitly
+user-triggered task).
+
+**Baseline changes, each behind its own flag, all becoming defaults by
+the end of this task:**
+
+1. `checker_model="kernel"` -- `should_we_balance()` (Task 7, already
+   implemented; only the DEFAULT changes in this task).
+2. `busy_factor=16` -- `get_sd_balance_interval()` (`fair.c:13565-13586`).
+3. `placement_root="own"` -- the entry core's own machine domain, not
+   the fixed `machines[0]` (`docs/FIDELITY_AUDIT.md` §11).
+4. `cache_hot=True` -- `task_hot()`/`can_migrate_task()` (`fair.c:
+   10291-10329`, `10817-10832`), `migration_cost` = 0.5ms.
+5. `numa_fix=True` -- `NUMA_IMBALANCE_MIN=2`, `imb_numa_nr=3` (this
+   topology's derived value, `docs/FIDELITY_AUDIT.md` §8), and the
+   NUMA adjustment removed from the generic migrate_load path
+   (`_balance_domain`) -- real `calculate_imbalance()` only ever calls
+   `adjust_numa_imbalance()` from the `group_has_spare` branch.
+6. `TIME_SLICE=2.8` -- the effective, boot-scaled `base_slice` for a
+   32-CPU machine under default tunable scaling (`docs/FIDELITY_AUDIT.
+   md` §10), NOT the module constant `TIME_SLICE=4`.
+
+**Burst path: UNCHANGED.** `BurstDetector`, its threshold grid
+(calibrated 2026-09-27i), and its own checker election
+(`_find_checker()` without `from_core` -- first idle core in the
+domain's whole span) are the paper's own novel mechanism, not a Linux
+analog being corrected for fidelity. None of the six fixes above touch
+`BurstScheduler.py`; `_balance_domain`'s shared internals (busy_factor
+does not apply to burst's own trigger, but cache_hot/numa_fix DO apply
+to any migration the burst path performs through the shared pipeline,
+same as periodic/newidle).
+
+**Selection rule: UNCHANGED from the 2026-09-27h/i calibration.** (1) no
+significant harm (the corrected `harms > wins` sign-test rule) on any
+metric, workload, or penalty; (2) among the harm-free configurations,
+the largest mean `stacked_medium` + `stacked_high` p95_wait reduction,
+averaged over both penalties (0.0, 2.0).
+
+**Seeds, kept disjoint from every prior seed range used in this repo:**
+grid stays at its existing 10000+ range (unchanged, no re-run needed for
+the grid itself beyond what Step 4 prepares); confirmation gets a FRESH
+40000+ range for the v2 re-run (20000+ was the original confirmation
+run, 30000+ was Task 7's checker-election audit, 50000+ was the Task 8
+fidelity-audit's own measurement scripts, 60000+ is this task's own
+Step-2 baseline-only ablation).
+
+**Commitment, stated before seeing any Step 2 result:** whatever the v2
+re-run shows is reported as-is, including if burst-aware's measured
+benefit shrinks, disappears, or reverses relative to the original
+confirmation run. This is a fidelity correction, not a search for a
+result.
