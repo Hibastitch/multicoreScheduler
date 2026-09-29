@@ -85,7 +85,8 @@ class LoadBalancer:
     def __init__(self, machine_domain, cores_by_id, logger=None, migration_penalty=0.0,
                  newidle_mode="transition", seed=0, per_cpu_last_balance=True,
                  imbalance_model="kernel", checker_model="kernel",
-                 busy_factor=16, cache_hot=True, numa_fix=True):
+                 busy_factor=16, cache_hot=True, numa_fix=True,
+                 penalty_model="all"):
         self.machine = machine_domain
         self.cores_by_id = cores_by_id
         self.migrations = 0
@@ -119,6 +120,29 @@ class LoadBalancer:
         # real hardware measurement, just a knob to test whether results
         # (esp. burst-aware's edge) survive migrations no longer being free.
         self.migration_penalty = migration_penalty
+
+        # TASK 9a (2026-09-29, docs/NOTEBOOK.md 2026-09-29h pre-
+        # registration, motivated by the Task 8 v2 grid finding every
+        # threshold config harmful on bursty_high_s64/avg_slowdown at
+        # penalty=2ms): "all" (default, exact pre-Task-9 behavior) charges
+        # migration_penalty to EVERY migrated task unconditionally, even
+        # one that has never run and therefore has no warm cache to lose
+        # -- real Linux's own can_migrate_task()/task_hot() (fair.c:
+        # 10291-10329, cited already in this file's cache_hot flag)
+        # establishes that a task's cache-hotness is governed by
+        # p->se.exec_start, which __sched_fork() sets to 0 at fork
+        # (core.c:4568) and only overwrites once the task is actually
+        # picked to run (update_stats_curr_start(), fair.c:2150-2156) --
+        # the SAME kernel fact already used to gate cache_hot above.
+        # "ran_only" charges the penalty only when Task.last_ran_until is
+        # not None (the task has executed at least once) -- applies
+        # identically to periodic/newidle/burst migrations, and to both
+        # LoadBalancer and BurstAwareLoadBalancer (this is a cost-model
+        # parameter, not a burst-path-specific one). See _do_migrate()
+        # below for the exact application, and self.penalty_charges for
+        # the new per-run counter this adds.
+        self.penalty_model = penalty_model
+        self.penalty_charges = 0
 
         # verified: SD_SERIALIZE is a real atomic global lock in
         # sched_balance_rq() -- only one core machine-wide runs a NUMA-level
@@ -740,8 +764,13 @@ class LoadBalancer:
         task.vruntime = task.vruntime - src_core.avg_vruntime() + dst_core.avg_vruntime()
         task.prev_core = src_core.core_id
         task.migrations += 1
-        if self.migration_penalty:
+        # TASK 9a: "ran_only" skips the charge for a task that has never
+        # run (task.last_ran_until is None) -- see __init__'s
+        # penalty_model comment for the kernel citation. "all" (default)
+        # is the exact pre-Task-9 unconditional charge.
+        if self.migration_penalty and (self.penalty_model == "all" or task.last_ran_until is not None):
             task.remaining_time += self.migration_penalty
+            self.penalty_charges += 1
         dst_core.rq.append(task)
         self.migrations += 1
         if self.logger:

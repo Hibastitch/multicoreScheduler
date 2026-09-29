@@ -31,6 +31,7 @@ class BurstAwareLoadBalancer(LoadBalancer):
                  newidle_mode="transition", seed=0, per_cpu_last_balance=True,
                  imbalance_model="kernel", checker_model="kernel",
                  busy_factor=16, cache_hot=True, numa_fix=True,
+                 penalty_model="all", burst_gap_gate=False,
                  burst_resets_timer=False, **detector_kwargs):
         # TASK 8 (2026-09-29, NOTEBOOK.md 2026-09-29c/d): busy_factor/
         # cache_hot/numa_fix forwarded straight through to LoadBalancer --
@@ -57,8 +58,25 @@ class BurstAwareLoadBalancer(LoadBalancer):
                           per_cpu_last_balance=per_cpu_last_balance,
                           imbalance_model=imbalance_model,
                           checker_model=checker_model,
-                          busy_factor=busy_factor, cache_hot=cache_hot, numa_fix=numa_fix)
+                          busy_factor=busy_factor, cache_hot=cache_hot, numa_fix=numa_fix,
+                          penalty_model=penalty_model)
         self.detector = BurstDetector(**detector_kwargs)
+
+        # TASK 9b (2026-09-29, docs/NOTEBOOK.md 2026-09-29h pre-
+        # registration, motivated by the Task 8 v2 grid finding every
+        # threshold config harmful on bursty_high_s64 at penalty=2ms):
+        # False (default, exact pre-Task-9 behavior) balances every
+        # domain in the burst chain unconditionally, using
+        # _find_checker(domain)'s legacy whole-span election (first idle
+        # core, else lowest core_id) as BOTH the acting checker and the
+        # balance destination. True requires the destination to be the
+        # explicitly least-loaded core in the domain AND at least 2
+        # nr_running (queued+running, Core.running_count()) behind the
+        # burst core before balancing that domain at all -- see
+        # on_task_placed() below for the exact gate and
+        # self.gate_skipped_domains for the new per-run counter this adds.
+        self.burst_gap_gate = burst_gap_gate
+        self.gate_skipped_domains = 0
         self.logger = logger
         self.burst_triggers = 0
         # Pre-registered design ablation (2026-09-27, see Readme.md).
@@ -124,7 +142,30 @@ class BurstAwareLoadBalancer(LoadBalancer):
 
         for domain in domain_chain(core):
             STATS.burst_balance_levels_walked += 1
-            checker = self._find_checker(domain)
+            if self.burst_gap_gate:
+                # TASK 9b: dst = least-loaded OTHER core in this domain
+                # (nr_running = queued+running, Core.running_count();
+                # ties -> lowest core_id). Skip the domain entirely
+                # unless src (the burst core) is at least 2 nr_running
+                # ahead of dst -- with a gap of 1, dst finishes its own
+                # extra task in the same time src would have reached the
+                # moved task, so moving it cannot finish it any earlier
+                # (pure migration overhead, including the Task 9a
+                # penalty when one applies, for zero benefit). dst
+                # becomes the local_core _balance_domain() compares
+                # against, replacing the legacy checker as the balance
+                # destination.
+                others = [c for c in domain.cores() if c is not core]
+                if not others:
+                    continue
+                dst = min(others, key=lambda c: (c.running_count(), c.core_id))
+                gap = core.running_count() - dst.running_count()
+                if gap < 2:
+                    self.gate_skipped_domains += 1
+                    continue
+                checker = dst
+            else:
+                checker = self._find_checker(domain)
             n = self._balance_domain(domain, checker, now, tag="burst")
             if n:
                 self.burst_triggered_migrations += n
