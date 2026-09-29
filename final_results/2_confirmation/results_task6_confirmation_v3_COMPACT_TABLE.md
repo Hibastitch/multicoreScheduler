@@ -1,23 +1,26 @@
-| workload | final fires | final p95 Δ% (p0/p2) | orig fires | orig p95 Δ% (p0/p2) | orig harm metric(s) | avg_wait Δ% (final/orig) | migrations Δ% (final) | scan work Δ% (final) |
-|---|---|---|---|---|---|---|---|---|
-| **final helps** | | | | | | | | |
-| stacked_medium | 24.8 | -25.2%*** / -22.1%*** | 159.7 | -23.4%*** / -16.6%*** | no | -23.6% / -21.9% | +3.2% | +2.0% |
-| stacked_high | 140.0 | -16.9%* / -12.8% | 180.9 | -22.5%*** / -18.3%** | no | -18.6% / -20.6% | -1.3% | +5.3% |
-| rate1.5_s12 | 15.9 | -23.2%*** / -23.0%*** | 95.8 | -25.5%*** / -25.8%*** | no | -25.0% / -24.4% | +2.7% | +1.1% |
-| rate3.0_s12 | 42.0 | -23.4%*** / -20.1%*** | 91.9 | -2.6% / -2.2% | no | -28.7% / -13.2% | +2.2% | +1.4% |
-| **final silent** | | | | | | | | |
-| stacked_low | 0.0 | +0.0% / +0.0% | 49.9 | +5.9% / +1.3% | no | +0.0% / -1.0% | +0.0% | +0.0% |
-| bursty_high_s24 | 0.0 | +0.0% / +0.0% | 10.7 | +0.0% / +7.2% | p99_wait@p0 | +0.0% / +1.1% | +0.0% | +0.0% |
-| heavy_tail_high | 0.0 | +0.0% / +0.0% | 9.9 | +0.0% / +0.0% | p99_wait@p0,p2; avg_wait@p2; avg_slowdown@p0,p2; p95_slowdown@p0,p2 | +0.0% / +0.3% | +0.0% | +0.0% |
-| rate0.5_s4 | 0.0 | +0.0% / +0.0% | 10.0 | +17.2%* / +20.0%** | p95_wait@p0,p2; p99_wait@p0,p2; avg_wait@p2 | +0.0% / +7.0% | +0.0% | +0.0% |
-| rate0.5_s12 | 0.0 | +0.0% / +0.0% | 24.4 | -24.8%*** / -22.5%*** | no | +0.0% / -18.0% | +0.0% | +0.0% |
-| rate0.75_s4 | 0.0 | +0.0% / +0.0% | 20.0 | -18.6%** / -12.7% | no | +0.0% / -30.4% | +0.0% | +0.0% |
-| rate0.75_s12 | 0.0 | +0.0% / +0.0% | 99.9 | -38.9%*** / -38.3%*** | no | +0.0% / -32.3% | +0.0% | +0.0% |
-| rate1.0_s4 | 0.0 | +0.0% / +0.0% | 20.0 | -12.0% / -13.1%* | no | +0.0% / -20.9% | +0.0% | +0.0% |
-| rate1.0_s12 | 0.0 | +0.0% / +0.0% | 99.9 | -16.9%* / -17.3%*** | no | +0.0% / -17.8% | +0.0% | +0.0% |
-| rate1.5_s4 | 0.0 | +0.0% / +0.0% | 20.0 | -21.6%*** / -18.5%** | no | +0.0% / -20.1% | +0.0% | +0.0% |
-| rate3.0_s4 | 0.0 | +0.0% / +0.0% | 10.0 | -29.6%*** / -29.0%*** | no | +0.0% / -32.0% | +0.0% | +0.0% |
-| **fires without benefit** | | | | | | | | |
-| bursty_high_s64 | 216.7 | -2.1% / -0.2% | 420.8 | -0.8% / -0.0% | avg_slowdown@p2; p95_slowdown@p2; makespan_excess@p2 | +4.0% / +0.3%† | +14.5% | +3.1% |
+**Disqualifying harm at penalty 0 or 0.5 (rule (e)): YES -- see rows below.**
+- bursty_high_s64: avg_wait@p0
 
-_Stars: \* p<0.05, \*\* p<0.01, \*\*\* p<0.001 (exact sign test, n=30 paired, tie-tolerant). avg_wait/migrations/scan-work %% are averaged across penalty 0 and 2; † marks a cell where penalty 0 and penalty 2 have OPPOSITE signs, so the average shown understates or masks a real per-penalty reversal -- see the per-penalty appendix tables (results_task6_confirmation_MAIN_TABLE.csv, _TABLE_original.csv, _TABLE_runnerup.csv) for the exact p0/p2 values. 'orig harm metric(s)' names which metric(s) triggered any_harm=True for the ORIGINAL detector and at which penalty (p0/p2) -- this is independent of the p95_wait column, so a row can show p95_wait improving and still be flagged harmful because of a DIFFERENT metric (see the worked explanation in the session notes). Groups: **final helps** = significant p95_wait improvement at either penalty; **final silent** = detector never fires (<0.5 fires/run average); **fires without benefit** = fires but no significant p95_wait improvement._
+| workload | gated fires | gated p95 Δ% (p0/p0.5/p2) | gated harm metric(s) | ungated p95 Δ% (p0/p0.5/p2) | ungated harm metric(s) | orig fires | orig p95 Δ% (p0/p0.5/p2) | orig harm metric(s) | runner-up p95 Δ% (p0/p0.5/p2) | avg_wait Δ% (gated/orig) | migrations Δ% (gated) | scan work Δ% (gated) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **gated harmful (p0/p0.5)** | | | | | | | | | | | | |
+| bursty_high_s64 | 215.2 | -2.1% / -2.1% / -0.2% | avg_wait@p0; avg_slowdown@p2(stress); p95_slowdown@p2(stress); makespan_excess@p2(stress) | -1.6% / -0.6% / +2.6% | avg_wait@p2(stress); avg_slowdown@p0.5,p2(stress); p95_slowdown@p2(stress); makespan_excess@p2(stress) | 420.6 | -0.8% / +2.8% / -0.0% | avg_slowdown@p0.5,p2(stress); p95_slowdown@p0.5,p2(stress); makespan_excess@p2(stress) | -2.5%* / -1.5% / +3.5%** | +3.8% / +0.9%† | +14.8% | +3.0% |
+| **gated helps** | | | | | | | | | | | | |
+| stacked_medium | 24.5 | -25.2%*** / -20.5%*** / -22.1%*** | no | -18.3%*** / -13.1%*** / -10.8%*** | no | 159.7 | -23.4%*** / -17.0%*** / -16.6%*** | no | -16.6%*** / -12.1%** / -9.7%** | -22.7% / -21.1% | +3.2% | +1.8% |
+| stacked_high | 139.6 | -16.9%* / -18.0%** / -12.8% | no | -21.0%*** / -21.0%** / -15.9% | no | 180.9 | -22.5%*** / -21.2%*** / -18.3%** | no | -21.5%*** / -19.1%** / -15.7% | -19.1% / -20.9% | -1.4% | +5.2% |
+| rate1.5_s12 | 16.1 | -23.2%*** / -24.2%*** / -23.0%*** | no | -21.7%*** / -21.9%*** / -18.5%*** | no | 95.8 | -25.5%*** / -24.7%*** / -25.8%*** | no | -20.7%*** / -21.1%*** / -18.1%*** | -24.4% / -24.5% | +2.9% | +1.0% |
+| rate3.0_s12 | 42.0 | -23.4%*** / -22.2%*** / -20.1%*** | no | -15.2%*** / -13.7%*** / -16.2%*** | no | 91.9 | -2.6% / +0.9% / -2.2% | no | -15.0%*** / -13.7%*** / -16.6%*** | -28.8% / -12.5% | +2.5% | +1.3% |
+| **gated silent** | | | | | | | | | | | | |
+| stacked_low | 0.0 | +0.0% / +0.0% / +0.0% | no | +0.0% / +0.0% / +0.0% | no | 49.9 | +5.9% / -2.3% / +1.3% | no | +0.0% / +0.0% / +0.0% | +0.0% / -1.1% | +0.0% | +0.0% |
+| bursty_high_s24 | 0.0 | +0.0% / +0.0% / +0.0% | no | +0.0% / +0.0% / +0.0% | no | 10.3 | +0.0% / +1.3% / +7.2% | p99_wait@p0 | +0.0% / +0.0% / +0.0% | +0.0% / +0.9% | +0.0% | +0.0% |
+| heavy_tail_high | 0.0 | +0.0% / +0.0% / +0.0% | no | +0.0% / +0.0% / +0.0% | no | 9.9 | +0.0% / +0.0% / +0.0% | p99_wait@p0,p0.5,p2(stress); avg_wait@p0.5,p2(stress); avg_slowdown@p0,p0.5,p2(stress); p95_slowdown@p0,p0.5,p2(stress) | +0.0% / +0.0% / +0.0% | +0.0% / +0.3% | +0.0% | +0.0% |
+| rate0.5_s4 | 0.0 | +0.0% / +0.0% / +0.0% | no | +0.0% / +0.0% / +0.0% | no | 10.0 | +17.2%* / +18.0% / +20.0%** | p95_wait@p0,p2(stress); p99_wait@p0,p0.5,p2(stress); avg_wait@p0.5,p2(stress) | +0.0% / +0.0% / +0.0% | +0.0% / +7.0% | +0.0% | +0.0% |
+| rate0.5_s12 | 0.0 | +0.0% / +0.0% / +0.0% | no | +0.0% / +0.0% / +0.0% | no | 24.3 | -24.8%*** / -23.1%*** / -22.5%*** | no | +0.0% / +0.0% / +0.0% | +0.0% / -17.5% | +0.0% | +0.0% |
+| rate0.75_s4 | 0.0 | +0.0% / +0.0% / +0.0% | no | +0.0% / +0.0% / +0.0% | no | 20.0 | -18.6%** / -18.5%** / -12.7% | no | +0.0% / +0.0% / +0.0% | +0.0% / -30.9% | +0.0% | +0.0% |
+| rate0.75_s12 | 0.0 | +0.0% / +0.0% / +0.0% | no | +0.0% / +0.0% / +0.0% | no | 99.9 | -38.9%*** / -42.5%*** / -38.3%*** | no | +0.0% / +0.0% / +0.0% | +0.0% / -33.0% | +0.0% | +0.0% |
+| rate1.0_s4 | 0.0 | +0.0% / +0.0% / +0.0% | no | +0.0% / +0.0% / +0.0% | no | 20.0 | -12.0% / -13.4%* / -13.1%* | no | +0.0% / +0.0% / +0.0% | +0.0% / -20.7% | +0.0% | +0.0% |
+| rate1.0_s12 | 0.0 | +0.0% / +0.0% / +0.0% | no | +0.0% / +0.0% / +0.0% | no | 99.9 | -16.9%* / -16.3%** / -17.3%*** | no | +0.0% / +0.0% / +0.0% | +0.0% / -17.9% | +0.0% | +0.0% |
+| rate1.5_s4 | 0.0 | +0.0% / +0.0% / +0.0% | no | +0.0% / +0.0% / +0.0% | no | 20.0 | -21.6%*** / -18.8%** / -18.5%** | no | +0.0% / +0.0% / +0.0% | +0.0% / -19.8% | +0.0% | +0.0% |
+| rate3.0_s4 | 0.0 | +0.0% / +0.0% / +0.0% | no | +0.0% / +0.0% / +0.0% | no | 10.0 | -29.6%*** / -28.5%*** / -29.0%*** | no | +0.0% / +0.0% / +0.0% | +0.0% / -32.0% | +0.0% | +0.0% |
+
+_Stars: \* p<0.05, \*\* p<0.01, \*\*\* p<0.001 (exact sign test, n=30 paired, tie-tolerant). p95 Δ%% triples are (penalty=0 / penalty=0.5 / penalty=2), rule (e)'s full sweep; avg_wait/migrations/scan-work %% are averaged across all 3 penalties -- † marks a cell where at least two penalties disagree in sign, so the average shown understates or masks a real per-penalty reversal -- see the per-penalty appendix tables (results_task6_confirmation_v3_MAIN_TABLE.csv, _TABLE_selected_ungated.csv, _TABLE_original_q2_a0.8_or_ungated.csv, _TABLE_runner_up_ungated.csv) for the exact per-penalty values. 'harm metric(s)' names which metric(s) triggered {metric}_harm=True for that variant and at which penalty -- (stress) marks a penalty=2ms-only hit, which per rule (e) does NOT disqualify (it is measured and reported, not selected against); an unmarked penalty (p0/p0.5) does disqualify. A row can show p95_wait improving and still list a harm metric because harm is evaluated per-metric, not just on p95_wait. Groups: **gated harmful (p0/p0.5)** = selected_gated itself showed disqualifying harm on this confirmation workload (a rule (e) violation, reported regardless); **gated helps** = significant p95_wait improvement at some penalty, no disqualifying harm; **gated silent** = detector never fires (<0.5 fires/run average); **fires without benefit** = fires but no significant p95_wait improvement._

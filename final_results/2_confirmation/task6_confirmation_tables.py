@@ -46,6 +46,14 @@ COMPACT_VARIANT_A = HEADLINE_VARIANT
 COMPACT_VARIANT_B = "original_q2_a0.8_or_ungated" if V3 else "original_q2_a0.8_or"
 COMPACT_PEN_LO, COMPACT_PEN_HI = PENALTIES[0], PENALTIES[-1]
 
+# TASK 9 rule (e) (docs/NOTEBOOK.md 2026-09-29h): only penalties 0 and
+# 0.5 disqualify a config; 2ms is a pessimistic stress test -- measured
+# and reported in full, but does not by itself make a cell "harmful"
+# for selection purposes. Mirrors RULE_PENALTIES in
+# task6_threshold_grid_recompute_harm.py. v3-only.
+DISQUALIFYING_PENALTIES = {"0.0", "0.5"}
+PENALTY_LABELS = {"0.0": "p0", "0.5": "p0.5", "2.0": "p2"}
+
 
 def write_variant_table(rows, variant, out_path):
     variant_rows = []
@@ -153,6 +161,219 @@ def classify_group(final_p0, final_p2):
         for r in (final_p0, final_p2)
     )
     return "final helps" if sig_improve else "fires without benefit"
+
+
+# ============================= v3 only =============================
+# v1/v2 hardcode a p0/p2 pair and 3 variants (final/original/runner_up).
+# v3 has 3 penalties (0/0.5/2) and rule (g)'s 4 variants (selected
+# gated/ungated, original ungated, runner-up ungated), plus rule (e)'s
+# disqualifying-vs-stress-test distinction. Kept as separate functions
+# rather than branching the v1/v2 ones apart, since the shapes differ
+# enough (pair vs triple, 2 harm columns vs 4) that shared branches
+# would be harder to read than the duplication.
+
+def pct_str_multi(rows_by_pen, metric):
+    return " / ".join(pct_str(rows_by_pen.get(p), metric) for p in PENALTIES)
+
+
+def mean_fires(rows_by_pen):
+    vals = [fnum(r, "detector_fires") for r in rows_by_pen.values() if r is not None]
+    return sum(vals) / len(vals) if vals else 0.0
+
+
+def harm_info_v3(rows_by_pen, metrics=METRICS):
+    """Which metric(s) triggered {metric}_harm=True for this variant, at
+    which penalty -- same idea as harm_metrics_str(), generalized to 3
+    penalties and annotated per rule (e): a penalty=2ms-only hit is
+    marked (stress) and does NOT set any_disqualifying. Returns
+    (any_disqualifying: bool, full_str, disqualifying_only_str)."""
+    parts, disq_parts = [], []
+    any_disqualifying = False
+    for m in metrics:
+        pens_hit = [p for p in PENALTIES if rows_by_pen.get(p) is not None
+                    and rows_by_pen[p].get(f"{m}_harm") == "True"]
+        if not pens_hit:
+            continue
+        labelled, disq_labelled = [], []
+        for p in pens_hit:
+            lbl = PENALTY_LABELS.get(p, p)
+            if p in DISQUALIFYING_PENALTIES:
+                any_disqualifying = True
+                disq_labelled.append(lbl)
+            else:
+                lbl += "(stress)"
+            labelled.append(lbl)
+        parts.append(f"{m}@{','.join(labelled)}")
+        if disq_labelled:
+            disq_parts.append(f"{m}@{','.join(disq_labelled)}")
+    return any_disqualifying, "; ".join(parts), "; ".join(disq_parts)
+
+
+def sign_flip_multi(rows_by_pen, metric):
+    vals = [fnum(r, f"{metric}_pct") for r in rows_by_pen.values() if r is not None]
+    return any(v > 1e-9 for v in vals) and any(v < -1e-9 for v in vals)
+
+
+def avg_pct_marked_multi(rows_by_pen, metric):
+    return avg_pct(rows_by_pen, metric), sign_flip_multi(rows_by_pen, metric)
+
+
+def classify_group_v3(gated_by_pen, gated_disqualifying_harm):
+    if gated_disqualifying_harm:
+        return "gated harmful (p0/p0.5)"
+    if mean_fires(gated_by_pen) < 0.5:
+        return "gated silent"
+    sig_improve = any(
+        r is not None and fnum(r, "p95_wait_wins") is not None and fnum(r, "p95_wait_harms") is not None
+        and fnum(r, "p95_wait_wins") > fnum(r, "p95_wait_harms")
+        and fnum(r, "p95_wait_sign_p") is not None and fnum(r, "p95_wait_sign_p") < 0.05
+        for r in gated_by_pen.values()
+    )
+    return "gated helps" if sig_improve else "fires without benefit"
+
+
+def build_compact_table_v3(rows):
+    def get(workload, penalty, variant):
+        for r in rows:
+            if r["workload"] == workload and r["penalty"] == penalty and r["variant"] == variant:
+                return r
+        return None
+
+    compact_rows = []
+    missing_workloads = []
+    for wl in WORKLOAD_ORDER:
+        gated_by_pen = {pen: get(wl, pen, "selected_gated") for pen in PENALTIES}
+        if all(v is None for v in gated_by_pen.values()):
+            missing_workloads.append(wl)
+            continue
+        ungated_by_pen = {pen: get(wl, pen, "selected_ungated") for pen in PENALTIES}
+        orig_by_pen = {pen: get(wl, pen, "original_q2_a0.8_or_ungated") for pen in PENALTIES}
+        runnerup_by_pen = {pen: get(wl, pen, "runner_up_ungated") for pen in PENALTIES}
+
+        gated_disq, gated_harm_str, gated_disq_str = harm_info_v3(gated_by_pen)
+        ungated_disq, ungated_harm_str, _ = harm_info_v3(ungated_by_pen)
+        orig_disq, orig_harm_str, _ = harm_info_v3(orig_by_pen)
+
+        group = classify_group_v3(gated_by_pen, gated_disq)
+
+        avg_wait_gated, avg_wait_gated_flip = avg_pct_marked_multi(gated_by_pen, "avg_wait")
+        avg_wait_orig, avg_wait_orig_flip = avg_pct_marked_multi(orig_by_pen, "avg_wait")
+        migrations_gated, migrations_gated_flip = avg_pct_marked_multi(gated_by_pen, "total_migrations")
+        scanwork_gated, scanwork_gated_flip = avg_pct_marked_multi(gated_by_pen, "sched_cores_scanned")
+        runnerup_p95_avg, runnerup_p95_flip = avg_pct_marked_multi(runnerup_by_pen, "p95_wait")
+
+        compact_rows.append(dict(
+            workload=wl, group=group,
+            gated_fires=mean_fires(gated_by_pen),
+            gated_p95=pct_str_multi(gated_by_pen, "p95_wait"),
+            gated_any_disqualifying_harm=gated_disq,
+            gated_harm_metrics=gated_harm_str,
+            gated_disqualifying_harm_metrics=gated_disq_str,
+            ungated_p95=pct_str_multi(ungated_by_pen, "p95_wait"),
+            ungated_any_disqualifying_harm=ungated_disq,
+            ungated_harm_metrics=ungated_harm_str,
+            orig_fires=mean_fires(orig_by_pen),
+            orig_p95=pct_str_multi(orig_by_pen, "p95_wait"),
+            orig_any_disqualifying_harm=orig_disq,
+            orig_harm_metrics=orig_harm_str,
+            runnerup_p95=pct_str_multi(runnerup_by_pen, "p95_wait"),
+            avg_wait_gated=avg_wait_gated, avg_wait_gated_flip=avg_wait_gated_flip,
+            avg_wait_orig=avg_wait_orig, avg_wait_orig_flip=avg_wait_orig_flip,
+            migrations_gated=migrations_gated, migrations_gated_flip=migrations_gated_flip,
+            scanwork_gated=scanwork_gated, scanwork_gated_flip=scanwork_gated_flip,
+        ))
+    if missing_workloads:
+        print(f"WARNING: {len(missing_workloads)}/{len(WORKLOAD_ORDER)} workload(s) have NO "
+              f"selected_gated confirmation rows at all -- run task6_confirmation_run.py for "
+              f"them first: {missing_workloads}")
+    else:
+        print(f"All {len(WORKLOAD_ORDER)} workloads present in the v3 compact table.")
+    return compact_rows
+
+
+def write_compact_csv_v3(compact_rows, out_path):
+    cols = ["group", "workload",
+            "gated_fires", "gated_p95", "gated_any_disqualifying_harm",
+            "gated_harm_metrics", "gated_disqualifying_harm_metrics",
+            "ungated_p95", "ungated_any_disqualifying_harm", "ungated_harm_metrics",
+            "orig_fires", "orig_p95", "orig_any_disqualifying_harm", "orig_harm_metrics",
+            "runnerup_p95",
+            "avg_wait_gated", "avg_wait_gated_flip", "avg_wait_orig", "avg_wait_orig_flip",
+            "migrations_gated", "migrations_gated_flip", "scanwork_gated", "scanwork_gated_flip"]
+    with open(out_path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=cols)
+        w.writeheader()
+        w.writerows(compact_rows)
+    print(f"Wrote {out_path}")
+
+
+def write_compact_markdown_v3(compact_rows, out_path, harm_summary_lines):
+    lines = []
+    if harm_summary_lines:
+        lines.append("**Disqualifying harm at penalty 0 or 0.5 (rule (e)): YES -- see rows below.**")
+        for l in harm_summary_lines:
+            lines.append(f"- {l}")
+    else:
+        lines.append("**Disqualifying harm at penalty 0 or 0.5 (rule (e)): NO** -- "
+                      "selected_gated (the pre-registered selection) showed no significant "
+                      "harm on any metric, any of the 16 confirmation workloads, at penalty "
+                      "0 or 0.5. (Penalty=2ms stress-test harm, if any, is reported per-row below.)")
+    lines.append("")
+    lines.append("| workload | gated fires | gated p95 Δ% (p0/p0.5/p2) | gated harm metric(s) | "
+                  "ungated p95 Δ% (p0/p0.5/p2) | ungated harm metric(s) | orig fires | "
+                  "orig p95 Δ% (p0/p0.5/p2) | orig harm metric(s) | runner-up p95 Δ% (p0/p0.5/p2) | "
+                  "avg_wait Δ% (gated/orig) | migrations Δ% (gated) | scan work Δ% (gated) |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+
+    group_order = ["gated harmful (p0/p0.5)", "gated helps", "gated silent", "fires without benefit"]
+    n_cols = 13
+    for group in group_order:
+        group_rows = [r for r in compact_rows if r["group"] == group]
+        if not group_rows:
+            continue
+        lines.append(f"| **{group}** " + "| " * (n_cols - 1) + "|")
+        for r in group_rows:
+            gated_harm_col = r["gated_harm_metrics"] if (r["gated_any_disqualifying_harm"]
+                                                           or r["gated_harm_metrics"]) else "no"
+            ungated_harm_col = r["ungated_harm_metrics"] if (r["ungated_any_disqualifying_harm"]
+                                                              or r["ungated_harm_metrics"]) else "no"
+            orig_harm_col = r["orig_harm_metrics"] if (r["orig_any_disqualifying_harm"]
+                                                        or r["orig_harm_metrics"]) else "no"
+            lines.append(
+                f"| {r['workload']} | {r['gated_fires']:.1f} | {r['gated_p95']} | {gated_harm_col} | "
+                f"{r['ungated_p95']} | {ungated_harm_col} | "
+                f"{r['orig_fires']:.1f} | {r['orig_p95']} | {orig_harm_col} | "
+                f"{r['runnerup_p95']} | "
+                f"{fmt_avg(r['avg_wait_gated'], r['avg_wait_gated_flip'])} / "
+                f"{fmt_avg(r['avg_wait_orig'], r['avg_wait_orig_flip'])} | "
+                f"{fmt_avg(r['migrations_gated'], r['migrations_gated_flip'])} | "
+                f"{fmt_avg(r['scanwork_gated'], r['scanwork_gated_flip'])} |"
+            )
+
+    footer = ("\n_Stars: \\* p<0.05, \\*\\* p<0.01, \\*\\*\\* p<0.001 (exact sign test, n=30 "
+              "paired, tie-tolerant). p95 Δ%% triples are (penalty=0 / penalty=0.5 / penalty=2), "
+              "rule (e)'s full sweep; avg_wait/migrations/scan-work %% are averaged across all 3 "
+              "penalties -- † marks a cell where at least two penalties disagree in sign, so the "
+              "average shown understates or masks a real per-penalty reversal -- see the "
+              "per-penalty appendix tables (results_task6_confirmation_v3_MAIN_TABLE.csv, "
+              "_TABLE_selected_ungated.csv, _TABLE_original_q2_a0.8_or_ungated.csv, "
+              "_TABLE_runner_up_ungated.csv) for the exact per-penalty values. "
+              "'harm metric(s)' names which metric(s) triggered {metric}_harm=True for that "
+              "variant and at which penalty -- (stress) marks a penalty=2ms-only hit, which "
+              "per rule (e) does NOT disqualify (it is measured and reported, not selected "
+              "against); an unmarked penalty (p0/p0.5) does disqualify. A row can show "
+              "p95_wait improving and still list a harm metric because harm is evaluated "
+              "per-metric, not just on p95_wait. "
+              "Groups: **gated harmful (p0/p0.5)** = selected_gated itself showed "
+              "disqualifying harm on this confirmation workload (a rule (e) violation, "
+              "reported regardless); **gated helps** = significant p95_wait improvement at "
+              "some penalty, no disqualifying harm; **gated silent** = detector never fires "
+              "(<0.5 fires/run average); **fires without benefit** = fires but no significant "
+              "p95_wait improvement._\n")
+
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n" + footer)
+    print(f"Wrote {out_path}")
 
 
 def build_compact_table(rows):
@@ -279,9 +500,29 @@ def main():
     for variant, out_path in VARIANT_TABLES.items():
         write_variant_table(rows, variant, out_path)
 
-    compact_rows = build_compact_table(rows)
-    write_compact_csv(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.csv")
-    write_compact_markdown(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.md")
+    if V3:
+        compact_rows = build_compact_table_v3(rows)
+        write_compact_csv_v3(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.csv")
+
+        # rule (e) confirmatory check: selected_gated was CHOSEN to be
+        # harm-free at penalties 0/0.5 on the grid's 9 workloads -- the
+        # confirmation run uses fresh seeds AND 16 workloads (7 more
+        # than the grid), so "no disqualifying harm here too" is an
+        # empirical result, not a given.
+        harmed = [r for r in compact_rows if r["gated_any_disqualifying_harm"]]
+        harm_summary_lines = [f"{r['workload']}: {r['gated_disqualifying_harm_metrics']}" for r in harmed]
+        write_compact_markdown_v3(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.md",
+                                   harm_summary_lines)
+
+        print(f"\nselected_gated disqualifying harm (penalty 0 or 0.5) on any of the "
+              f"{len(compact_rows)} confirmation workloads: {'YES' if harmed else 'NO'}")
+        if harmed:
+            for l in harm_summary_lines:
+                print(f"  {l}")
+    else:
+        compact_rows = build_compact_table(rows)
+        write_compact_csv(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.csv")
+        write_compact_markdown(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.md")
 
     print("\nGroup counts:")
     from collections import Counter
