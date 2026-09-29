@@ -81,6 +81,18 @@ python task6_confirmation_tables.py             # paper-ready tables, no new sim
 `<workload_key>` is one of the workload names printed by each script when
 run with no arguments (e.g. `stacked_medium`, `rate1.5_s12`).
 
+## Tests
+
+`tests/test_invariants.py` — automated invariant tests (Task 8b): catches
+plain programming bugs (a lost/duplicated task, a migration that moves a
+currently-running task, double-counted migrations, non-determinism), NOT
+Linux-fidelity questions — that's `docs/FIDELITY_AUDIT.md`'s job. Run:
+
+```
+cd tests && python test_invariants.py    # always works
+cd tests && python -m pytest -q          # if pytest is installed
+```
+
 ## Full history
 
 `docs/NOTEBOOK.md` — every dated finding, bug, fix, and correction.

@@ -3117,3 +3117,37 @@ rewriting their original (still-accurate-as-history) table entries.
 Steps 1-3. The calibration grid and confirmation run were not re-run
 (Step 4 prepares, but does not execute, the v2 commands for the user to
 run themselves).
+
+## 2026-09-29f — Task 8b: automated invariant tests
+
+`tests/test_invariants.py` -- a new, separate concern from every fidelity
+question above: does the simulator's OWN bookkeeping stay internally
+consistent (no lost/duplicated task, no migration of a currently-running
+task, no double-counted migration, deterministic replay), regardless of
+whether it matches Linux. 10 invariants, run matrix: both schedulers,
+penalty in {0, 2}, 8 workloads (`stacked_low`, `stacked_high`,
+`rate3.0_s12`, `bursty_high_s24`, `bursty_high_s64`, `heavy_tail_high`,
+`uniform`, `mixed`), 3 seeds each (90000+), final default config, each
+run TWICE for the determinism check -- 192 simulation runs total.
+
+No simulator file edited or behaviorally changed: `Core.enqueue`,
+`Core.tick_load`, `LoadBalancer._do_migrate` are monkeypatched onto the
+class for one run only and restored in a `finally` block immediately
+after; the one new SimPy process (a per-tick task-location sampler) uses
+the same `extra_processes` hook `diagnostics.py`'s existing live
+samplers already use, previously confirmed non-perturbing for this exact
+mechanism (`development/instrumentation_checks/
+task4_observer_effect_check.py`). All 10 invariants were checkable this
+way -- none required editing any `simulator/` file.
+
+**Result: all 192 runs, all 10 invariants (all applicable cells),
+PASS.** Full per-seed detail: `tests/results_invariants_perseed.csv`,
+`tests/results_invariants_paired_perseed.csv`. 133s total runtime.
+
+Per instruction, this test run finding no failures means there is
+nothing to diagnose or fix here -- had it found a violation, the rule
+was to report the exact seed/workload/violation and stop, not attempt a
+fix. No `pytest` in this environment; the script runs standalone
+(`python test_invariants.py`, the tested path) and also exposes a
+single coarse-grained `pytest`-collectible test if `pytest` is ever
+installed (unverified in this environment -- noted as such in the file).
