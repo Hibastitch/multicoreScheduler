@@ -21,10 +21,24 @@ file's module docstring — search for "Simplification" in each file.
 - `task.py` — vruntime/weight, matches `sched_entity` fields we used.
 - `topology.py` — 3-level domain hierarchy (pair/group/machine), with
   the real `imbalance_pct` values from `sd_init()` (110 at pair/SMT
-  level, 117 elsewhere).
+  level, 117 elsewhere). **Correction (2026-09-29): stale on two counts.**
+  The real file is `Topology.py` (capitalized, matching every other
+  module). The hierarchy has actually always been FOUR levels, not
+  three, and there is no flat "group" level: pair → node → onehop →
+  machine (`Domain.LEVEL_PAIR`/`LEVEL_NODE`/`LEVEL_ONEHOP`/
+  `LEVEL_MACHINE`), built PER NODE on a ring adjacency (`build_topology()`'s
+  own module docstring — the Scheduling-Group-Construction-bug fix).
+  The `imbalance_pct` values (110/117) are still correct as stated.
 - `core.py` — preemptive rbtree-lite execution + PELT-accurate decay
   law (`y^32 ≈ 0.5`, verified from `pelt.c`). Uses a FIXED time slice
   rather than EEVDF's dynamic slice — noted as a simplification.
+  **Correction (2026-09-29): "rbtree-lite" is no longer accurate.** The
+  real file is `Core.py`; as of 2026-09-24, `Core.rq` is a
+  `TrackedRunQueue` backed by `EevdfTree.py` — a real augmented rbtree
+  (deadline-keyed, `min_vruntime`-augmented, genuine rotations),
+  verified against 16,000+ brute-force-checked picks, not a
+  simplified stand-in. The fixed-time-slice simplification is still
+  accurate as stated.
 - `placement.py` — `wake_affine_idle()` / `wake_affine_weight()` /
   `select_idle_sibling()`, implementing the exact cross-multiplied,
   capacity-normalized, imbalance_pct-biased formula we read from

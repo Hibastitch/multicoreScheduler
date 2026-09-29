@@ -354,14 +354,37 @@ def build_topology(num_cores=32, cores_per_pair=2, pairs_per_node=4,
     different for every node, as it should be.
 
     Returns (machine, all_cores) -- same signature as before. `machine`
-    is node 0's own machine domain, used only as the descent root for
-    Placement.hierarchical_new_task_placement() (which itself always
-    enters from cores[0]'s perspective -- a separate, already-documented
-    simplification in placement.py, unrelated to this bug). Every core's
-    OWN balancing climb (`domain_chain()`/`core.parent`) goes through its
-    OWN node's onehop/machine domains regardless of which object this
-    function returns, so periodic/newidle/burst balancing for nodes 1-3
-    is unaffected by this choice.
+    is node 0's own machine domain (`machines[0]`), the fixed root every
+    caller descends from. Placement.hierarchical_new_task_placement()
+    does NOT enter from "cores[0]'s perspective" -- it descends from
+    THIS machine domain starting from the task's own `entry_core` (the
+    CPU it is forked from; one core chosen at random per burst, see
+    WorkloadGenerator._plan_burst_stacked() and friends), correctly
+    identifying which child domain actually contains that core at every
+    level. Every core's OWN balancing climb (`domain_chain()`/
+    `core.parent`) goes through its OWN node's onehop/machine domains
+    regardless of which object this function returns, so periodic/
+    newidle/burst balancing for nodes 1-3 is unaffected by this choice.
+
+    CAVEAT (found 2026-09-29, NOT yet fixed): placement is affected by
+    this choice, in a way the note above used to (wrongly) call
+    unrelated. `machines[0].children` is always exactly [onehop0,
+    onehop2] (verified directly) -- but onehop0's and onehop2's SPANS
+    overlap (each includes both of its own ring neighbors), and this
+    default topology's 4-node ring makes nodes 1 and 3 members of BOTH.
+    hierarchical_new_task_placement()'s local-domain lookup takes the
+    FIRST child whose `.cores()` contains `entry_core`, so a node1- or
+    node3-forked task's top-level "local" is always onehop0 (checked
+    directly: node0->onehop0, node1->onehop0, node2->onehop2,
+    node3->onehop0) -- never their own onehop1/onehop3, which
+    machines[0] never even references. Node0 and node2 happen to get
+    their genuinely-own onehop at this level (a coincidence of this
+    specific 4-node/neighbor-count-2 pairing, not a general guarantee);
+    node1 and node3 do not. This is a real, previously undocumented
+    placement-vs-balancing inconsistency -- domain_chain()-based
+    balancing is correctly per-node-anchored (§ above), but this
+    fixed-root placement path is not, for half of this topology's
+    nodes. Not fixed here per instruction; flagged for a future task.
     """
     cores_per_node = cores_per_pair * pairs_per_node
     num_nodes = num_cores // cores_per_node
