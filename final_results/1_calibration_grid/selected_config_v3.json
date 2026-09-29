@@ -1,0 +1,24 @@
+{
+  "selected": {
+    "config": "q4_a1.5_and",
+    "queue_growth_threshold": 4,
+    "arrival_rate_threshold": 1.5,
+    "combine": "and"
+  },
+  "selected_mean_p95_pct": -21.917759581262654,
+  "runner_up": {
+    "config": "q2_a1.5_and",
+    "queue_growth_threshold": 2,
+    "arrival_rate_threshold": 1.5,
+    "combine": "and"
+  },
+  "runner_up_mean_p95_pct": -21.91426090830766,
+  "harm_free_configs": [
+    "q2_a1.5_and",
+    "q4_a1.5_and"
+  ],
+  "rule_penalties": [
+    "0.0",
+    "0.5"
+  ]
+}
