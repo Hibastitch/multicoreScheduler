@@ -181,16 +181,16 @@ def make_plot(points):
     # by hand after inspecting the rendered plot (recipe fallback for no
     # adjustText: 12 points is few enough to place by hand and verify).
     LABEL_OFFSETS = {
-        "q2_a1.5_and":            (-0.20,  0.55, "right", "bottom"),  # selected, star
-        "q4_a1.5_or":             (-0.20, -0.75, "right", "top"),
+        "q2_a1.5_and":            ( 0.18,  0.75, "left",  "bottom"),  # selected, star -- right of marker
+        "q4_a1.5_or":             ( 0.18, -0.75, "left",  "top"),     # right of marker, clear of 17.5 ytick
         "q8_a0.8_and|q8_a1.5_and": (0.18, -0.55, "left",  "top"),
         "q2_a0.8_and":            (0.55,  0.00, "left",  "center"),
         "q2_a1.5_or":             (0.18,  0.65, "left",  "bottom"),
         "q4_a0.8_and":            (0.18, -0.85, "left",  "top"),
         "q4_a1.5_and":            (0.18,  0.65, "left",  "bottom"),
         "q8_a1.5_or":             (0.18, -0.05, "left",  "top"),
-        "q2_a0.8_or":             (0.18, -0.85, "left",  "top"),
-        "q4_a0.8_or|q8_a0.8_or":  (0.18,  0.55, "left",  "bottom"),
+        "q2_a0.8_or":             (-0.25, -1.495, "center", "center"),  # manual: text centered ~(2.75, 20.3), below marker
+        "q4_a0.8_or|q8_a0.8_or":  (-0.15,  1.472, "center", "center"),  # manual: text centered ~(2.85, 23.6), above marker -- shifted right, collided with q2_a0.8_and at x=2.75
     }
 
     for grp in groups.values():
@@ -219,13 +219,14 @@ def make_plot(points):
 
     ax.set_xlabel("Workloads with significant harm (of 9)")
     ax.set_ylabel("p95 wait reduction on\nstacked medium/high (%)")
-    ax.set_xlim(-0.5, max_x + 1.3)
+    ax.set_xlim(-0.6, 3.5)
     ax.set_xticks(range(0, max_x + 1))
     ymin = min(p["benefit_score"] for p in points) - 2
     ymax = max(p["benefit_score"] for p in points) + 3
     ax.set_ylim(ymin, ymax)
     ax.axvspan(-0.5, 0.5, color="0.90", zorder=0)
-    ax.text(0, ymin + 0.4, "harm-free", fontsize=6, style="italic", color="0.35", ha="left")
+    ax.text(0, ymax - 0.3, "harm-free", fontsize=6, style="italic", color="0.35",
+            ha="center", va="top")
 
     legend_elems = [
         plt.Line2D([0], [0], marker="o", color="w", markerfacecolor="white",
