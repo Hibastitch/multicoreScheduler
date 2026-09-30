@@ -1,0 +1,30 @@
+{
+  "selected": {
+    "config": "q8_a1.5_or",
+    "queue_growth_threshold": 8,
+    "arrival_rate_threshold": 1.5,
+    "combine": "or"
+  },
+  "selected_mean_p95_pct": -16.913455346638454,
+  "runner_up": {
+    "config": "q2_a1.5_and",
+    "queue_growth_threshold": 2,
+    "arrival_rate_threshold": 1.5,
+    "combine": "and"
+  },
+  "runner_up_mean_p95_pct": -16.86869400684163,
+  "harm_free_configs": [
+    "q2_a0.8_and",
+    "q2_a1.5_and",
+    "q4_a0.8_and",
+    "q4_a1.5_and",
+    "q4_a1.5_or",
+    "q8_a0.8_and",
+    "q8_a1.5_and",
+    "q8_a1.5_or"
+  ],
+  "rule_penalties": [
+    "0.0",
+    "0.5"
+  ]
+}
