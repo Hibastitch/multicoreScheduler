@@ -3595,3 +3595,118 @@ selects different thresholds, this smoke test's numbers for those
 three variants simply don't correspond to any config the real run
 will use, not a reproducibility problem. No other workload's
 120000+/110000+ seeds were touched by this or any other smoke test.
+
+## 2026-09-30g — Task 10 result: v4 confirmation (seeds 120000+, 16 workloads, n=30, penalties 0/0.5/2ms)
+
+Grid (seeds 110000+, commit `1cb0500`): 8/12 configs harm-free under
+rule (e); selected `q8_a1.5_or` (`queue_growth_threshold=8,
+arrival_rate_threshold=1.5, combine=or`), runner-up `q2_a1.5_and`
+(near-tied mean p95 reduction on stacked_medium+stacked_high,
+-16.91% vs -16.87%). Confirmation (seeds 120000+, commit `80bdc02`):
+16 workloads, 30 paired seeds each, `selected_checked`/
+`selected_unchecked`/`runner_up_checked`/`original_q2_a0.8_or_unchecked`
+vs baseline, `penalty_model="ran_only"` throughout. All numbers below
+verified directly from `results_task6_confirmation_v4_MAIN_TABLE.csv`,
+the per-workload `_summary.csv`/`_TABLE_*.csv` files, and
+`results_task6_confirmation_v4_CHECK_EFFECT.{csv,md}` -- none copied
+from a prompt without checking the file.
+
+**1. Headline: `selected_checked` (`q8_a1.5_or` + `burst_idle_check`)
+has `any_harm=False` in all 48 cells** (16 workloads x 3 penalties;
+`results_task6_confirmation_v4_MAIN_TABLE.csv`, 0/48 rows with
+`any_harm=True`).
+
+**2. Where it helps** -- `p95_wait` vs baseline, `sign_p<0.0001` on
+exactly 4 workloads (all 3 penalties each):
+
+| workload | p0 | p0.5 | p2 |
+|---|---|---|---|
+| stacked_medium | -15.51% | -14.75% | -15.13% |
+| stacked_high | -23.70% | -24.77% | -30.86% |
+| rate1.5_s12 | -25.85% | -23.46% | -23.66% |
+| rate3.0_s12 | -24.89% | -18.28% | -20.79% |
+
+`total_migrations_pct` on these 12 cells ranges -8.71% to +0.22% (11 of
+12 negative or ~0, one negligibly positive at stacked_medium/p0) --
+roughly unchanged or lower, not more expensive in migration count;
+this is consistent with the intended mechanism (triggering the
+existing balance walk sooner, not adding extra migrations) but this
+dataset has no lead-time metric, so "earlier" is not itself verified
+here, only "not more migrations." `sched_cores_scanned_pct` ranges
++2.58% (rate3.0_s12/p0.5) to +14.42% (stacked_high/p0) -- the real
+verified range, not the "+3% to +14%" figure this was drafted from.
+
+**3. Silent on 11 workloads.** 13 workloads show `detector_fires=0.0`
+exactly at every penalty except `bursty_high_s24` (0.03-0.07
+fires/run, essentially never) -- both bucket as "silent," 14 total
+with `p95_wait_pct=0.0000%` exactly at every penalty: `stacked_low,
+heavy_tail_high, rate0.5_s4, rate0.5_s12, rate0.75_s4, rate0.75_s12,
+rate1.0_s4, rate1.0_s12, rate1.5_s4, rate3.0_s4, bursty_high_s24` --
+11, matching the claim (the other 2 zero/near-zero-fires workloads,
+`rate1.5_s12`/`rate3.0_s12`, are NOT silent -- see point 2, they fire
+50/run and help significantly). `bursty_high_s64` fires heavily
+(264-278/run) but is neutral, not significant: `p95_wait_pct` -0.91%
+to -0.67%, `sign_p` 0.375-1.0. Why: `burst_balance_levels_walked_var`
+on this workload is only 0.67-1.47/run despite 264-278 detector
+fires -- the idle check is skipping nearly every trigger's walk
+(consistent with the Task 10a diagnostic, 2026-09-30b, which measured
+a 99.4% skip rate here for the same reason: this workload's burst
+size (64) saturates the machine, so no core is ever idle when the
+detector fires).
+
+**4. Coverage trade-off.** `original_q2_a0.8_or_unchecked` (the
+pre-calibration detector, no mechanism) helps on more workloads --
+e.g. `rate0.75_s12`: -37.82%/-36.05%/-39.90% (p0/p0.5/p2) -- but is
+`any_harm=True` on exactly 3: `rate0.5_s4` (all 3 penalties, `p95_wait`
+ACTUALLY WORSE: +10.54%/+8.45%/+6.66%), `heavy_tail_high` (all 3
+penalties, via `avg_wait_harm`, `p95_wait_pct`~0), `bursty_high_s64`
+(p0.5/p2 only, via `avg_slowdown_harm`) --
+`results_task6_confirmation_v4_TABLE_original_q2_a0.8_or_unchecked.csv`.
+`selected_checked` (`q8_a1.5_or`) cannot fire at all on any `_s4`
+workload (`rate0.5_s4` through `rate3.0_s4`, all show `detector_fires=
+0.0`) -- arithmetically forced: `queue_growth_threshold=8` requires
+queue growth of 8 within the detector's arrival window, but a
+burst_size=4 arrival can never grow the queue by more than 4. Known
+blind spot of the `q8/a1.5` thresholds, not a bug.
+
+**5. CHECK_EFFECT (`selected_checked` vs `selected_unchecked`, same
+thresholds, direct paired comparison, NOT vs baseline).** Identical
+(`+0.0%`, `sign_p=1.0000`, every metric, every penalty) on 13 of 16
+workloads: `stacked_low, stacked_medium, heavy_tail_high, rate0.5_s4,
+rate0.5_s12, rate0.75_s4, rate0.75_s12, rate1.0_s4, rate1.0_s12,
+rate1.5_s4, rate1.5_s12, rate3.0_s4, rate3.0_s12` (`stacked_medium`
+fires 81 times/run under `selected_checked` -- identical to unchecked
+there means the idle check never actually blocks a trigger on this
+workload, always finding an idle core). Real signal on 2:
+`bursty_high_s64` `total_migrations_pct` -18.73%/-19.39%/-17.07%
+(p0/p0.5/p2), all `p<2e-6` -- and `selected_unchecked` (no mechanism)
+is `any_harm=True` at p2 (via `avg_slowdown_harm`) while
+`selected_checked` is not; `stacked_high` `avg_wait_pct` +1.95% at
+p0.5 (`p=0.0037`), `total_migrations_pct` -3.27% at p0.5/-2.73% at p2
+(both `p<0.004`), `p95_wait` itself unchanged (-0.2%/-0.2%/+0.1%,
+never significant). `bursty_high_s24` shows two non-significant,
+near-zero cells at p2 only (`avg_wait` -0.2%, `p=1.0`) -- noise, not a
+third real-signal workload.
+
+Multiple-comparison note: this table runs 192 tests (16 workloads x 3
+penalties x 4 metrics; `results_task6_confirmation_v4_CHECK_EFFECT.csv`
+has exactly 48 rows x 4 metrics). 9/192 (4.7%) are significant at
+p<0.05 -- close to the 5% expected under the null for the weaker hits
+(`stacked_high avg_wait`/`avg_slowdown`: p=0.0037-0.0081;
+`bursty_high_s64 avg_slowdown`: p=0.0014-0.043). The `bursty_high_s64
+total_migrations` result is the robust one: p=1.6e-9 to 5.8e-8,
+consistent in direction and magnitude across all 3 independent
+penalty conditions -- not the kind of result multiple-comparison noise
+produces.
+
+**6. Transparency note.** The `stacked_low` smoke test recorded in the
+2026-09-30f addendum above (real confirmation seeds 120000-120029, a
+placeholder `selected_config_v4.json`) ran BEFORE this confirmation and
+did not affect any selection decision -- the real grid's selection
+(`q8_a1.5_or`, `selected_config_v4.json` written by commit `1cb0500`)
+was fixed before this confirmation run (`80bdc02`) started, and the
+smoke test's placeholder config (`q4_a1.5_and`, copied from v3) never
+matched the real selection, so its `stacked_low` output numbers do not
+appear anywhere in this confirmation's real data.
+
+**7. Status: experimental phase complete. Baseline and v4 frozen.**
