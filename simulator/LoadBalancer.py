@@ -144,6 +144,20 @@ class LoadBalancer:
         self.penalty_model = penalty_model
         self.penalty_charges = 0
 
+        # TASK 10 (2026-09-30, NOTEBOOK.md 2026-09-30d pre-registration,
+        # Step 2): per-run counter, incremented in _do_migrate() below
+        # for any tag="burst" migration whose destination core was NOT
+        # idle at the moment of the call (i.e. it already had a running
+        # or queued task) -- lives on the shared base class (like
+        # penalty_charges) since _do_migrate is shared, but only ever
+        # non-zero when a BurstAwareLoadBalancer runs (baseline never
+        # produces tag="burst"). Answers "how often does a walk that
+        # burst_idle_check let through still land on a busy core" --
+        # burst_idle_check only checks that SOME core machine-wide is
+        # idle, not that the SPECIFIC destination _find_checker() picks
+        # within one domain is that core.
+        self.burst_migrations_dst_busy = 0
+
         # verified: SD_SERIALIZE is a real atomic global lock in
         # sched_balance_rq() -- only one core machine-wide runs a NUMA-level
         # pass at a time; everyone else bails immediately rather than wait.
@@ -771,6 +785,10 @@ class LoadBalancer:
         if self.migration_penalty and (self.penalty_model == "all" or task.last_ran_until is not None):
             task.remaining_time += self.migration_penalty
             self.penalty_charges += 1
+        # TASK 10 (2026-09-30): read BEFORE the append below, which would
+        # otherwise make dst_core.is_idle() False unconditionally.
+        if tag == "burst" and not dst_core.is_idle():
+            self.burst_migrations_dst_busy += 1
         dst_core.rq.append(task)
         self.migrations += 1
         if self.logger:

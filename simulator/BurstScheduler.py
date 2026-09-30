@@ -31,7 +31,7 @@ class BurstAwareLoadBalancer(LoadBalancer):
                  newidle_mode="transition", seed=0, per_cpu_last_balance=True,
                  imbalance_model="kernel", checker_model="kernel",
                  busy_factor=16, cache_hot=True, numa_fix=True,
-                 penalty_model="all", burst_gap_gate=False,
+                 penalty_model="all", burst_gap_gate=False, burst_idle_check=False,
                  burst_resets_timer=False, **detector_kwargs):
         # TASK 8 (2026-09-29, NOTEBOOK.md 2026-09-29c/d): busy_factor/
         # cache_hot/numa_fix forwarded straight through to LoadBalancer --
@@ -77,6 +77,29 @@ class BurstAwareLoadBalancer(LoadBalancer):
         # self.gate_skipped_domains for the new per-run counter this adds.
         self.burst_gap_gate = burst_gap_gate
         self.gate_skipped_domains = 0
+
+        # TASK 10 (2026-09-30, NOTEBOOK.md 2026-09-30d pre-registration,
+        # motivated by the 2026-09-30c finding that burst_gap_gate's
+        # DESTINATION change -- not its gap check -- best explains v3's
+        # bursty_high_s64 harm, and by the 2026-09-30b Task 10a
+        # diagnostic finding that "any core idle machine-wide" cleanly
+        # discriminates bursty_high_s64 from the other workloads while
+        # gap-based checks almost never fire): False (default, exact
+        # pre-Task-10 behavior) is unaffected by this flag. True adds
+        # exactly ONE check, evaluated ONCE per trigger (not per domain
+        # like burst_gap_gate) right before the domain_chain walk below:
+        # if no core anywhere on the machine is idle, skip the walk
+        # entirely (all levels); otherwise run it EXACTLY as the
+        # ungated code already does -- same _find_checker() election,
+        # same _balance_domain() call, no destination change of any
+        # kind. Orthogonal to burst_gap_gate (both can be set; v4 uses
+        # this flag alone). See self.idle_check_skipped_triggers below
+        # for the new per-run counter, and LoadBalancer.__init__'s
+        # burst_migrations_dst_busy for a related one (this check only
+        # asks whether SOME core is idle, not whether the SPECIFIC
+        # destination _find_checker() picks within a given domain is).
+        self.burst_idle_check = burst_idle_check
+        self.idle_check_skipped_triggers = 0
         self.logger = logger
         self.burst_triggers = 0
         # Pre-registered design ablation (2026-09-27, see Readme.md).
@@ -139,6 +162,14 @@ class BurstAwareLoadBalancer(LoadBalancer):
         if self.logger:
             self.logger.log(now, "burst_trigger", core=core.core_id,
                              arrival_rate=rate, queue_growth=growth)
+
+        # TASK 10: single machine-wide check, evaluated once for this
+        # trigger, BEFORE any domain is walked -- see __init__'s
+        # burst_idle_check comment. No effect at all when the flag is
+        # False (the default).
+        if self.burst_idle_check and not any(c.is_idle() for c in self.cores_by_id.values()):
+            self.idle_check_skipped_triggers += 1
+            return
 
         for domain in domain_chain(core):
             STATS.burst_balance_levels_walked += 1

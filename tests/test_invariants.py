@@ -12,6 +12,16 @@ reads LoadBalancer.penalty_charges (the new per-run counter Task 9 Step
 2 added) as the count of migrations that actually charged, which is
 correct under both "all" and "ran_only".
 
+Task 10 extension (2026-09-30, docs/NOTEBOOK.md 2026-09-30d): a third
+config, penalty_model="ran_only" + burst_idle_check=True (burst_gap_gate
+=False), added to CONFIGS/run_instrumented(). New invariant 11 checks
+the two new per-run counters Task 10 Step 2 added
+(BurstAwareLoadBalancer.idle_check_skipped_triggers, LoadBalancer.
+burst_migrations_dst_busy) for internal consistency, and that
+idle_check_skipped_triggers stays exactly 0 whenever burst_idle_check
+is False (the flag has zero effect when off, matching Step 2's
+fingerprint verification).
+
 Catches plain PROGRAMMING bugs (a task lost or duplicated, a migration
 that moves a currently-running task, double-counted migrations, a
 non-deterministic replay) -- NOT Linux-fidelity questions. Fidelity
@@ -65,12 +75,13 @@ SEED_BASE = 90000
 PENALTIES = [0.0, 2.0]
 SCHEDULERS = {"baseline": LoadBalancer, "burst_aware": BurstAwareLoadBalancer}
 
-# Task 9 Step 3: sweep both the legacy config (exact pre-Task-9 default)
-# and Task 9's two new flags together, through the SAME full matrix and
-# SAME 10 invariants. (penalty_model, burst_gap_gate) -- burst_gap_gate
-# only actually applies to BurstAwareLoadBalancer (run_instrumented()
-# omits it from LoadBalancer's kwargs, which doesn't accept it at all).
-CONFIGS = [("all", False), ("ran_only", True)]
+# Task 9 Step 3 / Task 10 extension: sweep the legacy config, Task 9's
+# two flags together, and Task 10's new flag, through the SAME full
+# matrix. (penalty_model, burst_gap_gate, burst_idle_check) --
+# burst_gap_gate/burst_idle_check only actually apply to
+# BurstAwareLoadBalancer (run_instrumented() omits both from
+# LoadBalancer's kwargs, which accepts neither).
+CONFIGS = [("all", False, False), ("ran_only", True, False), ("ran_only", False, True)]
 
 # Canonical definitions, matching final_results/2_confirmation/task6_confirmation_run.py
 # where a workload name is shared with it; "uniform"/"mixed" aren't tested
@@ -104,13 +115,15 @@ TIE_TOLERANCE = 1e-6
 # ==================================================================
 
 class RunContext:
-    def __init__(self, workload, scheduler_name, penalty, seed, penalty_model, burst_gap_gate):
+    def __init__(self, workload, scheduler_name, penalty, seed, penalty_model, burst_gap_gate,
+                 burst_idle_check):
         self.workload = workload
         self.scheduler_name = scheduler_name
         self.penalty = penalty
         self.seed = seed
         self.penalty_model = penalty_model
         self.burst_gap_gate = burst_gap_gate
+        self.burst_idle_check = burst_idle_check
         self.all_tasks = {}        # task_id -> Task, registered at first Core.enqueue()
         self.executed_time = {}    # core_id -> accumulated dt while current_task is not None
         self.location_violations = []
@@ -118,8 +131,9 @@ class RunContext:
 
 
 def run_instrumented(workload_key, wl, scheduler_cls, scheduler_name, penalty, seed,
-                      penalty_model="all", burst_gap_gate=False):
-    ctx = RunContext(workload_key, scheduler_name, penalty, seed, penalty_model, burst_gap_gate)
+                      penalty_model="all", burst_gap_gate=False, burst_idle_check=False):
+    ctx = RunContext(workload_key, scheduler_name, penalty, seed, penalty_model, burst_gap_gate,
+                      burst_idle_check)
 
     orig_enqueue = Core.enqueue
     orig_tick_load = Core.tick_load
@@ -189,6 +203,7 @@ def run_instrumented(workload_key, wl, scheduler_cls, scheduler_name, penalty, s
         balancer_kwargs = dict(migration_penalty=penalty, penalty_model=penalty_model)
         if scheduler_cls is BurstAwareLoadBalancer:
             balancer_kwargs["burst_gap_gate"] = burst_gap_gate
+            balancer_kwargs["burst_idle_check"] = burst_idle_check
         m, b, gt, migs, logger, plan = run_simulation(
             wl["profile"], scheduler_cls, intensity_level=wl["intensity"], seed=seed,
             balancer_kwargs=balancer_kwargs,
@@ -355,6 +370,31 @@ def check_10_burst_bookkeeping(ctx):
     return (len(v) == 0, v)
 
 
+def check_11_idle_check_bookkeeping(ctx):
+    # TASK 10 STEP 2/3: BurstAwareLoadBalancer.idle_check_skipped_triggers
+    # and LoadBalancer.burst_migrations_dst_busy are the two new per-run
+    # counters. N/A for baseline (neither attribute means anything
+    # there -- baseline never runs on_task_placed at all).
+    if ctx.scheduler_name != "burst_aware":
+        return (None, [])
+    v = []
+    skipped = ctx.balancer.idle_check_skipped_triggers
+    triggers = ctx.balancer.burst_triggers
+    dst_busy = ctx.balancer.burst_migrations_dst_busy
+    burst_migs = ctx.balancer.burst_triggered_migrations
+    if not (0 <= skipped <= triggers):
+        v.append(f"seed={ctx.seed}: idle_check_skipped_triggers={skipped} not in [0, "
+                  f"burst_triggers={triggers}]")
+    if not ctx.burst_idle_check and skipped != 0:
+        v.append(f"seed={ctx.seed}: burst_idle_check=False but idle_check_skipped_triggers="
+                  f"{skipped} (expected 0 -- the flag must have zero effect when off)")
+    if not (0 <= dst_busy <= burst_migs):
+        v.append(f"seed={ctx.seed}: burst_migrations_dst_busy={dst_busy} not in [0, "
+                  f"burst_triggered_migrations={burst_migs}] (dst_busy counts a SUBSET of "
+                  f"burst-tagged migrations)")
+    return (len(v) == 0, v)
+
+
 def check_8_paired_workload(plan_a, plan_b, workload, penalty, seed):
     try:
         paired_compare.assert_same_workload(plan_a, plan_b, "baseline", "burst_aware")
@@ -370,7 +410,7 @@ def check_8_paired_workload(plan_a, plan_b, workload, penalty, seed):
 INVARIANT_NAMES = [
     "1_conservation", "2_timing", "3_work_accounting", "4_single_location",
     "5_only_queued_migrate", "6_migration_bookkeeping", "7_determinism",
-    "9_stacked_placement", "10_burst_bookkeeping",
+    "9_stacked_placement", "10_burst_bookkeeping", "11_idle_check_bookkeeping",
 ]
 
 
@@ -379,8 +419,9 @@ def run_matrix():
     paired_results = []  # dicts: config, workload, penalty, seed, status, violations
     n_runs = 0
 
-    for penalty_model, burst_gap_gate in CONFIGS:
-        config_label = f"penalty_model={penalty_model},burst_gap_gate={burst_gap_gate}"
+    for penalty_model, burst_gap_gate, burst_idle_check in CONFIGS:
+        config_label = (f"penalty_model={penalty_model},burst_gap_gate={burst_gap_gate},"
+                         f"burst_idle_check={burst_idle_check}")
         for workload_key, wl in WORKLOADS.items():
             for penalty in PENALTIES:
                 for i in range(N_SEEDS):
@@ -388,9 +429,11 @@ def run_matrix():
                     ctxs = {}
                     for scheduler_name, scheduler_cls in SCHEDULERS.items():
                         ctx_a = run_instrumented(workload_key, wl, scheduler_cls, scheduler_name, penalty, seed,
-                                                  penalty_model=penalty_model, burst_gap_gate=burst_gap_gate)
+                                                  penalty_model=penalty_model, burst_gap_gate=burst_gap_gate,
+                                                  burst_idle_check=burst_idle_check)
                         ctx_b = run_instrumented(workload_key, wl, scheduler_cls, scheduler_name, penalty, seed,
-                                                  penalty_model=penalty_model, burst_gap_gate=burst_gap_gate)
+                                                  penalty_model=penalty_model, burst_gap_gate=burst_gap_gate,
+                                                  burst_idle_check=burst_idle_check)
                         n_runs += 2
 
                         per = {
@@ -403,6 +446,7 @@ def run_matrix():
                             "7_determinism": check_7_determinism(ctx_a, ctx_b),
                             "9_stacked_placement": check_9_stacked_placement(ctx_a),
                             "10_burst_bookkeeping": check_10_burst_bookkeeping(ctx_a),
+                            "11_idle_check_bookkeeping": check_11_idle_check_bookkeeping(ctx_a),
                         }
                         for inv_name, (status, violations) in per.items():
                             all_results.append(dict(
@@ -441,7 +485,7 @@ def _cell_status(rows):
 
 
 def print_report(all_results, paired_results, n_runs, elapsed):
-    configs = [f"penalty_model={pm},burst_gap_gate={g}" for pm, g in CONFIGS]
+    configs = [f"penalty_model={pm},burst_gap_gate={g},burst_idle_check={c}" for pm, g, c in CONFIGS]
     any_fail = False
 
     for config_label in configs:
@@ -507,7 +551,8 @@ def print_report(all_results, paired_results, n_runs, elapsed):
                       f"penalty={r['penalty']} seed={r['seed']}")
                 print(f"      {r['violations']}")
     else:
-        print("ALL INVARIANTS PASSED (both configs: legacy, and penalty_model=ran_only+burst_gap_gate=True).")
+        print("ALL INVARIANTS PASSED (all 3 configs: legacy, penalty_model=ran_only+burst_gap_gate=True, "
+              "and penalty_model=ran_only+burst_idle_check=True).")
     print("=" * 100)
     print(f"\n{n_runs} simulation runs, {elapsed:.1f}s total runtime "
           f"({elapsed / n_runs:.3f}s/run average).")
@@ -534,7 +579,7 @@ def write_csv(all_results, paired_results):
 def main():
     start = time.time()
     print(f"Running invariant matrix: {len(CONFIGS)} configs "
-          f"({', '.join(f'penalty_model={pm}/burst_gap_gate={g}' for pm, g in CONFIGS)}) x "
+          f"({', '.join(f'penalty_model={pm}/burst_gap_gate={g}/burst_idle_check={c}' for pm, g, c in CONFIGS)}) x "
           f"{len(WORKLOADS)} workloads x {len(SCHEDULERS)} schedulers x "
           f"{len(PENALTIES)} penalties x {N_SEEDS} seeds (seeds {SEED_BASE}+), each run TWICE "
           f"for the determinism check (invariant 7).\n")
