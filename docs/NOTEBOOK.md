@@ -3501,3 +3501,60 @@ existing ungated destination logic unchanged when it says go.
 
 Task 10 pre-registers and prepares (does not run) v4: `burst_idle_check`,
 using check C3, in place of `burst_gap_gate`.
+
+## 2026-09-30d — Task 10 pre-registration (committed BEFORE any implementation)
+
+**(a) `burst_idle_check` (new flag, default `False` -- opt-in, v3
+stays reproducible).** In `on_task_placed()`, AFTER the detector
+triggers and the cooldown gate passes (i.e. exactly where
+`self.burst_triggers += 1` and the `"burst_trigger"` log line already
+sit) and BEFORE the `for domain in domain_chain(core):` walk: if at
+least one core anywhere on the machine is idle, run the walk exactly
+as the ungated code already does today -- same `_find_checker()`
+destination election, same `_balance_domain()` call, every level of
+`domain_chain(core)`, completely unchanged; otherwise skip the whole
+walk (all levels, not a per-domain skip like `burst_gap_gate`) and
+count it. This ONE check is the only difference from the ungated code
+-- unlike `burst_gap_gate`, it makes no destination change at all,
+per the 2026-09-30c finding above that the destination change (not
+the gap check) was what actually produced v3's harm. Orthogonal to
+`burst_gap_gate` (both flags can coexist in the code; v4 uses
+`burst_idle_check` alone, `burst_gap_gate=False`).
+
+**(b) Everything else as Task 9.** `penalty_model="ran_only"` for
+baseline and burst-aware alike (Task 9a, unchanged, applies
+universally). Baseline (`LoadBalancer`) logic frozen -- no baseline
+change in Task 10 at all. Same 12 threshold configs on the grid.
+Penalties 0/0.5/2ms. Selection rule (e) unchanged: only penalties 0
+and 0.5 disqualify a config; 2ms is measured and reported in full but
+does not disqualify; among harm-free configs, rank by mean
+`stacked_medium`+`stacked_high` `p95_wait` %% change at penalties 0/0.5,
+most negative wins.
+
+**(c) Seeds: grid FRESH 110000+, confirmation FRESH 120000+.** A
+single `+100000` offset from the v1/v2 base seeds (grid base 10000,
+confirmation base 20000) reaches both ranges in one step and preserves
+the existing "100 apart per workload" spacing automatically. Never
+used by any prior grid/confirmation/audit/diagnostic range in this
+repo (prior: 10000+/20000+/30000+/40000+/50000+/60000+/70000+/80000+/
+90000+/95000+/96000+).
+
+**(d) Confirmation variants (4, all under `penalty_model="ran_only"`,
+`burst_gap_gate=False`):**
+  - `selected_checked` -- v4's selected config, `burst_idle_check=True`
+  - `selected_unchecked` -- the same thresholds, `burst_idle_check=False`
+    (isolates the check's own effect, holding thresholds fixed)
+  - `original_q2_a0.8_or_unchecked` -- the pre-calibration detector,
+    `burst_idle_check=False` (historical reference point, as in v3)
+  - `runner_up_checked` -- v4's runner-up config, `burst_idle_check=True`
+    (unlike v3's `runner_up_ungated`: the runner-up is tested WITH the
+    mechanism here, since the mechanism itself is what's under test,
+    not just the threshold choice)
+
+**(e)/(f) Selection and reporting rule: identical to Task 9's (e)/(h)**
+-- if no config is harm-free under the corrected rule at penalties
+0/0.5, that is the reported result, exactly as v2 was (no config
+selected there).
+
+**Not done, per instruction:** no code was changed before this entry
+was committed. Step 2 (implementation) follows as its own commit.
