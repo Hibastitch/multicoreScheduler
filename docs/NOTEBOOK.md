@@ -3458,3 +3458,46 @@ the Task 9 diagnostic's finding (2026-09-30 entry above) that
 being the ones moved) is highest. Reported here as a mechanism
 observation only -- no rule, selection, or default changed by this
 entry.
+
+## 2026-09-30c — Task 10 result: v3 stands as a test of "per-domain gap check + least-loaded destination"; Task 10a motivates v4
+
+Recorded before any Task 10 code change.
+
+**What v3 actually tested.** `burst_gap_gate=True` (Task 9b) bundled TWO
+changes into one flag: (1) a per-domain gap check (skip a domain unless
+the burst core is >=2 `nr_running` ahead of the least-loaded OTHER
+core in that domain), and (2) a destination change (the balance target
+becomes that explicitly least-loaded core, replacing the legacy
+`_find_checker()` election used by the ungated code). The 2026-09-30
+diagnostic entry (above) found (2), not (1), is what actually explains
+`bursty_high_s64`'s penalty=0 `avg_wait` harm: `selected_gated`
+produced MORE burst migrations than `selected_ungated` there (126.6 vs
+102.4/run), not fewer, because the least-loaded destination measures a
+larger imbalance and so `_balance_domain()` moves more tasks per
+domain that passes the gate -- the gap check itself passed almost
+every domain through unchanged (~95.7%). The destination change was
+never the intended design (Task 9b's own pre-registration, NOTEBOOK.md
+2026-09-29h(b), motivates it only as "the compared least-loaded core,"
+a side effect of stating the gap check precisely -- not a goal in
+itself). **v3's results stand as a correct, honest test of what was
+actually run** -- this is not a retraction, it is the reason a
+different mechanism is now being tried.
+
+**What motivates v4.** Task 10a (2026-09-30b, diagnostic, seeds
+96000+, no rule/default changed) tested four HYPOTHETICAL machine-wide
+checks against the real trigger-time machine state, never installing
+any of them: gap-based checks (C1: `max_gap>=2`, C2: `max_gap>=3`, C4:
+C3 OR C2) almost never block (0% on 4 of 5 workloads, 4.9% at most) --
+`max_gap` is not a useful discriminator, because `q4_a1.5_and` only
+fires after queue growth has already built up, so the burst core is
+already well ahead of everything else by construction. "At least one
+core idle" (C3), by contrast, blocks 99.4% of `bursty_high_s64`'s
+triggers (removing 603/606 of its burst migrations) while blocking 0%
+on `stacked_medium`/`rate1.5_s12`/`rate3.0_s12` and 18.5% on
+`stacked_high` -- it cleanly discriminates the one harmful workload
+from the others, and (unlike Task 9b) requires no destination change
+at all: it is a single up-front go/no-go on the whole walk, using the
+existing ungated destination logic unchanged when it says go.
+
+Task 10 pre-registers and prepares (does not run) v4: `burst_idle_check`,
+using check C3, in place of `burst_gap_gate`.
