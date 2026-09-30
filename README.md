@@ -2,15 +2,19 @@
 
 A discrete-event simulation of Linux's CFS/EEVDF scheduler and its multi-level load-balancing pipeline, built to test one question: can a new, purely-observable-signal "a burst of tasks just landed here" trigger call the kernel's own balancing logic *earlier* than the kernel's own periodic/newly-idle timers would, without making anything else worse?
 
-> **Reproduce the headline result** (the confirmed configuration is already selected — `final_results/1_calibration_grid/selected_config_v4.json` is committed, so this reproduces the *confirmation* run, not the calibration grid):
+> **Reproduce the headline result** (the confirmed configuration is already selected — `final_results/1_calibration_grid/selected_config_v4.json` is committed, so this reproduces the *confirmation* run, not the calibration grid; same loop as §5d):
 > ```powershell
 > cd final_results/2_confirmation
 > $env:TASK10_V4=1
-> foreach ($wl in @("stacked_low","stacked_medium","stacked_high","bursty_high_s24","bursty_high_s64",
+> foreach ($wl in @(
+>     "stacked_low","stacked_medium","stacked_high","bursty_high_s24","bursty_high_s64",
 >     "heavy_tail_high","rate0.5_s4","rate0.5_s12","rate0.75_s4","rate0.75_s12",
->     "rate1.0_s4","rate1.0_s12","rate1.5_s4","rate1.5_s12","rate3.0_s4","rate3.0_s12")) {
+>     "rate1.0_s4","rate1.0_s12","rate1.5_s4","rate1.5_s12","rate3.0_s4","rate3.0_s12"
+> )) {
 >     python task6_confirmation_run.py $wl
+>     if ($LASTEXITCODE -ne 0) { Write-Error "FAILED: $wl"; break }
 > }
+> (Get-ChildItem "results_task6_confirmation_v4_*_summary.csv").Count   # expect 16
 > python task6_confirmation_analyze.py
 > python task6_confirmation_tables.py
 > ```
@@ -31,9 +35,11 @@ A **task** is a unit of work numbered in the order it happened — an experiment
 | version | produced by | what changed | env var | seeds (grid / confirmation) | result | problem found | how it was found | fixed in |
 |---|---|---|---|---|---|---|---|---|
 | v1 | Task 6 | Task 6's own 12-config grid calibrates the detector from the original `q2_a0.8_or` up to `q2_a1.5_and` (kept as a report-only reference thereafter); baseline not yet audited against Linux source | *(none)* | 10000+ / 20000+ | confirmation: harm-free on every workload run, including one (`heavy_tail`) never seen by the grid | baseline not Linux-faithful — periodic-checker election doesn't match `should_we_balance()` | Task 7, reading `fair.c` directly | v2 |
-| v2 | Tasks 7+8 | baseline fixed to match Linux v7.2: `checker_model`, `busy_factor`, `cache_hot`, `numa_fix`, `placement_root`, `time_slice` (§4's repo table shows which module owns each) | `TASK8_V2` | 10000+ / 40000+ (confirmation not run) | grid: **0/12 configs harm-free** — the fixed baseline exposes real harm the unaudited one hid | firing on a saturated machine (`bursty_high_s64`) harms `avg_slowdown`, concentrated at penalty=2ms (all 12 configs), 2 configs also at penalty=0 | the v2 grid run itself | v3 |
+| v2 | Tasks 7+8 | baseline fixed to match Linux v7.2: `checker_model`, `busy_factor`, `cache_hot`, `numa_fix`, `placement_root`, `time_slice` (§4's repo table shows which module owns each) | `TASK8_V2` | 10000+ (reused from v1, see §7) / 40000+ (confirmation not run) | grid: **0/12 configs harm-free** *under the rule in force at the time* — the fixed baseline exposes real harm the unaudited one hid | firing on a saturated machine (`bursty_high_s64`) harms `avg_slowdown`, concentrated at penalty=2ms (all 12 configs — see the rule-history note below the table), 2 configs also at penalty=0 | the v2 grid run itself | v3 |
 | v3 | Task 9 | `burst_gap_gate` (skip a domain unless the burst core is >=2 `nr_running` ahead of the least-loaded other core in it — bundled with a destination change, the balance target becomes that least-loaded core) + `penalty_model="ran_only"` | `TASK9_V3` | 70000+ / 80000+ | grid: 2/12 harm-free (`q4_a1.5_and` selected, `q2_a1.5_and` runner-up, near-tied); confirmation: 1 harm cell (`bursty_high_s64`, penalty=0, `avg_wait` +3.67%) | the DESTINATION change, not the gap check itself, causes the harm — `selected_gated` made MORE burst migrations than ungated, not fewer, because the least-loaded destination measures a larger imbalance | Task 9's own diagnostic (`development/task9_gap_gate_diagnostic/`) traced it to the destination change; Task 10a (`development/task10_check_mechanism/`) then showed idle capacity, not imbalance, is what actually separates helpful from harmful firings | v4 |
 | v4 | Task 10 | `burst_idle_check` only: one machine-wide "is any core idle" check before the unchanged balancing walk — no gap gate, no destination change | `TASK10_V4` | 110000+ / 120000+ | grid: 8/12 harm-free (`q8_a1.5_or` selected, `q2_a1.5_and` runner-up, near-tied); confirmation: **48/48 harm-free** | known gap (not fixed, an accepted trade-off): `q8_a1.5_or` can never fire on a 4-task burst — `queue_growth_threshold=8 > burst_size=4` is arithmetically impossible | confirmed directly in the v4 confirmation data (`detector_fires=0.0` on every `rate*_s4` workload) | *(not fixed — traded off against the harm-free result)* |
+
+**Rule history, since it matters for reading the v2 row correctly:** when v2 was judged (2026-09-29g), the selection rule was explicitly "UNCHANGED from the 2026-09-27h/i calibration" (2026-09-29c) — harm at **any** penalty disqualified a config, and there was no penalty=0.5ms at all (only 0 and 2ms existed before Task 9). Rule (e) — only 0/0.5 disqualify, 2ms is a reported stress test that doesn't — was introduced later, in Task 9's pre-registration (2026-09-29h), *motivated by* this exact v2 result (all 12 configs harmful, concentrated at penalty=2ms). Report-only, computed directly from the real v2 perseed CSVs with the current `harms>wins` logic, restricted to penalty=0.0 (v2 has no 0.5ms data to apply the rest of rule (e) to): **10 of 12 configs would be harm-free** — every config is harmful at `bursty_high_s64`/penalty=2.0, but only `q2_a0.8_or` and `q2_a1.5_or` are *also* harmful at penalty=0.0. This was never run as an actual selection (v2's confirmation was correctly never run at all, table above) — it's offered here only to show how much of the "0/12 harm-free" result was specifically the then-disqualifying 2ms stress test.
 
 Every task, in order (folders are where the *investigation* lives, not necessarily the final code — that's simulator/ and final_results/, §4):
 
@@ -232,11 +238,11 @@ Grid workloads (§5b) are the 9-workload subset: `stacked_{low,medium,high}`, `b
 
 ## 7. Seed ranges
 
-Every range used in this project's history, taken from `docs/NOTEBOOK.md`'s dated entries — each pipeline stage always gets a fresh range, never reused:
+Every range used in this project's history, taken from `docs/NOTEBOOK.md`'s dated entries. Every *confirmation* run uses a seed range never used before, and every new *grid* version normally does too — with one deliberate exception: the v2 grid reused v1's exact 10000+ seeds rather than drawing fresh ones, because only the baseline changed between them (the six fidelity fixes to `LoadBalancer.py`/`Main.py`), not the workload generator, the detector, or the 12-config grid itself (`docs/NOTEBOOK.md` 2026-09-29c: "grid stays at its existing 10000+ range (unchanged, no re-run needed for the grid itself...)"). Reusing the identical seeds means v1 and v2 saw the identical task streams, so any difference between their results is attributable to the baseline fix alone, not to new sampling noise:
 
 | range | used for |
 |---|---|
-| 10000+ | calibration grid, v1 (original detector thresholds, pre-fidelity-fixes) |
+| 10000+ | calibration grid, v1 AND v2 (v1: tested all 12 configs on the unaudited baseline, selected `q2_a1.5_and`; v2: same seeds, same 12 configs, re-run on the fixed baseline — deliberately reused, see above) |
 | 20000+ | original confirmation run, v1 |
 | 30000+ | Task 7: periodic-checker-election audit |
 | 40000+ | confirmation re-run, v2 (six baseline fidelity fixes made default) — **not actually run**; the v2 grid alone was already harmful, so confirmation was correctly skipped |
