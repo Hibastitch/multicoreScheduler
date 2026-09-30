@@ -19,6 +19,10 @@ from task6_confirmation_analyze import (
     WORKLOAD_ORDER, METRICS, COST_METRICS, load_rows, fnum,
     V2_SUFFIX, V3, V4, SUFFIX, PENALTIES, HEADLINE_VARIANT, SECONDARY_VARIANTS,
 )
+# task6_confirmation_analyze's own import (above) already did
+# sys.path.insert(.../simulator) at module-load time, so this is safe
+# here without repeating it.
+from paired_compare import sign_test_p, format_p, TIE_TOLERANCE
 
 # TASK 9 v3 / TASK 10 v4 (2026-09-29/30, Step 4/3): under v1/v2 this
 # writes tables for the 2 non-headline variants (original_q2_a0.8_or,
@@ -518,6 +522,126 @@ def write_compact_markdown(compact_rows, out_path):
     print(f"Wrote {out_path}")
 
 
+# ===================== v4 only: direct checked-vs-unchecked =====================
+# Added 2026-09-30 (docs/NOTEBOOK.md 2026-09-30d, before any v4 result
+# exists) -- a DIRECT paired comparison of SECONDARY_VARIANTS[0] (the
+# headline, mechanism ON) against SECONDARY_VARIANTS[1] (same
+# thresholds, mechanism OFF), same seed/workload/penalty, straight from
+# the per-seed variant_{metric} columns already in the perseed CSV.
+# This is NOT a variant-vs-baseline comparison (everything else in this
+# file is) and does NOT apply the harms>wins corrected-rule harm label
+# (docs/NOTEBOOK.md 2026-09-27h) -- checked-vs-unchecked is a mechanism
+# effect, not a baseline/variant harm judgment, so it is reported as a
+# plain effect size (%% change) + significance (exact two-sided sign
+# test, direction-neutral) with no win/harm/select semantics attached.
+CHECK_EFFECT_METRICS = ["p95_wait", "avg_wait", "avg_slowdown", "total_migrations"]
+
+
+def load_perseed_rows():
+    rows = []
+    for path in glob.glob(f"results_task6_confirmation{SUFFIX}_*_perseed.csv"):
+        if SUFFIX == "" and ("_v2_" in path or "_v3_" in path or "_v4_" in path):
+            continue  # plain mode must not also pick up v2/v3/v4 files
+        rows.extend(csv.DictReader(open(path)))
+    return rows
+
+
+def build_check_effect(perseed_rows, variant_a, variant_b, metrics=CHECK_EFFECT_METRICS):
+    """Paired by (workload, penalty, seed): variant_a's variant_{metric}
+    value vs variant_b's, for the SAME seed -- not vs baseline. Returns
+    one row per (workload, penalty) actually present for variant_a."""
+    by_key = {}
+    for r in perseed_rows:
+        by_key[(r["workload"], r["penalty"], r["variant"], r["seed"])] = r
+
+    out_rows = []
+    for wl in WORKLOAD_ORDER:
+        for pen in PENALTIES:
+            seeds = sorted({r["seed"] for r in perseed_rows
+                             if r["workload"] == wl and r["penalty"] == pen and r["variant"] == variant_a})
+            if not seeds:
+                continue
+            row = dict(workload=wl, penalty=pen, n_seeds=len(seeds))
+            for metric in metrics:
+                a_vals, b_vals = [], []
+                for seed in seeds:
+                    ra = by_key.get((wl, pen, variant_a, seed))
+                    rb = by_key.get((wl, pen, variant_b, seed))
+                    if ra is None or rb is None:
+                        continue
+                    a_vals.append(float(ra[f"variant_{metric}"]))
+                    b_vals.append(float(rb[f"variant_{metric}"]))
+                if not a_vals:
+                    row[f"{metric}_pct"] = None
+                    row[f"{metric}_sign_p"] = None
+                    row[f"{metric}_n_eff"] = 0
+                    row[f"{metric}_a_over_b"] = None
+                    row[f"{metric}_b_over_a"] = None
+                    continue
+                diffs = [a - b for a, b in zip(a_vals, b_vals)]
+                a_over_b = sum(1 for d in diffs if d < -TIE_TOLERANCE)  # a lower than b
+                b_over_a = sum(1 for d in diffs if d > TIE_TOLERANCE)   # a higher than b
+                n_eff = len(diffs) - sum(1 for d in diffs if abs(d) <= TIE_TOLERANCE)
+                mean_a = sum(a_vals) / len(a_vals)
+                mean_b = sum(b_vals) / len(b_vals)
+                pct = ((mean_a - mean_b) / mean_b * 100) if mean_b else float("nan")
+                p = sign_test_p(max(a_over_b, b_over_a), n_eff) if n_eff else 1.0
+                row[f"{metric}_pct"] = pct
+                row[f"{metric}_sign_p"] = p
+                row[f"{metric}_n_eff"] = n_eff
+                row[f"{metric}_a_over_b"] = a_over_b
+                row[f"{metric}_b_over_a"] = b_over_a
+            out_rows.append(row)
+    return out_rows
+
+
+def write_check_effect_csv(rows, out_path, metrics=CHECK_EFFECT_METRICS):
+    cols = ["workload", "penalty", "n_seeds"]
+    for m in metrics:
+        cols += [f"{m}_pct", f"{m}_sign_p", f"{m}_n_eff", f"{m}_a_over_b", f"{m}_b_over_a"]
+    with open(out_path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=cols)
+        w.writeheader()
+        w.writerows(rows)
+    print(f"Wrote {out_path}")
+
+
+def write_check_effect_markdown(rows, out_path, variant_a, variant_b, metrics=CHECK_EFFECT_METRICS):
+    lines = [
+        f"Direct paired comparison: **{variant_a}** vs **{variant_b}** -- same seed, same "
+        f"workload, same penalty, NOT vs baseline. This isolates the mechanism's own effect "
+        f"(same thresholds either way).",
+        "",
+    ]
+    header_cells = ["workload", "penalty"] + [f"{m} Δ% (sign_p)" for m in metrics]
+    lines.append("| " + " | ".join(header_cells) + " |")
+    lines.append("|" + "---|" * len(header_cells))
+    for r in rows:
+        cells = [r["workload"], r["penalty"]]
+        for m in metrics:
+            pct, p = r.get(f"{m}_pct"), r.get(f"{m}_sign_p")
+            if pct is None:
+                cells.append("n/a")
+            else:
+                cells.append(f"{pct:+.1f}%{stars(p)} ({format_p(p)})")
+        lines.append("| " + " | ".join(cells) + " |")
+
+    footer = (
+        f"\n_Δ%% = (mean({variant_a}) - mean({variant_b})) / mean({variant_b}) * 100, paired by "
+        f"seed (tie-tolerant, |diff|<={TIE_TOLERANCE:g} treated as a tie and excluded from the "
+        "sign test's n). sign_p is the exact two-sided binomial sign test "
+        "(paired_compare.sign_test_p) -- direction-neutral, so this table reports effect size + "
+        f"significance directly and does NOT apply the harms>wins corrected-rule harm label "
+        f"(docs/NOTEBOOK.md 2026-09-27h): {variant_a} vs {variant_b} is a mechanism-effect "
+        "comparison, not a baseline/variant harm judgment. total_migrations is a cost metric, "
+        "not itself a win/harm-labeled metric elsewhere in this repo -- reported here purely "
+        "descriptively. Stars: \\* p<0.05, \\*\\* p<0.01, \\*\\*\\* p<0.001._\n"
+    )
+    with open(out_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n" + footer)
+    print(f"Wrote {out_path}")
+
+
 def main():
     rows = load_rows()
     print(f"Loaded {len(rows)} summary rows from "
@@ -553,6 +677,17 @@ def main():
     print("\nGroup counts:")
     from collections import Counter
     print(Counter(r["group"] for r in compact_rows))
+
+    if V4:
+        # Direct checked-vs-unchecked comparison (SECONDARY_VARIANTS[0]
+        # vs [1]) -- see the CHECK_EFFECT functions' module comment.
+        # v4-only, per the 2026-09-30d pre-registration addendum.
+        perseed_rows = load_perseed_rows()
+        variant_a, variant_b = SECONDARY_VARIANTS[0], SECONDARY_VARIANTS[1]
+        check_rows = build_check_effect(perseed_rows, variant_a, variant_b)
+        write_check_effect_csv(check_rows, f"results_task6_confirmation{SUFFIX}_CHECK_EFFECT.csv")
+        write_check_effect_markdown(check_rows, f"results_task6_confirmation{SUFFIX}_CHECK_EFFECT.md",
+                                     variant_a, variant_b)
 
 
 if __name__ == "__main__":

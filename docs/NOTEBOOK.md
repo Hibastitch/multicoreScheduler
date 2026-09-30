@@ -3558,3 +3558,19 @@ selected there).
 
 **Not done, per instruction:** no code was changed before this entry
 was committed. Step 2 (implementation) follows as its own commit.
+
+**Addendum (2026-09-30e), added to this pre-registration before any
+v4 result exists:** the confirmation-analysis pipeline (Step 3) will
+also produce a DIRECT paired comparison of `selected_checked` vs
+`selected_unchecked` (same seed, same workload, same penalty --
+isolating `burst_idle_check`'s own effect, NOT a vs-baseline
+comparison), written to `results_task6_confirmation_v4_CHECK_EFFECT.
+{csv,md}` by `task6_confirmation_tables.py`'s v4 path: per (workload,
+penalty), %% change and exact two-sided sign-test p (`paired_compare.
+sign_test_p`) for `p95_wait`, `avg_wait`, `avg_slowdown`, and
+`total_migrations`. This does NOT apply the `harms>wins` corrected-
+rule harm label (2026-09-27h) -- checked-vs-unchecked is a mechanism-
+effect report, not a baseline/variant harm judgment, so it carries no
+win/harm/selection semantics. Added to `task6_confirmation_tables.py`
+now (committed with this addendum, before any v4 grid or confirmation
+run); no simulation was run to produce this addendum.
