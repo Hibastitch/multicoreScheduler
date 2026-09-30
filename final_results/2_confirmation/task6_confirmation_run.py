@@ -51,8 +51,24 @@ V2_SEED_OFFSET = 20000 if os.environ.get("TASK8_V2") else 0
 # anything.
 V3 = bool(os.environ.get("TASK9_V3"))
 V3_SUFFIX = "_v3" if V3 else ""
-SUFFIX = V3_SUFFIX or V2_SUFFIX
 V3_SEED_OFFSET = 60000 if V3 else 0
+
+# TASK 10 v4 RE-RUN (2026-09-30, docs/NOTEBOOK.md 2026-09-30d pre-
+# registration, Step 3 "prepare, don't run"): TASK10_V4=1 (a) shifts
+# every workload's seed_base by +100000 from its BASE (20000+) value --
+# FRESH 120000+ seeds, 100 apart per workload; (b) writes to
+# _v4-suffixed outputs; (c) keeps the 3-penalty sweep; (d) sets
+# penalty_model="ran_only" universally (Task 9a, unchanged); (e)
+# replaces VARIANTS with rule (d)'s 4: selected WITH the idle check,
+# selected WITHOUT it, the original q2_a0.8_or WITHOUT it, and the
+# runner-up WITH it -- read from selected_config_v4.json, written by
+# ../1_calibration_grid/task6_threshold_grid_recompute_harm.py's v4
+# mode (run that first). Empty VARIANTS is reported, not a crash, same
+# as v3.
+V4 = bool(os.environ.get("TASK10_V4"))
+V4_SUFFIX = "_v4" if V4 else ""
+SUFFIX = V4_SUFFIX or V3_SUFFIX or V2_SUFFIX
+V4_SEED_OFFSET = 100000 if V4 else 0
 
 from Main import run_simulation
 from LoadBalancer import LoadBalancer
@@ -61,7 +77,7 @@ from paired_compare import assert_same_workload, wilcoxon_signed_rank, format_p,
 import diagnostics
 
 N_REPS = 30
-PENALTIES = [0.0, 0.5, 2.0] if V3 else [0.0, 2.0]
+PENALTIES = [0.0, 0.5, 2.0] if (V3 or V4) else [0.0, 2.0]
 
 # FINAL configuration is now the plain default for both classes (2026-09-27i)
 FINAL_KWARGS = {}
@@ -105,11 +121,55 @@ def _load_v3_variants():
     return variants
 
 
-VARIANTS = _load_v3_variants() if V3 else {
-    "final": FINAL_KWARGS,
-    "original_q2_a0.8_or": ORIGINAL_KWARGS,
-    "runner_up_q4_a1.5_or": RUNNER_UP_KWARGS,
-}
+def _load_v4_variants():
+    """Task 10 pre-registration (d): 4 variants built from
+    selected_config_v4.json (written by ../1_calibration_grid/
+    task6_threshold_grid_recompute_harm.py's v4 mode). Unlike v3's
+    runner_up_ungated, the runner-up is tested WITH the mechanism here
+    (burst_idle_check=True) -- the mechanism itself is what's under
+    test, not just the threshold choice. Returns {} if the file doesn't
+    exist yet or no config was selected there."""
+    path = pathlib.Path(__file__).resolve().parents[1] / "1_calibration_grid" / "selected_config_v4.json"
+    try:
+        with open(path) as f:
+            sel = json.load(f)
+    except FileNotFoundError:
+        print(f"selected_config_v4.json not found at {path} -- run the v4 grid and "
+              f"task6_threshold_grid_recompute_harm.py first.")
+        return {}
+    if not sel.get("selected"):
+        print(f"selected_config_v4.json says NO CONFIG SELECTED (harm_free_configs="
+              f"{sel.get('harm_free_configs')}) -- nothing to confirm.")
+        return {}
+
+    def _thresholds(entry):
+        return dict(queue_growth_threshold=entry["queue_growth_threshold"],
+                    arrival_rate_threshold=entry["arrival_rate_threshold"], combine=entry["combine"])
+
+    selected = _thresholds(sel["selected"])
+    variants = {
+        "selected_checked": dict(selected, burst_idle_check=True),
+        "selected_unchecked": dict(selected, burst_idle_check=False),
+        "original_q2_a0.8_or_unchecked": dict(ORIGINAL_KWARGS, burst_idle_check=False),
+    }
+    if sel.get("runner_up"):
+        variants["runner_up_checked"] = dict(_thresholds(sel["runner_up"]), burst_idle_check=True)
+    else:
+        print("selected_config_v4.json has no runner_up (fewer than 2 harm-free configs) "
+              "-- confirmation will run without a runner-up variant.")
+    return variants
+
+
+if V4:
+    VARIANTS = _load_v4_variants()
+elif V3:
+    VARIANTS = _load_v3_variants()
+else:
+    VARIANTS = {
+        "final": FINAL_KWARGS,
+        "original_q2_a0.8_or": ORIGINAL_KWARGS,
+        "runner_up_q4_a1.5_or": RUNNER_UP_KWARGS,
+    }
 
 WORKLOADS = {
     "stacked_low":     dict(profile="stacked_burst", intensity="low", overrides=None, n_tasks=200, seed_base=20000),
@@ -135,7 +195,7 @@ for _rate in [0.5, 0.75, 1.0, 1.5, 3.0]:
         )
         _RATE_SEED_BASE += 100
 
-_SEED_OFFSET = V3_SEED_OFFSET or V2_SEED_OFFSET
+_SEED_OFFSET = V4_SEED_OFFSET or V3_SEED_OFFSET or V2_SEED_OFFSET
 if _SEED_OFFSET:
     for _wl in WORKLOADS.values():
         _wl["seed_base"] += _SEED_OFFSET
@@ -157,7 +217,7 @@ def run_baseline(profile, intensity, seed, penalty, overrides, n_tasks):
     # pre-registration -- it's a cost-model correction, not one of the
     # 4 things rule (g) compares.
     kwargs = {"migration_penalty": penalty}
-    if V3:
+    if V3 or V4:
         kwargs["penalty_model"] = "ran_only"
     m, b, gt, migs, logger, plan = run_simulation(
         profile, LoadBalancer, intensity_level=intensity, seed=seed,
@@ -172,8 +232,9 @@ def run_baseline(profile, intensity, seed, penalty, overrides, n_tasks):
 
 def run_variant(profile, intensity, seed, penalty, overrides, n_tasks, variant_kwargs):
     kwargs = dict(variant_kwargs, migration_penalty=penalty)
-    if V3:
-        kwargs["penalty_model"] = "ran_only"  # burst_gap_gate is already IN variant_kwargs for v3
+    if V3 or V4:
+        # burst_gap_gate/burst_idle_check is already IN variant_kwargs for v3/v4
+        kwargs["penalty_model"] = "ran_only"
     m, b, gt, migs, logger, plan = run_simulation(
         profile, BurstAwareLoadBalancer, intensity_level=intensity, seed=seed,
         balancer_kwargs=kwargs, intensity_overrides=overrides, n_tasks=n_tasks,
@@ -190,13 +251,13 @@ def main():
     workload_key = sys.argv[1]
     wl = WORKLOADS[workload_key]
 
-    # TASK 9 rule (h): if no config was harm-free in the v3 grid,
-    # _load_v3_variants() already printed why and returned {} --
-    # nothing to confirm. Report and stop, don't crash on an empty
-    # per_seed_rows[0] below.
-    if V3 and not VARIANTS:
-        print(f"\nNO CONFIG SELECTED (see message above) -- {workload_key}: nothing to confirm, "
-              f"per rule (h). No output written.")
+    # TASK 9 rule (h) / TASK 10: if no config was harm-free in the grid,
+    # _load_v3_variants()/_load_v4_variants() already printed why and
+    # returned {} -- nothing to confirm. Report and stop, don't crash on
+    # an empty per_seed_rows[0] below.
+    if (V3 or V4) and not VARIANTS:
+        print(f"\nNO CONFIG SELECTED (see message above) -- {workload_key}: nothing to confirm. "
+              f"No output written.")
         return
 
     per_seed_rows = []

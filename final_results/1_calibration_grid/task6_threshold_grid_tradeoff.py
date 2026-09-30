@@ -39,17 +39,24 @@ V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 # the EXPECTED_HARM/EXPECTED_BENEFIT gate, same reasoning as v2.
 V3 = bool(os.environ.get("TASK9_V3"))
 V3_SUFFIX = "_v3" if V3 else ""
-SUFFIX = V3_SUFFIX or V2_SUFFIX
-RULE_PENALTIES = {"0.0", "0.5"} if V3 else {"0.0", "2.0"}
-ALL_PENALTIES = ["0.0", "0.5", "2.0"] if V3 else ["0.0", "2.0"]
+
+# TASK 10 v4 RE-RUN (2026-09-30, Step 3): TASK10_V4=1 -- same treatment
+# as v3 (rule (e) penalty filtering, skip the v1-reference mismatch
+# gate, read SELECTED/RUNNER_UP from a JSON file instead of the
+# hardcoded v1 constants), reading selected_config_v4.json instead.
+V4 = bool(os.environ.get("TASK10_V4"))
+V4_SUFFIX = "_v4" if V4 else ""
+SUFFIX = V4_SUFFIX or V3_SUFFIX or V2_SUFFIX
+RULE_PENALTIES = {"0.0", "0.5"} if (V3 or V4) else {"0.0", "2.0"}
+ALL_PENALTIES = ["0.0", "0.5", "2.0"] if (V3 or V4) else ["0.0", "2.0"]
 
 
 def _pen_key(pen):
     # v1/v2 keeps the ORIGINAL "p0"/"p2" scheme (pen[0]) -- unambiguous
-    # there since penalties are only ever "0.0"/"2.0". v3 has 3
+    # there since penalties are only ever "0.0"/"2.0". v3/v4 have 3
     # penalties, where pen[0] would collide "0.0" and "0.5" both to
     # "p0" -- uses "p0_0"/"p0_5"/"p2_0" instead.
-    return f"p{pen.replace('.', '_')}" if V3 else f"p{pen[0]}"
+    return f"p{pen.replace('.', '_')}" if (V3 or V4) else f"p{pen[0]}"
 
 
 SELECTED_DEFAULT = "q2_a1.5_and"  # v1's own pre-registered selection -- unused when V3
@@ -150,7 +157,7 @@ def main():
             benefit_score=benefit_score, **vals,
         ))
 
-        if not V3:
+        if not (V3 or V4):
             if EXPECTED_HARM.get(cfg) != harm_count:
                 mismatches.append(f"{cfg}: harm_count computed={harm_count} expected={EXPECTED_HARM.get(cfg)}")
             if cfg in EXPECTED_BENEFIT and abs(EXPECTED_BENEFIT[cfg] - benefit_score) > 0.01:
@@ -160,8 +167,8 @@ def main():
     for p in sorted(points, key=lambda p: p["config"]):
         print(f"{p['config']:16} {p['harm_count']:4}  {p['benefit_score']:6.2f}   {p['harmed_workloads']}")
 
-    if V2_SUFFIX or V3:
-        tag = "TASK9_V3" if V3 else "TASK8_V2"
+    if V2_SUFFIX or V3 or V4:
+        tag = "TASK10_V4" if V4 else ("TASK9_V3" if V3 else "TASK8_V2")
         print(f"\n({tag} mode: skipping the v1-reference mismatch gate below -- "
               f"a {tag} run is EXPECTED to differ from the original grid's values.)")
     elif mismatches:
@@ -180,20 +187,22 @@ def main():
         w.writerows(points)
     print(f"Wrote tradeoff_points{SUFFIX}.csv")
 
-    # TASK 9 v3: SELECTED/RUNNER_UP come from selected_config_v3.json
-    # (written by task6_threshold_grid_recompute_harm.py's v3 mode),
-    # not the hardcoded v1 constants -- None/None (no star, no bold
-    # label) if the file doesn't exist yet or no config was selected.
+    # TASK 9 v3 / TASK 10 v4: SELECTED/RUNNER_UP come from
+    # selected_config{SUFFIX}.json (written by task6_threshold_grid_
+    # recompute_harm.py's matching mode), not the hardcoded v1
+    # constants -- None/None (no star, no bold label) if the file
+    # doesn't exist yet or no config was selected.
     selected, runner_up = SELECTED_DEFAULT, RUNNER_UP_DEFAULT
-    if V3:
+    if V3 or V4:
         selected, runner_up = None, None
+        sel_path = f"selected_config{SUFFIX}.json"
         try:
-            with open("selected_config_v3.json") as f:
+            with open(sel_path) as f:
                 sel = json.load(f)
             selected = sel["selected"]["config"] if sel.get("selected") else None
             runner_up = sel["runner_up"]["config"] if sel.get("runner_up") else None
         except FileNotFoundError:
-            print("\n(selected_config_v3.json not found -- run task6_threshold_grid_recompute_harm.py "
+            print(f"\n({sel_path} not found -- run task6_threshold_grid_recompute_harm.py "
                   "first. Plotting with no SELECTED/RUNNER_UP marker.)")
 
     make_plot(points, selected, runner_up)

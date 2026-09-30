@@ -50,8 +50,17 @@ V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 # suffixed grid CSVs and applies rule (e)'s penalty-based disqualification.
 V3 = bool(os.environ.get("TASK9_V3"))
 V3_SUFFIX = "_v3" if V3 else ""
-SUFFIX = V3_SUFFIX or V2_SUFFIX
-RULE_PENALTIES = {"0.0", "0.5"} if V3 else {"0.0", "2.0"}
+
+# TASK 10 v4 RE-RUN (2026-09-30, Step 3): TASK10_V4=1 reads the _v4-
+# suffixed grid CSVs, applies the SAME rule (e) penalty-based
+# disqualification as v3 (only 0/0.5 disqualify), and -- since this
+# script's corrected `harms>wins` rule is the authoritative one -- also
+# writes selected_config_v4.json for task6_confirmation_run.py's v4
+# mode to read.
+V4 = bool(os.environ.get("TASK10_V4"))
+V4_SUFFIX = "_v4" if V4 else ""
+SUFFIX = V4_SUFFIX or V3_SUFFIX or V2_SUFFIX
+RULE_PENALTIES = {"0.0", "0.5"} if (V3 or V4) else {"0.0", "2.0"}
 
 
 def sign_p(wins, n):
@@ -65,7 +74,7 @@ def sign_p(wins, n):
 def load_rows():
     rows = []
     for path in glob.glob(f"results_task6_threshold_grid{SUFFIX}_*_perseed.csv"):
-        if SUFFIX == "" and ("_v2_" in path or "_v3_" in path):
+        if SUFFIX == "" and ("_v2_" in path or "_v3_" in path or "_v4_" in path):
             continue  # plain mode must not also pick up v2/v3 files
         with open(path, newline="") as f:
             rows.extend(csv.DictReader(f))
@@ -190,12 +199,13 @@ def main():
               "harm-free list above (empty).")
     else:
         print(f"\nSELECTED (corrected rule): {best[0]} ({best[1]:+.2f}%)")
-        if V3 and runner_up:
+        if (V3 or V4) and runner_up:
             print(f"RUNNER-UP (corrected rule): {runner_up[0]} ({runner_up[1]:+.2f}%)")
 
-    # TASK 9 v3: this IS the authoritative (corrected-rule) selection --
-    # write it for task6_confirmation_run.py's v3 mode to read.
-    if V3:
+    # TASK 9 v3 / TASK 10 v4: this IS the authoritative (corrected-rule)
+    # selection -- write it for task6_confirmation_run.py's matching
+    # mode to read.
+    if V3 or V4:
         def _thresholds_for(cfg_name):
             m = re.match(r"^q(\d+)_a([\d.]+)_(or|and)$", cfg_name)
             if not m:
@@ -212,9 +222,10 @@ def main():
         if runner_up is not None:
             out["runner_up"] = _thresholds_for(runner_up[0])
             out["runner_up_mean_p95_pct"] = runner_up[1]
-        with open("selected_config_v3.json", "w") as f:
+        out_name = f"selected_config{SUFFIX}.json"
+        with open(out_name, "w") as f:
             json.dump(out, f, indent=2)
-        print(f"\nWrote selected_config_v3.json "
+        print(f"\nWrote {out_name} "
               f"(selected={out['selected']['config'] if out['selected'] else None}, "
               f"runner_up={out['runner_up']['config'] if out['runner_up'] else None})")
 

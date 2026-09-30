@@ -47,10 +47,31 @@ V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 # never used by any prior grid/confirmation/audit range in this repo.
 V3 = bool(os.environ.get("TASK9_V3"))
 V3_SUFFIX = "_v3" if V3 else ""
-SUFFIX = V3_SUFFIX or V2_SUFFIX
 V3_SEED_OFFSET = 60000 if V3 else 0
 V3_BASELINE_KWARGS = dict(penalty_model="ran_only") if V3 else {}
 V3_VARIANT_KWARGS = dict(penalty_model="ran_only", burst_gap_gate=True) if V3 else {}
+
+# TASK 10 v4 RE-RUN (2026-09-30, docs/NOTEBOOK.md 2026-09-30d pre-
+# registration, Step 3 "prepare, don't run"): TASK10_V4=1 in the
+# environment (a) writes to _v4-suffixed output files, (b) keeps the
+# same 3-penalty sweep (0/0.5/2ms) as v3, (c) sets penalty_model=
+# "ran_only" for both baseline and burst-aware (Task 9a, unchanged)
+# and burst_idle_check=True for burst-aware only (Task 10: skip the
+# WHOLE burst-triggered domain_chain walk unless at least one core is
+# idle machine-wide -- burst_gap_gate stays False, not combined), and
+# (d) shifts every workload's seed_base by +100000 from the v1/v2 base
+# -- FRESH 110000+ seeds, 100 apart per workload, never used by any
+# prior grid/confirmation/audit/diagnostic range in this repo.
+V4 = bool(os.environ.get("TASK10_V4"))
+V4_SUFFIX = "_v4" if V4 else ""
+SUFFIX = V4_SUFFIX or V3_SUFFIX or V2_SUFFIX
+V4_SEED_OFFSET = 100000 if V4 else 0
+V4_BASELINE_KWARGS = dict(penalty_model="ran_only") if V4 else {}
+V4_VARIANT_KWARGS = dict(penalty_model="ran_only", burst_idle_check=True) if V4 else {}
+
+SEED_OFFSET = V4_SEED_OFFSET or V3_SEED_OFFSET
+BASELINE_KWARGS = V4_BASELINE_KWARGS or V3_BASELINE_KWARGS
+VARIANT_KWARGS = V4_VARIANT_KWARGS or V3_VARIANT_KWARGS
 
 from Main import run_simulation
 from LoadBalancer import LoadBalancer
@@ -59,7 +80,7 @@ from paired_compare import assert_same_workload, wilcoxon_signed_rank, format_p,
 import diagnostics
 
 N_REPS = 30
-PENALTIES = [0.0, 0.5, 2.0] if V3 else [0.0, 2.0]
+PENALTIES = [0.0, 0.5, 2.0] if (V3 or V4) else [0.0, 2.0]
 ABC_BASE = {"newidle_mode": "transition", "per_cpu_last_balance": True, "imbalance_model": "kernel",
             "burst_resets_timer": False}
 
@@ -97,9 +118,9 @@ WORKLOADS = {
                              n_tasks=120, seed_base=10800),
 }
 
-if V3_SEED_OFFSET:
+if SEED_OFFSET:
     for _wl in WORKLOADS.values():
-        _wl["seed_base"] += V3_SEED_OFFSET
+        _wl["seed_base"] += SEED_OFFSET
 
 METRICS = ["p95_wait", "avg_wait", "avg_slowdown"]
 
@@ -113,7 +134,7 @@ def sign_p(wins, n):
 
 
 def run_baseline(profile, intensity, seed, penalty, overrides, n_tasks):
-    kwargs = dict(ABC_BASE, migration_penalty=penalty, **V3_BASELINE_KWARGS)
+    kwargs = dict(ABC_BASE, migration_penalty=penalty, **BASELINE_KWARGS)
     del kwargs["burst_resets_timer"]  # baseline (LoadBalancer) doesn't take this
     m, b, gt, migs, logger, plan = run_simulation(
         profile, LoadBalancer, intensity_level=intensity, seed=seed,
@@ -124,7 +145,7 @@ def run_baseline(profile, intensity, seed, penalty, overrides, n_tasks):
 
 
 def run_variant(profile, intensity, seed, penalty, overrides, n_tasks, threshold_cfg):
-    kwargs = dict(ABC_BASE, migration_penalty=penalty, **V3_VARIANT_KWARGS, **threshold_cfg)
+    kwargs = dict(ABC_BASE, migration_penalty=penalty, **VARIANT_KWARGS, **threshold_cfg)
     m, b, gt, migs, logger, plan = run_simulation(
         profile, BurstAwareLoadBalancer, intensity_level=intensity, seed=seed,
         balancer_kwargs=kwargs, load_model="runnable", intensity_overrides=overrides, n_tasks=n_tasks,

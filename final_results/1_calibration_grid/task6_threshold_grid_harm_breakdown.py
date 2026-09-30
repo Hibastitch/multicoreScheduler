@@ -24,7 +24,12 @@ V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 # disqualifying-but-still-real harm, which is exactly what rule (e)'s
 # "measured and reported in full" means.
 V3_SUFFIX = "_v3" if os.environ.get("TASK9_V3") else ""
-SUFFIX = V3_SUFFIX or V2_SUFFIX
+
+# TASK 10 v4 RE-RUN (2026-09-30, Step 3): TASK10_V4=1 writes a _v4-
+# suffixed output -- same "show everything, including non-disqualifying
+# penalty=2ms harm" behavior as v3, unchanged by design.
+V4_SUFFIX = "_v4" if os.environ.get("TASK10_V4") else ""
+SUFFIX = V4_SUFFIX or V3_SUFFIX or V2_SUFFIX
 
 
 def main():

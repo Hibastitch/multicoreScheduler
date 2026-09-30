@@ -17,16 +17,16 @@ import os
 
 from task6_confirmation_analyze import (
     WORKLOAD_ORDER, METRICS, COST_METRICS, load_rows, fnum,
-    V2_SUFFIX, V3, SUFFIX, PENALTIES, HEADLINE_VARIANT, SECONDARY_VARIANTS,
+    V2_SUFFIX, V3, V4, SUFFIX, PENALTIES, HEADLINE_VARIANT, SECONDARY_VARIANTS,
 )
 
-# TASK 9 v3 (2026-09-29, Step 4): under v1/v2 this writes tables for the
-# 2 non-headline variants (original_q2_a0.8_or, runner_up_q4_a1.5_or) --
-# "final" already has its own MAIN_TABLE from task6_confirmation_analyze.py.
-# Under v3 that generalizes to "every SECONDARY_VARIANTS entry except the
-# headline" -- 3 variants (selected_ungated, original_q2_a0.8_or_ungated,
-# runner_up_ungated) instead of 2.
-if V3:
+# TASK 9 v3 / TASK 10 v4 (2026-09-29/30, Step 4/3): under v1/v2 this
+# writes tables for the 2 non-headline variants (original_q2_a0.8_or,
+# runner_up_q4_a1.5_or) -- "final" already has its own MAIN_TABLE from
+# task6_confirmation_analyze.py. Under v3/v4 that generalizes to "every
+# SECONDARY_VARIANTS entry except the headline" -- 3 variants instead
+# of 2 either way.
+if V3 or V4:
     VARIANT_TABLES = {
         v: f"results_task6_confirmation{SUFFIX}_TABLE_{v}.csv"
         for v in SECONDARY_VARIANTS if v != HEADLINE_VARIANT
@@ -38,12 +38,17 @@ else:
     }
 
 # Compact-table comparison pair: headline vs the original detector
-# (ungated, under v3 -- the gate is what's being evaluated). Reuses
-# PENALTIES[0]/[-1] as the two comparison points, same choice as
-# task6_confirmation_analyze.py's plot section under v3 (0.0 and 2.0
-# unchanged for v1/v2).
+# (ungated/unchecked, under v3/v4 -- the mechanism itself is what's
+# being evaluated). Reuses PENALTIES[0]/[-1] as the two comparison
+# points, same choice as task6_confirmation_analyze.py's plot section
+# under v3/v4 (0.0 and 2.0 unchanged for v1/v2).
 COMPACT_VARIANT_A = HEADLINE_VARIANT
-COMPACT_VARIANT_B = "original_q2_a0.8_or_ungated" if V3 else "original_q2_a0.8_or"
+if V4:
+    COMPACT_VARIANT_B = "original_q2_a0.8_or_unchecked"
+elif V3:
+    COMPACT_VARIANT_B = "original_q2_a0.8_or_ungated"
+else:
+    COMPACT_VARIANT_B = "original_q2_a0.8_or"
 COMPACT_PEN_LO, COMPACT_PEN_HI = PENALTIES[0], PENALTIES[-1]
 
 # TASK 9 rule (e) (docs/NOTEBOOK.md 2026-09-29h): only penalties 0 and
@@ -53,6 +58,12 @@ COMPACT_PEN_LO, COMPACT_PEN_HI = PENALTIES[0], PENALTIES[-1]
 # task6_threshold_grid_recompute_harm.py. v3-only.
 DISQUALIFYING_PENALTIES = {"0.0", "0.5"}
 PENALTY_LABELS = {"0.0": "p0", "0.5": "p0.5", "2.0": "p2"}
+
+# Display wording for the mechanism-on/mechanism-off pair -- v3's is a
+# per-domain gate, v4's is a machine-wide idle check. Only ever read
+# when V3 or V4 (irrelevant, unused, for v1/v2).
+MECH_LABEL = "checked" if V4 else "gated"
+MECH_LABEL_OFF = "unchecked" if V4 else "ungated"
 
 
 def write_variant_table(rows, variant, out_path):
@@ -163,14 +174,18 @@ def classify_group(final_p0, final_p2):
     return "final helps" if sig_improve else "fires without benefit"
 
 
-# ============================= v3 only =============================
+# ========================= v3/v4 only ("_v3" suffix throughout the
+# function names below, reused as-is for v4 -- see MECH_LABEL/
+# MECH_LABEL_OFF above for the wording swap, and SECONDARY_VARIANTS'
+# fixed 4-element order for the variant-name swap) =========================
 # v1/v2 hardcode a p0/p2 pair and 3 variants (final/original/runner_up).
-# v3 has 3 penalties (0/0.5/2) and rule (g)'s 4 variants (selected
-# gated/ungated, original ungated, runner-up ungated), plus rule (e)'s
-# disqualifying-vs-stress-test distinction. Kept as separate functions
-# rather than branching the v1/v2 ones apart, since the shapes differ
-# enough (pair vs triple, 2 harm columns vs 4) that shared branches
-# would be harder to read than the duplication.
+# v3/v4 have 3 penalties (0/0.5/2) and 4 variants each (v3: selected
+# gated/ungated, original ungated, runner-up ungated; v4: selected
+# checked/unchecked, original unchecked, runner-up checked), plus rule
+# (e)'s disqualifying-vs-stress-test distinction. Kept as separate
+# functions rather than branching the v1/v2 ones apart, since the
+# shapes differ enough (pair vs triple, 2 harm columns vs 4) that
+# shared branches would be harder to read than the duplication.
 
 def pct_str_multi(rows_by_pen, metric):
     return " / ".join(pct_str(rows_by_pen.get(p), metric) for p in PENALTIES)
@@ -220,16 +235,16 @@ def avg_pct_marked_multi(rows_by_pen, metric):
 
 def classify_group_v3(gated_by_pen, gated_disqualifying_harm):
     if gated_disqualifying_harm:
-        return "gated harmful (p0/p0.5)"
+        return f"{MECH_LABEL} harmful (p0/p0.5)"
     if mean_fires(gated_by_pen) < 0.5:
-        return "gated silent"
+        return f"{MECH_LABEL} silent"
     sig_improve = any(
         r is not None and fnum(r, "p95_wait_wins") is not None and fnum(r, "p95_wait_harms") is not None
         and fnum(r, "p95_wait_wins") > fnum(r, "p95_wait_harms")
         and fnum(r, "p95_wait_sign_p") is not None and fnum(r, "p95_wait_sign_p") < 0.05
         for r in gated_by_pen.values()
     )
-    return "gated helps" if sig_improve else "fires without benefit"
+    return f"{MECH_LABEL} helps" if sig_improve else "fires without benefit"
 
 
 def build_compact_table_v3(rows):
@@ -239,16 +254,24 @@ def build_compact_table_v3(rows):
                 return r
         return None
 
+    # SECONDARY_VARIANTS is positional -- [0]=headline (gated/checked),
+    # [1]=same thresholds with the mechanism OFF, [2]=original detector
+    # (mechanism off), [3]=runner-up -- true for both v3's 4 names and
+    # v4's, so index into it rather than hardcode v3's own variant
+    # names (which would silently mismatch v4's "_checked"/"_unchecked"
+    # names and read all-None columns).
+    variant_gated, variant_ungated, variant_orig, variant_runnerup = SECONDARY_VARIANTS
+
     compact_rows = []
     missing_workloads = []
     for wl in WORKLOAD_ORDER:
-        gated_by_pen = {pen: get(wl, pen, "selected_gated") for pen in PENALTIES}
+        gated_by_pen = {pen: get(wl, pen, variant_gated) for pen in PENALTIES}
         if all(v is None for v in gated_by_pen.values()):
             missing_workloads.append(wl)
             continue
-        ungated_by_pen = {pen: get(wl, pen, "selected_ungated") for pen in PENALTIES}
-        orig_by_pen = {pen: get(wl, pen, "original_q2_a0.8_or_ungated") for pen in PENALTIES}
-        runnerup_by_pen = {pen: get(wl, pen, "runner_up_ungated") for pen in PENALTIES}
+        ungated_by_pen = {pen: get(wl, pen, variant_ungated) for pen in PENALTIES}
+        orig_by_pen = {pen: get(wl, pen, variant_orig) for pen in PENALTIES}
+        runnerup_by_pen = {pen: get(wl, pen, variant_runnerup) for pen in PENALTIES}
 
         gated_disq, gated_harm_str, gated_disq_str = harm_info_v3(gated_by_pen)
         ungated_disq, ungated_harm_str, _ = harm_info_v3(ungated_by_pen)
@@ -284,7 +307,7 @@ def build_compact_table_v3(rows):
         ))
     if missing_workloads:
         print(f"WARNING: {len(missing_workloads)}/{len(WORKLOAD_ORDER)} workload(s) have NO "
-              f"selected_gated confirmation rows at all -- run task6_confirmation_run.py for "
+              f"{HEADLINE_VARIANT} confirmation rows at all -- run task6_confirmation_run.py for "
               f"them first: {missing_workloads}")
     else:
         print(f"All {len(WORKLOAD_ORDER)} workloads present in the v3 compact table.")
@@ -315,17 +338,20 @@ def write_compact_markdown_v3(compact_rows, out_path, harm_summary_lines):
             lines.append(f"- {l}")
     else:
         lines.append("**Disqualifying harm at penalty 0 or 0.5 (rule (e)): NO** -- "
-                      "selected_gated (the pre-registered selection) showed no significant "
+                      f"{HEADLINE_VARIANT} (the pre-registered selection) showed no significant "
                       "harm on any metric, any of the 16 confirmation workloads, at penalty "
                       "0 or 0.5. (Penalty=2ms stress-test harm, if any, is reported per-row below.)")
     lines.append("")
-    lines.append("| workload | gated fires | gated p95 Δ% (p0/p0.5/p2) | gated harm metric(s) | "
-                  "ungated p95 Δ% (p0/p0.5/p2) | ungated harm metric(s) | orig fires | "
+    lines.append(f"| workload | {MECH_LABEL} fires | {MECH_LABEL} p95 Δ% (p0/p0.5/p2) | "
+                  f"{MECH_LABEL} harm metric(s) | "
+                  f"{MECH_LABEL_OFF} p95 Δ% (p0/p0.5/p2) | {MECH_LABEL_OFF} harm metric(s) | orig fires | "
                   "orig p95 Δ% (p0/p0.5/p2) | orig harm metric(s) | runner-up p95 Δ% (p0/p0.5/p2) | "
-                  "avg_wait Δ% (gated/orig) | migrations Δ% (gated) | scan work Δ% (gated) |")
+                  f"avg_wait Δ% ({MECH_LABEL}/orig) | migrations Δ% ({MECH_LABEL}) | "
+                  f"scan work Δ% ({MECH_LABEL}) |")
     lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
 
-    group_order = ["gated harmful (p0/p0.5)", "gated helps", "gated silent", "fires without benefit"]
+    group_order = [f"{MECH_LABEL} harmful (p0/p0.5)", f"{MECH_LABEL} helps", f"{MECH_LABEL} silent",
+                   "fires without benefit"]
     n_cols = 13
     for group in group_order:
         group_rows = [r for r in compact_rows if r["group"] == group]
@@ -350,24 +376,24 @@ def write_compact_markdown_v3(compact_rows, out_path, harm_summary_lines):
                 f"{fmt_avg(r['scanwork_gated'], r['scanwork_gated_flip'])} |"
             )
 
+    appendix_tables = ", ".join([f"results_task6_confirmation{SUFFIX}_MAIN_TABLE.csv"]
+                                 + list(VARIANT_TABLES.values()))
     footer = ("\n_Stars: \\* p<0.05, \\*\\* p<0.01, \\*\\*\\* p<0.001 (exact sign test, n=30 "
               "paired, tie-tolerant). p95 Δ%% triples are (penalty=0 / penalty=0.5 / penalty=2), "
               "rule (e)'s full sweep; avg_wait/migrations/scan-work %% are averaged across all 3 "
               "penalties -- † marks a cell where at least two penalties disagree in sign, so the "
               "average shown understates or masks a real per-penalty reversal -- see the "
-              "per-penalty appendix tables (results_task6_confirmation_v3_MAIN_TABLE.csv, "
-              "_TABLE_selected_ungated.csv, _TABLE_original_q2_a0.8_or_ungated.csv, "
-              "_TABLE_runner_up_ungated.csv) for the exact per-penalty values. "
+              f"per-penalty appendix tables ({appendix_tables}) for the exact per-penalty values. "
               "'harm metric(s)' names which metric(s) triggered {metric}_harm=True for that "
               "variant and at which penalty -- (stress) marks a penalty=2ms-only hit, which "
               "per rule (e) does NOT disqualify (it is measured and reported, not selected "
               "against); an unmarked penalty (p0/p0.5) does disqualify. A row can show "
               "p95_wait improving and still list a harm metric because harm is evaluated "
               "per-metric, not just on p95_wait. "
-              "Groups: **gated harmful (p0/p0.5)** = selected_gated itself showed "
+              f"Groups: **{MECH_LABEL} harmful (p0/p0.5)** = {HEADLINE_VARIANT} itself showed "
               "disqualifying harm on this confirmation workload (a rule (e) violation, "
-              "reported regardless); **gated helps** = significant p95_wait improvement at "
-              "some penalty, no disqualifying harm; **gated silent** = detector never fires "
+              f"reported regardless); **{MECH_LABEL} helps** = significant p95_wait improvement at "
+              f"some penalty, no disqualifying harm; **{MECH_LABEL} silent** = detector never fires "
               "(<0.5 fires/run average); **fires without benefit** = fires but no significant "
               "p95_wait improvement._\n")
 
@@ -500,21 +526,21 @@ def main():
     for variant, out_path in VARIANT_TABLES.items():
         write_variant_table(rows, variant, out_path)
 
-    if V3:
+    if V3 or V4:
         compact_rows = build_compact_table_v3(rows)
         write_compact_csv_v3(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.csv")
 
-        # rule (e) confirmatory check: selected_gated was CHOSEN to be
-        # harm-free at penalties 0/0.5 on the grid's 9 workloads -- the
-        # confirmation run uses fresh seeds AND 16 workloads (7 more
-        # than the grid), so "no disqualifying harm here too" is an
-        # empirical result, not a given.
+        # rule (e) confirmatory check (v3) / Task 10 equivalent (v4):
+        # the headline variant was CHOSEN to be harm-free at penalties
+        # 0/0.5 on the grid's 9 workloads -- the confirmation run uses
+        # fresh seeds AND 16 workloads (7 more than the grid), so "no
+        # disqualifying harm here too" is an empirical result, not a given.
         harmed = [r for r in compact_rows if r["gated_any_disqualifying_harm"]]
         harm_summary_lines = [f"{r['workload']}: {r['gated_disqualifying_harm_metrics']}" for r in harmed]
         write_compact_markdown_v3(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.md",
                                    harm_summary_lines)
 
-        print(f"\nselected_gated disqualifying harm (penalty 0 or 0.5) on any of the "
+        print(f"\n{HEADLINE_VARIANT} disqualifying harm (penalty 0 or 0.5) on any of the "
               f"{len(compact_rows)} confirmation workloads: {'YES' if harmed else 'NO'}")
         if harmed:
             for l in harm_summary_lines:

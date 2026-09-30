@@ -30,11 +30,26 @@ V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 # "runner_up_q4_a1.5_or").
 V3 = bool(os.environ.get("TASK9_V3"))
 V3_SUFFIX = "_v3" if V3 else ""
-SUFFIX = V3_SUFFIX or V2_SUFFIX
-PENALTIES = ["0.0", "0.5", "2.0"] if V3 else ["0.0", "2.0"]
-HEADLINE_VARIANT = "selected_gated" if V3 else "final"
-SECONDARY_VARIANTS = (["selected_gated", "selected_ungated", "original_q2_a0.8_or_ungated", "runner_up_ungated"]
-                      if V3 else ["final", "original_q2_a0.8_or", "runner_up_q4_a1.5_or"])
+
+# TASK 10 v4 RE-RUN (2026-09-30, Step 3): TASK10_V4=1 reads _v4-suffixed
+# CSVs, keeps the 3-penalty sweep, and uses Task 10's 4 variant names
+# ("selected_checked" stands in for "selected_gated"/"final" as the
+# headline comparison).
+V4 = bool(os.environ.get("TASK10_V4"))
+V4_SUFFIX = "_v4" if V4 else ""
+SUFFIX = V4_SUFFIX or V3_SUFFIX or V2_SUFFIX
+PENALTIES = ["0.0", "0.5", "2.0"] if (V3 or V4) else ["0.0", "2.0"]
+if V4:
+    HEADLINE_VARIANT = "selected_checked"
+    SECONDARY_VARIANTS = ["selected_checked", "selected_unchecked",
+                           "original_q2_a0.8_or_unchecked", "runner_up_checked"]
+elif V3:
+    HEADLINE_VARIANT = "selected_gated"
+    SECONDARY_VARIANTS = ["selected_gated", "selected_ungated",
+                           "original_q2_a0.8_or_ungated", "runner_up_ungated"]
+else:
+    HEADLINE_VARIANT = "final"
+    SECONDARY_VARIANTS = ["final", "original_q2_a0.8_or", "runner_up_q4_a1.5_or"]
 
 METRICS = ["p95_wait", "p99_wait", "avg_wait", "avg_slowdown", "p95_slowdown", "makespan_excess"]
 COST_METRICS = ["sched_cores_scanned", "burst_balance_levels_walked", "total_migrations"]
@@ -51,8 +66,8 @@ WORKLOAD_ORDER = [
 def load_rows():
     rows = []
     for path in glob.glob(f"results_task6_confirmation{SUFFIX}_*_summary.csv"):
-        if SUFFIX == "" and ("_v2_" in path or "_v3_" in path):
-            continue  # plain mode must not also pick up v2/v3 files
+        if SUFFIX == "" and ("_v2_" in path or "_v3_" in path or "_v4_" in path):
+            continue  # plain mode must not also pick up v2/v3/v4 files
         rows.extend(csv.DictReader(open(path)))
     return rows
 
@@ -76,7 +91,7 @@ def main():
     # ================= MAIN TABLE: baseline vs FINAL =================
     print("\n" + "=" * 130)
     print(f"MAIN TABLE -- baseline (A+B+C) vs {HEADLINE_VARIANT.upper()} burst-aware, all workloads, "
-          f"{'3' if V3 else 'both'} penalties")
+          f"{'3' if (V3 or V4) else 'both'} penalties")
     print("=" * 130)
     main_table_rows = []
     for wl in WORKLOAD_ORDER:
@@ -138,7 +153,7 @@ def main():
             for variant in SECONDARY_VARIANTS:
                 r = get(wl, pen, variant)
                 vals[variant] = (fnum(r, "p95_wait_pct"), r["any_harm"] == "True") if r else (None, None)
-            if not V3:
+            if not (V3 or V4):
                 print(f"{wl:16} pen={pen:4} "
                       f"final={vals['final'][0]:+7.1f}%(harm={vals['final'][1]})  "
                       f"original={vals['original_q2_a0.8_or'][0]:+7.1f}%(harm={vals['original_q2_a0.8_or'][1]})  "
@@ -154,9 +169,18 @@ def main():
     # ================= PLOT: p95_wait %% change vs arrival rate, sizes 4 & 12 =================
     rates = [0.5, 0.75, 1.0, 1.5, 3.0]
     plot_variant_a = HEADLINE_VARIANT
-    plot_variant_b = "original_q2_a0.8_or_ungated" if V3 else "original_q2_a0.8_or"
-    plot_label_a = "selected (gated)" if V3 else "final (calibrated, AND)"
-    plot_label_b = "original (q2_a0.8_or, ungated)" if V3 else "original (q2_a0.8_or)"
+    if V4:
+        plot_variant_b = "original_q2_a0.8_or_unchecked"
+        plot_label_a = "selected (checked)"
+        plot_label_b = "original (q2_a0.8_or, unchecked)"
+    elif V3:
+        plot_variant_b = "original_q2_a0.8_or_ungated"
+        plot_label_a = "selected (gated)"
+        plot_label_b = "original (q2_a0.8_or, ungated)"
+    else:
+        plot_variant_b = "original_q2_a0.8_or"
+        plot_label_a = "final (calibrated, AND)"
+        plot_label_b = "original (q2_a0.8_or)"
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharey=True)
     for ax, size in zip(axes, [4, 12]):
         for variant, style in [(plot_variant_a, dict(marker="o", color="#2166ac", label=plot_label_a)),
@@ -180,7 +204,7 @@ def main():
     axes[0].set_ylabel("p95_wait %% change vs baseline")
     axes[0].legend(fontsize=8, loc="best")
     fig.suptitle("Burst-aware p95_wait change vs arrival rate -- "
-                 + (f"{plot_label_a} vs {plot_label_b}" if V3 else "final (calibrated) vs original detector"))
+                 + (f"{plot_label_a} vs {plot_label_b}" if (V3 or V4) else "final (calibrated) vs original detector"))
     fig.tight_layout()
     fig.savefig(f"figure_p95wait_vs_arrival_rate{SUFFIX}.png", dpi=150)
     print(f"\nWrote figure_p95wait_vs_arrival_rate{SUFFIX}.png")

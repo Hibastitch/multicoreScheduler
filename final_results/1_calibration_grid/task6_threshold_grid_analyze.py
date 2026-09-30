@@ -31,19 +31,27 @@ V2_SUFFIX = "_v2" if os.environ.get("TASK8_V2") else ""
 # either-penalty-disqualifies rule.
 V3 = bool(os.environ.get("TASK9_V3"))
 V3_SUFFIX = "_v3" if V3 else ""
-SUFFIX = V3_SUFFIX or V2_SUFFIX
+
+# TASK 10 v4 RE-RUN (2026-09-30, Step 3): TASK10_V4=1 reads the _v4-
+# suffixed grid CSVs and applies the SAME rule (e) as v3 (only 0/0.5
+# disqualify). This script's own harm rule is still the OLD, report-
+# only one under v4 too -- task6_threshold_grid_recompute_harm.py stays
+# the authoritative script that writes selected_config_v4.json.
+V4 = bool(os.environ.get("TASK10_V4"))
+V4_SUFFIX = "_v4" if V4 else ""
+SUFFIX = V4_SUFFIX or V3_SUFFIX or V2_SUFFIX
 
 # Penalties that DISQUALIFY a config (harm check) and that the benefit
 # average is computed over. v1/v2: both penalties disqualify (the grid
-# only ever had 2: 0 and 2). v3: only 0 and 0.5 disqualify/count toward
-# the benefit average -- 2ms is measured and reported but neither.
-RULE_PENALTIES = {"0.0", "0.5"} if V3 else {"0.0", "2.0"}
-ALL_PENALTIES = ["0.0", "0.5", "2.0"] if V3 else ["0.0", "2.0"]
+# only ever had 2: 0 and 2). v3/v4: only 0 and 0.5 disqualify/count
+# toward the benefit average -- 2ms is measured and reported but neither.
+RULE_PENALTIES = {"0.0", "0.5"} if (V3 or V4) else {"0.0", "2.0"}
+ALL_PENALTIES = ["0.0", "0.5", "2.0"] if (V3 or V4) else ["0.0", "2.0"]
 
 rows = []
 for path in glob.glob(f"results_task6_threshold_grid{SUFFIX}_*_summary.csv"):
-    if SUFFIX == "" and ("_v2_" in path or "_v3_" in path):
-        continue  # plain mode must not also pick up v2/v3 files
+    if SUFFIX == "" and ("_v2_" in path or "_v3_" in path or "_v4_" in path):
+        continue  # plain mode must not also pick up v2/v3/v4 files
     rows.extend(csv.DictReader(open(path)))
 
 configs = sorted(set(r["config"] for r in rows))
@@ -55,10 +63,13 @@ print(f"Configs: {configs}\n")
 if V3:
     print(f"TASK9_V3 mode: disqualifying penalties = {sorted(RULE_PENALTIES)}; "
           f"penalty=2.0 measured/reported but does NOT disqualify (rule e).\n")
+elif V4:
+    print(f"TASK10_V4 mode: disqualifying penalties = {sorted(RULE_PENALTIES)}; "
+          f"penalty=2.0 measured/reported but does NOT disqualify (rule e).\n")
 
 # --- full grid: per config, any_significant_harm anywhere? ---
 print("=" * 100)
-print("HARM CHECK per config (any workload, any DISQUALIFYING penalty, any metric)" if V3
+print("HARM CHECK per config (any workload, any DISQUALIFYING penalty, any metric)" if (V3 or V4)
       else "HARM CHECK per config (any workload, any penalty, any metric)")
 print("=" * 100)
 harm_free_configs = []
@@ -74,14 +85,14 @@ for cfg in configs:
     if not harmful:
         harm_free_configs.append(cfg)
 
-if V3:
+if V3 or V4:
     print(f"\nHarm-free configs (at disqualifying penalties {sorted(RULE_PENALTIES)}): {harm_free_configs}\n")
 else:
     print(f"\nHarm-free configs: {harm_free_configs}\n")
 
 # --- among harm-free configs, largest mean p95_wait reduction on stacked_burst medium/high ---
 print("=" * 100)
-if V3:
+if V3 or V4:
     print(f"stacked_burst medium/high p95_wait %% change (penalties {sorted(RULE_PENALTIES)} only), "
           f"harm-free configs only")
 else:
@@ -95,7 +106,7 @@ for cfg in harm_free_configs:
                  and r["penalty"] in RULE_PENALTIES]
     pct_vals = [float(r["p95_wait_pct"]) for r in med_rows + high_rows]
     mean_pct = sum(pct_vals) / len(pct_vals) if pct_vals else float("nan")
-    if V3:
+    if V3 or V4:
         print(f"{cfg:20} mean p95_wait %% change (medium+high, penalties {sorted(RULE_PENALTIES)}) = "
               f"{mean_pct:+.2f}%  (values: {[round(v,1) for v in pct_vals]})")
     else:
@@ -115,12 +126,12 @@ if best is None:
           "one (workload, disqualifying-penalty, metric) -- see the HARM CHECK above.")
 else:
     print(f"\nSELECTED (largest reduction among harm-free configs): {best[0]} ({best[1]:+.2f}%)")
-    if V3 and runner_up:
+    if (V3 or V4) and runner_up:
         print(f"RUNNER-UP: {runner_up[0]} ({runner_up[1]:+.2f}%)")
 
 # --- full grid table for the report ---
 print("\n" + "=" * 100)
-if V3:
+if V3 or V4:
     print("FULL GRID (p95_wait %% change, sign_p, fires, recall, precision) -- condensed, ALL penalties")
 else:
     print("FULL GRID (p95_wait %% change, sign_p, fires, recall, precision) -- condensed")
