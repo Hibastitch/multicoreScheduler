@@ -3379,3 +3379,82 @@ first-idle-or-lowest-id checker) measures a larger imbalance against
 passes the gate, even though the gate itself skips very few domains.
 Reported here as a mechanistic finding, not adjudicated -- this does
 not change the confirmation result, the selection, or any default.
+
+## 2026-09-30b — Task 10a: burst-gate mechanism check (diagnostic, seeds 96000+, not part of any confirmation)
+
+Diagnostic only -- no simulator file edited (a line-for-line copy of
+`BurstScheduler.on_task_placed` with two additive read-only insertions
+was installed via monkeypatch for the duration of each run and
+restored after; see
+`development/task10_check_mechanism/task10_check_mechanism.py`'s
+docstring), no default/selection/rule changed. Reports ONLY decision
+counts and machine state -- no p95_wait/avg_wait/slowdown/harm
+statistic appears anywhere in it, by design.
+
+Question: at every burst trigger that passes cooldown (right before
+its domain_chain walk), on the REAL machine state at that instant
+(burst core = the core the triggering task was placed on), how often
+would each of four HYPOTHETICAL machine-wide checks have blocked the
+trigger, and how many of that trigger's burst-tagged migrations would
+that have removed? None of these checks is Task 9b's actual
+`burst_gap_gate` (a per-domain check against the least-loaded OTHER
+core in that one domain) -- these are machine-wide, evaluated once per
+trigger, and never installed; `burst_gap_gate=False` for every run.
+
+- C1: exists a core with `nr_running <= nr_running(burst core) - 2`
+  (i.e. `max_gap = nr_running(burst) - min(nr_running over all cores)
+  >= 2`)
+- C2: same with `-3` (`max_gap >= 3`)
+- C3: at least one core is idle (`idle_cores >= 1`)
+- C4: C3 OR C2
+
+5 fresh seeds per workload (96000-96004 `bursty_high_s64`,
+96100-96104 `stacked_high`, 96200-96204 `stacked_medium`, 96300-96304
+`rate1.5_s12`, 96400-96404 `rate3.0_s12` -- 100 apart per workload,
+this repo's standing convention, all within the "96000+, never used"
+block asked for). `BurstAwareLoadBalancer`, q4_a1.5_and (the v3
+selected config), `penalty_model="ran_only"`, `migration_penalty=0`.
+Output: `development/task10_check_mechanism/results_task10_check_
+mechanism_{summary,perseed}.csv` (401 total per-trigger records).
+
+**Block rate (%) / burst migrations removed, by check:**
+
+| workload | n_triggers | tot_burst_migs | C1 blk% | C2 blk% | C3 blk% (rm) | C4 blk% |
+|---|---|---|---|---|---|---|
+| bursty_high_s64 | 156 | 606 | 0.0 | 0.0 | **99.4% (603, 99.5%)** | 0.0 |
+| stacked_high | 65 | 401 | 0.0 | 0.0 | 18.5% (18, 4.5%) | 0.0 |
+| stacked_medium | 81 | 263 | 0.0 | 4.9 | 0.0 | 0.0 |
+| rate1.5_s12 | 49 | 191 | 0.0 | 0.0 | 0.0 | 0.0 |
+| rate3.0_s12 | 50 | 251 | 0.0 | 0.0 | 0.0 | 0.0 |
+
+Idle-core distribution at trigger time (bursty_high_s64: 99.4% of
+triggers have ZERO idle cores machine-wide; stacked_medium/
+rate1.5_s12/rate3.0_s12: 100% of triggers have 3+ idle cores; stacked_
+high sits in between, 61.5% at 3+ but 18.5% at zero). max_gap: C1 never
+blocks anywhere (every trigger already has max_gap>=2 by construction
+of the detector's own firing condition -- q4_a1.5_and only fires after
+substantial queue growth has already built up, so the burst core is
+already well ahead); max_gap is >=5 in 77.8%-100% of triggers on every
+workload except `bursty_high_s64` and `stacked_high` (both 100% at
+>=5, i.e. gap size itself is NOT what distinguishes bursty_high_s64 --
+see below).
+
+**Which check blocks most on bursty_high_s64 while blocking least on
+the other four: C3 (the idle-core check), clearly.** It blocks 99.4%
+of bursty_high_s64's triggers -- removing 603 of 606 burst migrations,
+essentially eliminating burst-triggered migration on that workload --
+while blocking 0% on stacked_medium/rate1.5_s12/rate3.0_s12 and only
+18.5% on stacked_high. C1, C2, and C4 barely block anywhere (C2 tops
+out at 4.9% on stacked_medium; C1 and C4 never block at all across all
+401 triggers) -- none of them discriminates bursty_high_s64 from the
+other four the way C3 does. Mechanistically: by the time q4_a1.5_and
+fires on bursty_high_s64 (burst_size=64, the largest and most
+saturated workload here), the machine is already fully busy -- no idle
+core exists at trigger time in 99.4% of cases -- whereas the other
+(smaller-burst) workloads still have idle capacity most or all of the
+time. This is consistent with, and offers a candidate mechanism for,
+the Task 9 diagnostic's finding (2026-09-30 entry above) that
+`bursty_high_s64` is also where `ran_only` exposure (already-run tasks
+being the ones moved) is highest. Reported here as a mechanism
+observation only -- no rule, selection, or default changed by this
+entry.

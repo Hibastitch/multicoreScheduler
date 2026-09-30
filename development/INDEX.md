@@ -112,6 +112,37 @@ on `stacked_high`.
   already-warm tasks per triggered domain via its least-loaded-core
   destination choice.
 
+## task10_check_mechanism/ — Task 10a: burst-gate mechanism check (hypothetical machine-wide checks)
+
+Diagnostic only (2026-09-30, see `docs/NOTEBOOK.md`'s "2026-09-30b"
+entry for the full writeup) -- no simulator file edited, no rule/
+selection/default changed. Reports ONLY decision counts and machine
+state, never a performance/harm statistic.
+
+- `task10_check_mechanism.py` — at every burst trigger that passes
+  cooldown, before its domain_chain walk, evaluates 4 HYPOTHETICAL
+  machine-wide checks (C1: some core `nr_running <= burst core's - 2`;
+  C2: same with `-3`; C3: any core idle; C4: C3 OR C2) against the real
+  machine state at that instant, and records how many of that
+  trigger's burst-tagged migrations each check would have blocked --
+  none of these checks is ever actually installed (`burst_gap_gate=
+  False` throughout; this is not Task 9b's per-domain gate). Splice
+  technique: a line-for-line copy of `BurstScheduler.on_task_placed`
+  with two additive read-only insertions, monkeypatched in for one run
+  and restored after. 5 fresh seeds x 5 workloads (96000+, 100 apart
+  per workload), q4_a1.5_and (the v3 selected config), `penalty_model=
+  "ran_only"`, `migration_penalty=0`.
+- `results_task10_check_mechanism_summary.csv`, `_perseed.csv` — its
+  output (401 total per-trigger records). Headline: C3 (the idle-core
+  check) blocks 99.4% of `bursty_high_s64`'s triggers (removing 603/606
+  burst migrations) while blocking 0% on `stacked_medium`/`rate1.5_s12`/
+  `rate3.0_s12` and only 18.5% on `stacked_high` -- C1/C2/C4 barely
+  block anywhere (C2 tops out at 4.9%). By trigger time, `bursty_high_
+  s64` (burst_size=64) has NO idle core machine-wide in 99.4% of cases;
+  the smaller-burst workloads still have idle capacity most or all of
+  the time -- offering a candidate mechanism, distinct from max_gap
+  (which never discriminates: C1 never blocks anywhere).
+
 ## sweeps_precalibration/ — burst-size / interval sweeps before the detector was calibrated
 
 - `task6_sweeps_v2.py` — corrected-duration burst-size and inter-burst-interval sweeps.

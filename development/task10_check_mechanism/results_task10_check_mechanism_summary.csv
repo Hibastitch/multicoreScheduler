@@ -1,0 +1,6 @@
+workload,n_triggers,total_burst_migrations,c1_block_pct,c1_migs_removed,c1_migs_removed_pct,c2_block_pct,c2_migs_removed,c2_migs_removed_pct,c3_block_pct,c3_migs_removed,c3_migs_removed_pct,c4_block_pct,c4_migs_removed,c4_migs_removed_pct,idle_0_pct,idle_1_pct,idle_2_pct,idle_3+_pct,gap_0_pct,gap_1_pct,gap_2_pct,gap_3_pct,gap_4_pct,gap_5+_pct
+bursty_high_s64,156,606,0.0,0,0.0,0.0,0,0.0,99.4,603,99.5,0.0,0,0.0,99.4,0.6,0.0,0.0,0.0,0.0,0.0,0.0,0.0,100.0
+stacked_high,65,401,0.0,0,0.0,0.0,0,0.0,18.5,18,4.5,0.0,0,0.0,18.5,12.3,7.7,61.5,0.0,0.0,0.0,0.0,0.0,100.0
+stacked_medium,81,263,0.0,0,0.0,4.9,2,0.8,0.0,0,0.0,0.0,0,0.0,0.0,0.0,0.0,100.0,0.0,0.0,4.9,4.9,12.3,77.8
+rate1.5_s12,49,191,0.0,0,0.0,0.0,0,0.0,0.0,0,0.0,0.0,0,0.0,0.0,0.0,0.0,100.0,0.0,0.0,0.0,6.1,6.1,87.8
+rate3.0_s12,50,251,0.0,0,0.0,0.0,0,0.0,0.0,0,0.0,0.0,0,0.0,0.0,0.0,0.0,100.0,0.0,0.0,0.0,0.0,0.0,100.0
