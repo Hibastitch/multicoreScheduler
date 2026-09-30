@@ -3574,3 +3574,24 @@ effect report, not a baseline/variant harm judgment, so it carries no
 win/harm/selection semantics. Added to `task6_confirmation_tables.py`
 now (committed with this addendum, before any v4 grid or confirmation
 run); no simulation was run to produce this addendum.
+
+**Addendum (2026-09-30f), seed hygiene:** while verifying Step 3's
+`task6_confirmation_run.py` wiring, a full smoke-test run used
+`stacked_low` on the REAL confirmation seed range (120000-120029)
+before any v4 grid selection existed -- `selected_config_v4.json` was
+a hand-written placeholder (`selected=q4_a1.5_and`, `runner_up=
+q2_a1.5_and`, copied from v3's own selection as a stand-in), not a
+real grid result. The two output files this produced (`results_task6_
+confirmation_v4_stacked_low_{perseed,summary}.csv`) were deleted
+after verification and were never committed. Because this project's
+simulator is deterministic (same seed + same balancer kwargs -> same
+result, invariant 7 in `tests/test_invariants.py`), the real run will
+reproduce byte-identical numbers on these same seeds for
+`original_q2_a0.8_or_unchecked` unconditionally (its kwargs don't
+depend on grid selection) -- and for `selected_checked`/
+`selected_unchecked`/`runner_up_checked` too, PROVIDED the real v4
+grid selection also lands on `q4_a1.5_and`/`q2_a1.5_and`; if it
+selects different thresholds, this smoke test's numbers for those
+three variants simply don't correspond to any config the real run
+will use, not a reproducibility problem. No other workload's
+120000+/110000+ seeds were touched by this or any other smoke test.
