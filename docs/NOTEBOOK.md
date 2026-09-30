@@ -3775,3 +3775,26 @@ scanning work already measured and published), the idle check adds
 0.03%-1.91% -- small in every cell measured, largest exactly on the
 workload (`bursty_high_s64`) where the mechanism itself is closest to
 saturated and least effective (2026-09-30g's confirmation entry).
+
+**Addendum (2026-10-01b):** `development/idle_check_cost/` moved to
+`final_results/3_idle_check_cost/` (`git mv`, paths above otherwise
+unchanged) -- it measures the exact seeds/thresholds behind the
+published v4 confirmation, not an independent diagnostic, so it
+belongs with the other final results rather than `development/`. Also
+added `final_results/3_idle_check_cost/build_cost_table.py`, which
+merges `results_idle_check_cost.csv` with `results_task6_confirmation_
+v4_MAIN_TABLE.csv` into `results_task6_confirmation_v4_COST_TABLE.
+{csv,md}` -- all 48 confirmation cells (extra balancer scanning %%,
+idle-check reads as %% of baseline scanning, `total_migrations` %%,
+`p95_wait` %%), no new simulations. Idle-check %% is 0 (proven, `detector_
+fires=0.0` exactly) for the 10 workloads that never fire at any
+penalty, and for `bursty_high_s24`'s own penalty=0.0 cell specifically
+(also `fires=0.0` there) -- but `bursty_high_s24` fires a tiny nonzero
+amount at penalty=0.5 (0.067/run) and penalty=2.0 (0.033/run), and
+those 2 cells were NOT part of the 5-workload idle-check measurement,
+so they're marked `n/a` in the cost table rather than assumed 0 --
+verified from `results_task6_confirmation_v4_MAIN_TABLE.csv`'s own
+`detector_fires` column before writing anything, not assumed from the
+"11 silent workloads" framing in the 2026-09-30g entry (which is a
+true statement about `p95_wait` effect, not about whether the idle
+check ran at all).

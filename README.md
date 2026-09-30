@@ -16,7 +16,7 @@ From the real, committed `final_results/2_confirmation/results_task6_confirmatio
 
 The idle-core scan only runs when the detector actually fires and passes its cooldown (`BurstScheduler.on_task_placed()`, called once per task arrival, not on every tick) — bounded in practice by the v4 confirmation's own fire counts, e.g. ~151/run on `stacked_high`. An exact equivalent is a scan of `idle_cpu()`/`available_idle_cpu()` over all CPUs: O(N) but cheap per-CPU reads (N=32 here), and Linux already runs exactly this shape of scan on its own wakeup path — `select_idle_cpu()` (`kernel/sched/fair.c:8535-8596`) walks candidate CPUs with `for_each_cpu_wrap()`, calling `__select_idle_cpu()` → `choose_idle_cpu()` (`kernel/sched/fair.c:7763-7767`) → `available_idle_cpu()` per candidate, the identical per-CPU test this simulator uses. A cheaper, approximate alternative exists too: testing `nohz.idle_cpus_mask` (`kernel/sched/fair.c`) instead of scanning is fast, but that mask only tracks CPUs that have gone fully tickless-idle and is documented in the kernel source itself as lagging real idle entry/exit, not a live signal — so a real implementation would be trading exactness for cost, not getting both for free.
 
-Measured (not estimated) on the simulator's own side, re-running the exact seeds behind the v4 confirmation: 11-1085 real `Core.is_idle()` reads per run of the check across the 5 workloads checked, 0.03%-1.91% of that same run's baseline `sched_cores_scanned` — small everywhere measured, largest on `bursty_high_s64` (the workload the mechanism already helps least on). Not included in `sched_cores_scanned` itself. Full table and the safety check that verifies these are the identical published runs: `development/idle_check_cost/`.
+Measured on the published runs (not estimated): the idle check adds 11-1085 cheap `Core.is_idle()` reads per run — 0.03%-1.91% of that same run's own baseline `sched_cores_scanned` — reported separately from `cores_scanned` itself, not folded into it. Full table and the safety check verifying these are the identical published runs: `final_results/3_idle_check_cost/`.
 
 > **Reproduce the headline result** (the confirmed configuration is already selected — `final_results/1_calibration_grid/selected_config_v4.json` is committed, so this reproduces the _confirmation_ run, not the calibration grid; same loop as `docs/PIPELINE.md`'s Confirmation step):
 >
@@ -45,6 +45,7 @@ simulator/              the scheduler itself — every module Main.run_simulatio
 final_results/
   1_calibration_grid/    Step 1 of the pipeline: pick a detector configuration
   2_confirmation/        Step 2: confirm the pick on fresh seeds and workloads
+  3_idle_check_cost/     the idle check's own scanning cost, measured on the published runs
 development/             one-off diagnosis/verification scripts — real findings, not the final numbers
 superseded/              early results known to be invalid or replaced — kept for provenance, never cite
 docs/                    pipeline docs, project history, and the full dated lab notebook

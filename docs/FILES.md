@@ -46,6 +46,17 @@ Full per-file breakdown of every folder. For the top-level tree, see `README.md`
 | `results_task6_confirmation*_MAIN_TABLE.csv`, `_COMPACT_TABLE.{csv,md}`, `_TABLE_<variant>.csv`, `_CHECK_EFFECT.{csv,md}` | Merged outputs of the two analysis scripts above. |
 | `figure_p95wait_vs_arrival_rate*.png`, `confirmation_run_analysis.txt` | The arrival-rate figure and a captured-stdout snapshot. |
 
+### `final_results/3_idle_check_cost/` — the idle check's own scanning cost, measured on the published runs
+
+Moved here from `development/` (2026-10-01) since it measures the exact seeds/thresholds behind the published v4 confirmation, not an independent diagnostic — see `docs/NOTEBOOK.md`'s `2026-10-01` entry.
+
+| file | what it does |
+|---|---|
+| `measure_idle_check_cost.py` | Re-runs the exact (workload, penalty, seed) triples behind the v4 confirmation on 5 workloads x 3 penalties, reading `idle_check_runs`/`idle_check_cores_read` off the balancer after each run. Safety-checks every recomputed `p95_wait`/`avg_wait`/`total_migrations` against the committed per-seed CSVs before writing anything. |
+| `results_idle_check_cost.{csv,md}` | Its output: mean cores read per idle-check scan, and that as a %% of the same run's baseline `sched_cores_scanned`, per workload/penalty. |
+| `build_cost_table.py` | Merges `results_idle_check_cost.csv` with `final_results/2_confirmation/results_task6_confirmation_v4_MAIN_TABLE.csv` into one per-(workload,penalty) cost/benefit table covering all 48 confirmation cells -- no new simulations, reads only committed CSVs. |
+| `results_task6_confirmation_v4_COST_TABLE.{csv,md}` | Its output. |
+
 ### `development/` — one-off diagnosis and verification, real findings that aren't the final numbers
 
 Each subfolder is one investigation; `development/INDEX.md` indexes every script and what it found, cross-referenced to the `docs/NOTEBOOK.md` entry that explains it. Folder-to-task mapping is in `docs/HISTORY.md`'s task table.
