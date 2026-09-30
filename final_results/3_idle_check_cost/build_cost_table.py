@@ -11,12 +11,16 @@ that cell (proven: the idle check can't run if the detector never
 triggers -- see BurstScheduler.on_task_placed()). It is NOT assumed 0
 just because a workload is one of the "11 silent workloads" from the
 2026-09-30g headline (that's about p95_wait effect, not about whether
-the idle check ran) -- bursty_high_s24 is the one case where this
-matters: its penalty=0.0 cell has detector_fires=0.0 exactly (-> 0%,
-proven), but its penalty=0.5/2.0 cells have tiny nonzero fires
-(0.067/0.033 per run) and were NOT part of the 5-workload idle-check
-measurement, so those two cells are marked n/a here rather than
-guessed.
+the idle check ran) -- bursty_high_s24 was the one case where this
+mattered: its penalty=0.0 cell has detector_fires=0.0 exactly (->
+proven 0%), but its penalty=0.5/2.0 cells have tiny nonzero fires
+(0.067/0.033 per run). It was added to measure_idle_check_cost.py's
+WORKLOADS dict on 2026-10-01c specifically to measure those two cells
+directly rather than leave them n/a -- both came back ~0.0022% (not
+exactly 0: 1/30 seeds at each penalty actually ran the idle-check scan
+and read all 32 cores without finding one idle, same saturated-machine
+pattern as bursty_high_s64). As of 2026-10-01c every one of the 48
+cells is either "measured" or "proven" zero; none are n/a any more.
 """
 
 import csv
@@ -51,11 +55,15 @@ def main():
 
         if idle_row is not None:
             idle_pct = float(idle_row["idle_check_pct_of_baseline_scanned"])
-            idle_pct_str = f"{idle_pct:.2f}"
+            # 4 decimals, not 2: bursty_high_s24's two rare-fire cells (penalty
+            # 0.5/2.0) round to 0.00 at 2dp even though they're measured and
+            # nonzero (~0.0022%) -- keep that visible rather than collapsing
+            # it to the same "0.00" used for the proven-exact-zero cells.
+            idle_pct_str = f"{idle_pct:.4f}"
             idle_note = "measured"
         elif fires == 0.0:
             idle_pct = 0.0
-            idle_pct_str = "0.00"
+            idle_pct_str = "0.0000"
             idle_note = "proven (detector_fires=0.0)"
         else:
             idle_pct = None
@@ -93,12 +101,13 @@ def main():
     out_md = HERE / "results_task6_confirmation_v4_COST_TABLE.md"
     lines = [
         "All 48 v4 confirmation cells (16 workloads x 3 penalties). `idle_check_pct_of_"
-        "baseline_scanning` is 0.00 only where `detector_fires=0.0` exactly (proven the "
-        "idle check never ran); `n/a` means the detector fired a nonzero-but-tiny amount "
-        "and that cell wasn't covered by the 5-workload idle-check measurement -- not "
-        "assumed 0. See `results_idle_check_cost.csv`/`.md` for the 15 directly-measured "
-        "cells and `../2_confirmation/results_task6_confirmation_v4_MAIN_TABLE.csv` for "
-        "the scanning/migrations/p95_wait source values.",
+        "baseline_scanning` is 0.0000 only where `detector_fires=0.0` exactly (proven the "
+        "idle check never ran); every other cell is directly measured, including "
+        "bursty_high_s24's rare-but-nonzero penalty=0.5/2.0 cells (~0.0022%%, added "
+        "2026-10-01c) -- no cell is n/a. See `results_idle_check_cost.csv`/`.md` for the "
+        "18 directly-measured cells (6 workloads x 3 penalties) and "
+        "`../2_confirmation/results_task6_confirmation_v4_MAIN_TABLE.csv` for the "
+        "scanning/migrations/p95_wait source values.",
         "",
         "| workload | penalty | detector_fires | extra balancer scanning % | idle-check "
         "% of baseline scanning | total_migrations % | p95_wait % |",

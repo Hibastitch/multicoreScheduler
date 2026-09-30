@@ -1,49 +1,49 @@
 workload,penalty,detector_fires,extra_balancer_scanning_pct,idle_check_pct_of_baseline_scanning,idle_check_note,total_migrations_pct,p95_wait_pct
-stacked_low,0.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-stacked_low,0.5,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-stacked_low,2.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-stacked_medium,0.0,81,4.946202489120612,0.05,measured,0.21691973969630002,-15.507190050525224
-stacked_medium,0.5,81,4.7911649510259595,0.05,measured,-0.4787552363853912,-14.747634069399654
-stacked_medium,2.0,81,5.2561521308561225,0.05,measured,-0.1193175038778121,-15.129654903490769
-stacked_high,0.0,151.2,14.423129192533082,1.51,measured,-2.445134783044391,-23.701388250436775
-stacked_high,0.5,151.43333333333334,10.933795613736642,1.59,measured,-6.844069128043979,-24.77459109238355
-stacked_high,2.0,151.3,10.67027005767485,1.91,measured,-8.707201889020071,-30.86292810250727
-bursty_high_s24,0.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-bursty_high_s24,0.5,0.06666666666666667,0.0,n/a,"not measured (detector_fires=0.067, outside the 5-workload measurement)",0.0,0.0
-bursty_high_s24,2.0,0.03333333333333333,0.0,n/a,"not measured (detector_fires=0.033, outside the 5-workload measurement)",0.0,0.0
-bursty_high_s64,0.0,264.06666666666666,-0.041850561548280256,1.29,measured,-0.12287395718812505,-0.9144620479435355
-bursty_high_s64,0.5,266.56666666666666,0.051292395932378325,1.28,measured,0.25712025316454795,-0.10056683123047905
-bursty_high_s64,2.0,277.5,-0.04582126106514004,1.30,measured,-0.5712451861360777,-0.6728428455503789
-heavy_tail_high,0.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-heavy_tail_high,0.5,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-heavy_tail_high,2.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate0.5_s4,0.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate0.5_s4,0.5,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate0.5_s4,2.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate0.5_s12,0.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate0.5_s12,0.5,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate0.5_s12,2.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate0.75_s4,0.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate0.75_s4,0.5,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate0.75_s4,2.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate0.75_s12,0.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate0.75_s12,0.5,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate0.75_s12,2.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate1.0_s4,0.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate1.0_s4,0.5,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate1.0_s4,2.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate1.0_s12,0.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate1.0_s12,0.5,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate1.0_s12,2.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate1.5_s4,0.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate1.5_s4,0.5,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate1.5_s4,2.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate1.5_s12,0.0,50,2.9065054355562503,0.03,measured,-2.1460775473399467,-25.847176079734762
-rate1.5_s12,0.5,50,2.8525530315915497,0.03,measured,-2.123065851025551,-23.46420714164838
-rate1.5_s12,2.0,50,2.735479717641436,0.03,measured,-2.486038551612319,-23.662830060934922
-rate3.0_s4,0.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate3.0_s4,0.5,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate3.0_s4,2.0,0,0.0,0.00,proven (detector_fires=0.0),0.0,0.0
-rate3.0_s12,0.0,50,2.8993224264852806,0.03,measured,-3.2211306168465086,-24.88759970993448
-rate3.0_s12,0.5,50,2.5765434556077293,0.03,measured,-3.911863324285495,-18.281887460548944
-rate3.0_s12,2.0,50,2.611839118274743,0.03,measured,-4.520939086294416,-20.787778942638855
+stacked_low,0.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+stacked_low,0.5,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+stacked_low,2.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+stacked_medium,0.0,81,4.946202489120612,0.0511,measured,0.21691973969630002,-15.507190050525224
+stacked_medium,0.5,81,4.7911649510259595,0.0515,measured,-0.4787552363853912,-14.747634069399654
+stacked_medium,2.0,81,5.2561521308561225,0.0537,measured,-0.1193175038778121,-15.129654903490769
+stacked_high,0.0,151.2,14.423129192533082,1.5134,measured,-2.445134783044391,-23.701388250436775
+stacked_high,0.5,151.43333333333334,10.933795613736642,1.5910,measured,-6.844069128043979,-24.77459109238355
+stacked_high,2.0,151.3,10.67027005767485,1.9103,measured,-8.707201889020071,-30.86292810250727
+bursty_high_s24,0.0,0,0.0,0.0000,measured,0.0,0.0
+bursty_high_s24,0.5,0.06666666666666667,0.0,0.0022,measured,0.0,0.0
+bursty_high_s24,2.0,0.03333333333333333,0.0,0.0022,measured,0.0,0.0
+bursty_high_s64,0.0,264.06666666666666,-0.041850561548280256,1.2911,measured,-0.12287395718812505,-0.9144620479435355
+bursty_high_s64,0.5,266.56666666666666,0.051292395932378325,1.2805,measured,0.25712025316454795,-0.10056683123047905
+bursty_high_s64,2.0,277.5,-0.04582126106514004,1.3021,measured,-0.5712451861360777,-0.6728428455503789
+heavy_tail_high,0.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+heavy_tail_high,0.5,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+heavy_tail_high,2.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate0.5_s4,0.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate0.5_s4,0.5,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate0.5_s4,2.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate0.5_s12,0.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate0.5_s12,0.5,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate0.5_s12,2.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate0.75_s4,0.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate0.75_s4,0.5,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate0.75_s4,2.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate0.75_s12,0.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate0.75_s12,0.5,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate0.75_s12,2.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate1.0_s4,0.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate1.0_s4,0.5,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate1.0_s4,2.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate1.0_s12,0.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate1.0_s12,0.5,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate1.0_s12,2.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate1.5_s4,0.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate1.5_s4,0.5,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate1.5_s4,2.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate1.5_s12,0.0,50,2.9065054355562503,0.0262,measured,-2.1460775473399467,-25.847176079734762
+rate1.5_s12,0.5,50,2.8525530315915497,0.0261,measured,-2.123065851025551,-23.46420714164838
+rate1.5_s12,2.0,50,2.735479717641436,0.0269,measured,-2.486038551612319,-23.662830060934922
+rate3.0_s4,0.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate3.0_s4,0.5,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate3.0_s4,2.0,0,0.0,0.0000,proven (detector_fires=0.0),0.0,0.0
+rate3.0_s12,0.0,50,2.8993224264852806,0.0273,measured,-3.2211306168465086,-24.88759970993448
+rate3.0_s12,0.5,50,2.5765434556077293,0.0263,measured,-3.911863324285495,-18.281887460548944
+rate3.0_s12,2.0,50,2.611839118274743,0.0263,measured,-4.520939086294416,-20.787778942638855

@@ -65,6 +65,12 @@ WORKLOADS = {
     "bursty_high_s64": dict(profile="bursty", intensity="high",
                              overrides={"burst_size": 64, "burst_duration": 64 / 3.75},
                              n_tasks=640, seed_base=120400),
+    # Added 2026-10-01c to fill the 2 n/a cost-table cells: bursty_high_s24
+    # fires rarely (0.067/0.033 per run at penalty=0.5/2.0) but not zero, so
+    # it wasn't in the original 5-workload set -- see docs/NOTEBOOK.md.
+    "bursty_high_s24": dict(profile="bursty", intensity="high",
+                             overrides={"burst_size": 24, "burst_duration": 24 / 3.75},
+                             n_tasks=240, seed_base=120300),
 }
 
 
@@ -207,11 +213,15 @@ def main():
         "|---|---|---|---|---|---|---|---|",
     ]
     for r in per_cell_rows:
-        lines.append(f"| {r['workload']} | {r['penalty']} | {r['idle_check_runs_mean']:.1f} | "
+        # .3f/.4f, not .1f/.2f, for idle_check_runs_mean and the pct column:
+        # bursty_high_s24's rare-fire cells (1/30 seeds) round to 0.0/0.00% at
+        # coarser precision, indistinguishable from the workloads that never
+        # run the check at all -- keep the nonzero visible (2026-10-01c).
+        lines.append(f"| {r['workload']} | {r['penalty']} | {r['idle_check_runs_mean']:.3f} | "
                       f"{r['idle_check_cores_read_mean']:.1f} | {r['mean_cores_read_per_check']:.2f} | "
                       f"{r['baseline_sched_cores_scanned_mean']:.1f} | "
                       f"{r['variant_sched_cores_scanned_mean']:.1f} | "
-                      f"{r['idle_check_pct_of_baseline_scanned']:.2f}% |")
+                      f"{r['idle_check_pct_of_baseline_scanned']:.4f}% |")
     with open(out_md, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
     print(f"Wrote {out_md}")

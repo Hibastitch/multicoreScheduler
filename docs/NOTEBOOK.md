@@ -3798,3 +3798,28 @@ verified from `results_task6_confirmation_v4_MAIN_TABLE.csv`'s own
 "11 silent workloads" framing in the 2026-09-30g entry (which is a
 true statement about `p95_wait` effect, not about whether the idle
 check ran at all).
+
+**Addendum (2026-10-01c):** filled the 2 `n/a` cells above.
+`bursty_high_s24` was added to `measure_idle_check_cost.py`'s
+`WORKLOADS` dict (seed_base=120300, verified against `task6_
+confirmation_run.py`'s own v4 seed derivation before running) and the
+script re-run for all 6 workloads x 3 penalties; SAFETY CHECK PASSED
+again (3240/3240 recomputed values, including the 5 already-published
+workloads re-verified alongside it). Result: `bursty_high_s24` fires
+rarely but not zero -- `detector_fires`=0.067/run at penalty=0.5 and
+0.033/run at penalty=2.0 (confirmed already in the MAIN_TABLE), and of
+those, `idle_check_runs` (post-cooldown) is smaller still: 1 run out of
+30 seeds at each penalty (0.033/run) actually reached the idle-check
+scan, and in both cases it read all 32 cores and found none idle
+(`mean_cores_read_per_check=32.0`) -- the same saturated-machine
+pattern as `bursty_high_s64`, just far rarer here since `s24` bursts
+are smaller. As a %% of that run's own baseline `sched_cores_scanned`
+this is ~0.0022%% at both penalties (not exactly 0, but small enough to
+round to 0.00%% at 2 decimals) -- `build_cost_table.py` and `measure_
+idle_check_cost.py`'s table-writers were both changed to report this
+column at 3-4 decimal places instead of 1-2, specifically so this
+nonzero-but-tiny result stays visible rather than collapsing to the
+same printed "0.00%%" used for the 30 cells that are exactly zero
+(`detector_fires=0.0`). `results_task6_confirmation_v4_COST_TABLE.csv`
+now has 0 `n/a` cells: 18 measured (6 workloads x 3 penalties), 30
+proven-zero.
