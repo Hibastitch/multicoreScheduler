@@ -100,6 +100,18 @@ class BurstAwareLoadBalancer(LoadBalancer):
         # destination _find_checker() picks within a given domain is).
         self.burst_idle_check = burst_idle_check
         self.idle_check_skipped_triggers = 0
+        # Measurement only (2026-10-01, docs/NOTEBOOK.md), no behavior
+        # change: idle_check_runs counts how many times the scan below
+        # actually ran; idle_check_cores_read counts the real number of
+        # Core.is_idle() calls made (the scan stops at the first idle
+        # core, same as the any() it replaces -- see on_task_placed()).
+        # Deliberately NOT added to sched_cores_scanned or any other
+        # Topology.WorkStats field -- those exist for the shared
+        # baseline pipeline (classify_group()/_find_checker()); this is
+        # a new, separate site, kept separate so the published
+        # sched_cores_scanned numbers are unaffected.
+        self.idle_check_runs = 0
+        self.idle_check_cores_read = 0
         self.logger = logger
         self.burst_triggers = 0
         # Pre-registered design ablation (2026-09-27, see Readme.md).
@@ -167,9 +179,25 @@ class BurstAwareLoadBalancer(LoadBalancer):
         # trigger, BEFORE any domain is walked -- see __init__'s
         # burst_idle_check comment. No effect at all when the flag is
         # False (the default).
-        if self.burst_idle_check and not any(c.is_idle() for c in self.cores_by_id.values()):
-            self.idle_check_skipped_triggers += 1
-            return
+        #
+        # Measurement only (2026-10-01): an explicit loop replacing the
+        # original any(c.is_idle() for c in self.cores_by_id.values()),
+        # so idle_check_cores_read can count the real number of reads --
+        # same iteration order (self.cores_by_id.values()), same
+        # short-circuit on the first idle core, so found_idle is
+        # identical to what any(...) would have returned; nothing about
+        # WHICH cores get scanned or WHEN the walk below runs changes.
+        if self.burst_idle_check:
+            self.idle_check_runs += 1
+            found_idle = False
+            for c in self.cores_by_id.values():
+                self.idle_check_cores_read += 1
+                if c.is_idle():
+                    found_idle = True
+                    break
+            if not found_idle:
+                self.idle_check_skipped_triggers += 1
+                return
 
         for domain in domain_chain(core):
             STATS.burst_balance_levels_walked += 1

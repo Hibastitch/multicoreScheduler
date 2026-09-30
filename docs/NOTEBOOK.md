@@ -3710,3 +3710,68 @@ matched the real selection, so its `stacked_low` output numbers do not
 appear anywhere in this confirmation's real data.
 
 **7. Status: experimental phase complete. Baseline and v4 frozen.**
+
+## 2026-10-01 — Measurement: the idle check's own cost (not included in sched_cores_scanned)
+
+Measurement only, no rule/selection/default changed. `simulator/
+BurstScheduler.py`'s `burst_idle_check` scan (`any(c.is_idle() for c
+in self.cores_by_id.values())`) was never counted in `sched_cores_
+scanned` (that field is `STATS.classify_cores_scanned + STATS.
+checker_cores_scanned` only, `Metrics.py:123`) or any other `Topology.
+WorkStats` field -- confirmed by inspection before measuring anything.
+Added two new balancer instance counters, `idle_check_runs` and
+`idle_check_cores_read`, replacing the `any(...)` call with an
+explicit loop that stops at the first idle core (same iteration order,
+same short-circuit, boolean result identical) so the real number of
+`Core.is_idle()` reads can be counted. Deliberately kept OUT of
+`sched_cores_scanned`/`WorkStats` so the already-published numbers are
+untouched. `tests/test_invariants.py` re-run after the change: 576
+runs, all 3 configs, ALL PASS, and `results_invariants_perseed.csv`/
+`_paired_perseed.csv` came back byte-identical to what was already
+committed -- confirms the edit is behavior-preserving, not just
+invariant-clean.
+
+`development/idle_check_cost/measure_idle_check_cost.py` re-runs the
+EXACT (workload, penalty, seed) triples behind the published v4
+confirmation -- seeds 120000+, `selected_config_v4.json`'s thresholds
+(`q8_a1.5_or`) -- on 5 workloads (`stacked_medium`, `stacked_high`,
+`rate1.5_s12`, `rate3.0_s12`, `bursty_high_s64`), all 3 penalties.
+**Safety check, before writing anything:** every recomputed `p95_wait`/
+`avg_wait`/`total_migrations` (baseline and `selected_checked`, all 30
+seeds) compared against the committed per-seed CSVs -- **2700/2700
+matched exactly** (tolerance 1e-9, float<->str round-tripping only).
+These are confirmed to be the identical runs behind the published
+results, not a resample.
+
+| workload | penalty | idle_check_runs | idle_check_cores_read | mean cores/check | baseline sched_cores_scanned | variant sched_cores_scanned | idle-check as % of baseline |
+|---|---|---|---|---|---|---|---|
+| stacked_medium | 0.0 | 17.0 | 24.1 | 1.42 | 47130.4 | 49461.6 | 0.05% |
+| stacked_medium | 0.5 | 17.0 | 24.3 | 1.43 | 47157.6 | 49417.0 | 0.05% |
+| stacked_medium | 2.0 | 17.0 | 25.1 | 1.48 | 46803.6 | 49263.6 | 0.05% |
+| stacked_high | 0.0 | 13.0 | 185.6 | 14.28 | 12263.9 | 14032.7 | 1.51% |
+| stacked_high | 0.5 | 13.0 | 196.4 | 15.11 | 12344.6 | 13694.3 | 1.59% |
+| stacked_high | 2.0 | 13.0 | 226.7 | 17.44 | 11865.4 | 13131.4 | 1.91% |
+| rate1.5_s12 | 0.0 | 10.0 | 11.7 | 1.17 | 44491.0 | 45784.1 | 0.03% |
+| rate1.5_s12 | 0.5 | 10.0 | 11.6 | 1.16 | 44487.6 | 45756.7 | 0.03% |
+| rate1.5_s12 | 2.0 | 10.0 | 12.0 | 1.20 | 44529.7 | 45747.8 | 0.03% |
+| rate3.0_s12 | 0.0 | 10.0 | 11.6 | 1.16 | 42568.6 | 43802.8 | 0.03% |
+| rate3.0_s12 | 0.5 | 10.0 | 11.2 | 1.12 | 42704.5 | 43804.8 | 0.03% |
+| rate3.0_s12 | 2.0 | 10.0 | 11.2 | 1.12 | 42655.8 | 43769.9 | 0.03% |
+| bursty_high_s64 | 0.0 | 33.8 | 1077.7 | 31.85 | 83471.6 | 83436.7 | 1.29% |
+| bursty_high_s64 | 0.5 | 33.4 | 1064.3 | 31.90 | 83118.2 | 83160.9 | 1.28% |
+| bursty_high_s64 | 2.0 | 34.0 | 1084.6 | 31.93 | 83294.7 | 83256.5 | 1.30% |
+
+Consistent with everything already established about this mechanism:
+`bursty_high_s64`'s mean cores/check is 31.85-31.93, essentially the
+whole 32-core machine scanned almost every time -- matching Task 10a's
+finding (2026-09-30b) that this workload has no idle core at trigger
+time in ~99% of cases, so the scan rarely finds one early. `stacked_
+medium`/`rate1.5_s12`/`rate3.0_s12` (lightly loaded, idle cores common)
+stop after ~1.1-1.5 cores on average. `stacked_high` sits in between
+(~14-17 cores/check). Across all 15 cells: `idle_check_cores_read`
+mean ranges 11.2-1084.6/run; as a fraction of the SAME run's baseline
+`sched_cores_scanned` (the existing periodic/newidle/placement
+scanning work already measured and published), the idle check adds
+0.03%-1.91% -- small in every cell measured, largest exactly on the
+workload (`bursty_high_s64`) where the mechanism itself is closest to
+saturated and least effective (2026-09-30g's confirmation entry).

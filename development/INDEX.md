@@ -154,3 +154,26 @@ state, never a performance/harm statistic.
 - `results_task6_bursty_sweep_fixed_perseed.csv`, `results_task6_bursty_sweep_fixed_summary.csv` — its output.
 - `task6_bursty_sweep_fixed_output.txt` — captured stdout.
 - `stress_test_bursty.py` — larger-n stress test of the same question.
+
+## idle_check_cost/ — measuring burst_idle_check's own scan cost (2026-10-01)
+
+Measurement only, see `docs/NOTEBOOK.md`'s `2026-10-01` entry for the full writeup -- no
+rule/selection/default changed. `simulator/BurstScheduler.py`'s idle-check scan was never
+counted in `sched_cores_scanned`; two new balancer counters (`idle_check_runs`,
+`idle_check_cores_read`) make it measurable without changing behavior (the `any(...)` call
+was replaced by an equivalent explicit loop, same iteration order, same short-circuit,
+boolean result identical -- `tests/test_invariants.py` re-run after, all pass, result CSVs
+byte-identical to before the change).
+
+- `measure_idle_check_cost.py` — re-runs the EXACT (workload, penalty, seed) triples behind
+  the published v4 confirmation (seeds 120000+, `selected_config_v4.json`'s `q8_a1.5_or`) on
+  5 workloads x 3 penalties; SAFETY CHECK compares every recomputed `p95_wait`/`avg_wait`/
+  `total_migrations` against the committed per-seed CSVs before writing anything (2700/2700
+  matched exactly) -- these are confirmed to be the identical runs behind the published
+  numbers, not a resample.
+- `results_idle_check_cost.csv`, `.md` — its output. Headline: `idle_check_cores_read` mean
+  ranges 11.2-1084.6/run across the 15 cells measured; as a %% of that same run's baseline
+  `sched_cores_scanned`, the idle check adds 0.03%-1.91% -- small everywhere measured, largest
+  on `bursty_high_s64` (mean cores/check 31.85-31.93, essentially the whole machine scanned
+  almost every time), the same workload where the mechanism itself is closest to saturated
+  and least effective (2026-09-30g).
