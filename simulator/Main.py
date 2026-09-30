@@ -1,3 +1,9 @@
+"""
+Simulation entry point: run_simulation() builds the topology, runs one
+simulation and returns metrics. Called by all experiment scripts.
+Running this file directly is not part of the experiment pipeline.
+"""
+
 import random
 import simpy
 
