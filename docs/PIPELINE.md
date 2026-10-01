@@ -109,7 +109,9 @@ No arguments; same `TASK10_V4=1` requirement as every script above (refuses to r
 - `fig1_headline_p95wait_by_workload.png` — all 16 workloads' `p95_wait` % change at penalty=0.5ms, `selected_checked` vs `original_q2_a0.8_or_unchecked`, from `_MAIN_TABLE.csv` and `_TABLE_original_q2_a0.8_or_unchecked.csv`.
 - `fig2_stacked_high_perseed_scatter.png` — `stacked_high`/penalty=0.5, one point per seed, from `results_task6_confirmation_v4_stacked_high_perseed.csv`.
 - `fig3_bursty_high_s64_checked_vs_unchecked.png` — `bursty_high_s64`, all 3 penalties, `total_migrations` and `p95_wait` for baseline/`selected_unchecked`/`selected_checked`, from `_MAIN_TABLE.csv` and `_TABLE_selected_unchecked.csv`, cross-checked against `_CHECK_EFFECT.csv`.
-- `fig4_p95wait_vs_arrival_rate.png` — the same data as `figure_p95wait_vs_arrival_rate_v4.png` above, restyled to match the other three, from `_MAIN_TABLE.csv` and `_TABLE_original_q2_a0.8_or_unchecked.csv`.
+- `fig4_p95wait_vs_arrival_rate.png` — the same data as `figure_p95wait_vs_arrival_rate_v4.png` above, restyled to match the other three (penalties 0.5/2ms, matching Fig 1, rather than that figure's 0/2ms), from `_MAIN_TABLE.csv` and `_TABLE_original_q2_a0.8_or_unchecked.csv`.
+
+All four use plain-language series names (e.g. "Burst trigger + idle check (v4)") rather than the CSVs' own variant codes, and read every plotted fact -- which workloads help, where a value is exactly zero, which cells are harmful and on which specific metric -- from the CSVs at run time (see `make_figures.py`'s own settings block for the only hardcoded choices: labels, colors, and which workload/penalty Figs 2-4 look at).
 
 ## How to read an output line
 
