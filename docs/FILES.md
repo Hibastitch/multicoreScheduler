@@ -33,7 +33,7 @@ Full per-file breakdown of every folder. For the top-level tree, see `README.md`
 | `results_task6_threshold_grid*_<workload>_{perseed,summary}.csv` | Raw per-seed / per-config-aggregated grid output, one pair per workload per pipeline version (no suffix = v1, `_v2`/`_v3`/`_v4` = later re-runs under `TASK8_V2`/`TASK9_V3`/`TASK10_V4`). |
 | `selected_config_v3.json`, `selected_config_v4.json` | The winning (and runner-up) config from each version's grid, consumed by the matching confirmation run. |
 | `tradeoff_points*.csv`, `figure_threshold_grid_tradeoff*.{png,pdf}`, `harm_breakdown*.csv`, `threshold_grid_analysis*.txt`, `threshold_grid_recompute_harm*.txt` | Outputs/captured-stdout of the four scripts above, one set per pipeline version. |
-| `logs/` | Captured stdout from individual grid-workload runs. |
+| `logs/` | Captured console output (stdout) of the individual grid-workload runs -- provenance for the v4 grid, intentionally tracked despite `.gitignore`'s `*.log` rule (added 2026-10-01, pre-publication audit): that rule only affects new, untracked `.log` files; it does not untrack files already committed. |
 
 ### `final_results/2_confirmation/` — confirm it
 
