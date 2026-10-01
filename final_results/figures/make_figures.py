@@ -1,9 +1,9 @@
 """
 Presentation figures for the v4 confirmation result -- reads ONLY the
-already-committed CSVs under final_results/2_confirmation/. No
-simulation runs here, and nothing it reads is modified: this script is
-read-only over published data, same discipline as
-final_results/3_idle_check_cost/build_cost_table.py.
+already-committed CSVs under final_results/2_confirmation/ and
+final_results/1_calibration_grid/. No simulation runs here, and
+nothing it reads is modified: this script is read-only over published
+data, same discipline as final_results/3_idle_check_cost/build_cost_table.py.
 
 Run as: python make_figures.py (no arguments, works from any cwd --
 every path below is resolved relative to this file, same convention as
@@ -26,6 +26,7 @@ isn't itself a CSV column.
 """
 
 import csv
+import json
 import os
 import pathlib
 import re
@@ -37,6 +38,7 @@ from matplotlib.lines import Line2D
 
 HERE = pathlib.Path(__file__).resolve().parent
 CONF_DIR = HERE.parent / "2_confirmation"
+GRID_DIR = HERE.parent / "1_calibration_grid"
 
 # Same guard as task6_threshold_grid.py/task6_confirmation_run.py/etc
 # (pre-publication audit fix, 2026-10-01, docs/NOTEBOOK.md): this script
@@ -130,6 +132,17 @@ def read_csv(name):
         return list(csv.DictReader(f))
 
 
+def read_grid_csv(name):
+    path = GRID_DIR / name
+    with open(path, newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def read_grid_json(name):
+    with open(GRID_DIR / name) as f:
+        return json.load(f)
+
+
 def index_by_wl_pen(rows):
     return {(r["workload"], r["penalty"]): r for r in rows}
 
@@ -151,6 +164,154 @@ def harmful_metrics(row):
 
 def pretty_metric(name):
     return name.replace("_", " ")
+
+
+# =============================================================== Fig 0 ==
+
+def config_label(row):
+    combine_word = "OR" if row["combine"] == "or" else "AND"
+    return f"q≥{int(float(row['q']))} {combine_word} rate≥{row['a']}"
+
+
+def fig0_calibration_grid():
+    rows = read_grid_csv("tradeoff_points_v4.csv")
+    sel = read_grid_json("selected_config_v4.json")
+
+    # The 4 cells the selection score is averaged over (docs/PIPELINE.md's
+    # Selection step): stacked_medium/stacked_high x penalties 0/0.5.
+    P95_COLS = ["stacked_medium_p0_0", "stacked_medium_p0_5",
+                "stacked_high_p0_0", "stacked_high_p0_5"]
+    points = []
+    for r in rows:
+        mean_pct = sum(fnum(r, c) for c in P95_COLS) / len(P95_COLS)
+        points.append(dict(
+            config=r["config"], harm_count=int(r["harm_count"]),
+            mean_pct=mean_pct, label=config_label(r),
+        ))
+
+    # Verify against a SECOND, independently-written source
+    # (selected_config_v4.json, written by task6_threshold_grid_recompute_
+    # harm.py, not by task6_threshold_grid_tradeoff.py which wrote
+    # tradeoff_points_v4.csv) before drawing anything.
+    harm_free = sorted(p["config"] for p in points if p["harm_count"] == 0)
+    expected_harm_free = sorted(sel["harm_free_configs"])
+    print(f"Fig 0: {len(harm_free)}/{len(points)} harm-free configs: {harm_free}")
+    if harm_free != expected_harm_free:
+        print(f"MISMATCH: harm-free configs from tradeoff_points_v4.csv "
+              f"({harm_free}) != selected_config_v4.json's harm_free_configs "
+              f"({expected_harm_free})")
+    else:
+        print("Fig 0 cross-check OK: harm-free config list matches "
+              "selected_config_v4.json exactly.")
+
+    selected_name = sel["selected"]["config"]
+    runner_up_name = sel["runner_up"]["config"]
+    selected_pt = next(p for p in points if p["config"] == selected_name)
+    runner_up_pt = next(p for p in points if p["config"] == runner_up_name)
+    for pt, json_key, tag in [(selected_pt, "selected_mean_p95_pct", "selected"),
+                               (runner_up_pt, "runner_up_mean_p95_pct", "runner-up")]:
+        json_val = sel[json_key]
+        if abs(pt["mean_pct"] - json_val) > 1e-6:
+            print(f"MISMATCH: {tag} ({pt['config']}) mean_pct from "
+                  f"tradeoff_points_v4.csv = {pt['mean_pct']:.6f}, but "
+                  f"selected_config_v4.json's {json_key} = {json_val:.6f}")
+        else:
+            print(f"Fig 0 cross-check OK: {tag} ({pt['config']}) mean_pct "
+                  f"{pt['mean_pct']:.4f}% matches selected_config_v4.json exactly.")
+    print(f"Fig 0: SELECTED={selected_name} ({selected_pt['mean_pct']:.2f}%), "
+          f"RUNNER-UP={runner_up_name} ({runner_up_pt['mean_pct']:.2f}%)")
+
+    # Group points landing on (almost) the exact same spot -- verified
+    # against the raw CSV this session: q4_a0.8_or and q8_a0.8_or are
+    # numerically IDENTICAL (same harmed workload drives both, so q never
+    # gets a chance to matter) -- merge rather than silently overplot one
+    # marker on the other.
+    groups = {}
+    for p in points:
+        key = (p["harm_count"], round(p["mean_pct"], 4))
+        groups.setdefault(key, []).append(p)
+    merged = []
+    for grp in groups.values():
+        merged.append(dict(
+            harm_count=grp[0]["harm_count"],
+            mean_pct=sum(p["mean_pct"] for p in grp) / len(grp),
+            configs=[p["config"] for p in grp],
+            label=" / ".join(p["label"] for p in grp),
+            is_selected=any(p["config"] == selected_name for p in grp),
+            is_runner_up=any(p["config"] == runner_up_name for p in grp),
+        ))
+    dupes = [g for g in merged if len(g["configs"]) > 1]
+    if dupes:
+        print("Fig 0: merged coincident points: " +
+              "; ".join(" + ".join(g["configs"]) for g in dupes))
+
+    fig, ax = plt.subplots(figsize=(10.5, 8))
+
+    max_harm = max(g["harm_count"] for g in merged)
+    ax.axvspan(-0.5, 0.5, color=COLOR["baseline"], alpha=0.12, zorder=0)
+    ax.annotate("Harm-free", xy=(0, 1), xycoords=("data", "axes fraction"),
+                xytext=(0, -8), textcoords="offset points",
+                ha="center", va="top", fontsize=11, color="dimgray")
+
+    for g in merged:
+        if g["is_selected"]:
+            marker, size, face, edge, lw = "*", 420, COLOR["selected_checked"], COLOR["selected_checked"], 0
+        elif g["is_runner_up"]:
+            marker, size, face, edge, lw = "D", 160, "white", COLOR["selected_checked"], 2.2
+        else:
+            marker, size, face, edge, lw = "o", 110, COLOR["baseline"], COLOR["baseline"], 0
+        ax.scatter(g["harm_count"], g["mean_pct"], marker=marker, s=size,
+                   facecolor=face, edgecolor=edge, linewidth=lw, zorder=5)
+
+    # Sorted label column to the right of the data, each connected to its
+    # real point with a thin leader line -- guarantees no label overlap
+    # regardless of how close the real data points are (two configs here
+    # differ by as little as 0.04 percentage points). Column span is
+    # derived from the data's own range plus one row per point, not a
+    # fixed pixel guess.
+    ordered = sorted(merged, key=lambda g: -g["mean_pct"])
+    n = len(ordered)
+    min_gap = 2.0  # layout choice: vertical spacing between stacked label rows
+    natural_top = max(g["mean_pct"] for g in merged)
+    natural_bottom = min(g["mean_pct"] for g in merged)
+    center = (natural_top + natural_bottom) / 2
+    half_span = max((n - 1) * min_gap / 2, (natural_top - natural_bottom) / 2 + 1.0)
+    top, bottom = center + half_span, center - half_span
+    label_x = max_harm + 1.9
+    step = (top - bottom) / max(n - 1, 1)
+    for i, g in enumerate(ordered):
+        ly = top - i * step
+        weight = "bold" if g["is_selected"] else "normal"
+        color = COLOR["selected_checked"] if (g["is_selected"] or g["is_runner_up"]) else "black"
+        ax.annotate(g["label"], xy=(g["harm_count"], g["mean_pct"]),
+                    xytext=(label_x, ly), fontsize=10.5, fontweight=weight, color=color,
+                    va="center", ha="left",
+                    arrowprops=dict(arrowstyle="-", lw=0.7, color="0.55",
+                                     shrinkA=2, shrinkB=6))
+
+    ax.set_xlim(-0.7, label_x + 3.8)
+    ax.set_ylim(bottom - 1.5, top + 1.5)
+    ax.set_xticks(range(0, max_harm + 1))
+    ax.set_xlabel("Disqualifying harm cells (penalties 0 & 0.5 only)")
+    ax.set_ylabel("Mean p95 wait change, stacked_medium + stacked_high (%)")
+
+    handles = [
+        Line2D([0], [0], marker="o", linestyle="none", markersize=11,
+               markerfacecolor=COLOR["baseline"], markeredgecolor=COLOR["baseline"],
+               label="Other configuration"),
+        Line2D([0], [0], marker="*", linestyle="none", markersize=18,
+               markerfacecolor=COLOR["selected_checked"], markeredgecolor=COLOR["selected_checked"],
+               label=f"Selected (v4): {selected_pt['label']}"),
+        Line2D([0], [0], marker="D", linestyle="none", markersize=11,
+               markerfacecolor="white", markeredgecolor=COLOR["selected_checked"], markeredgewidth=2,
+               label=f"Runner-up: {runner_up_pt['label']}"),
+    ]
+    fig.legend(handles=handles, loc="upper left", frameon=False,
+               fontsize=11, bbox_to_anchor=(0.1, 0.06))
+    fig.tight_layout(rect=(0, 0.1, 1, 1))
+
+    save(fig, "fig0_calibration_grid")
+    return dict(selected=selected_name, runner_up=runner_up_name, harm_free=harm_free)
 
 
 # =============================================================== Fig 1 ==
@@ -450,12 +611,15 @@ def fig4_arrival_rate():
 # ================================================================ main ==
 
 def main():
+    r0 = fig0_calibration_grid()
     r1 = fig1_headline()
     r2 = fig2_stacked_high_scatter()
     r3 = fig3_bursty_high_s64()
     fig4_arrival_rate()
 
     print("\n=== verification summary ===")
+    print(f"Fig 0: selected={r0['selected']}, runner_up={r0['runner_up']}, "
+          f"harm_free={r0['harm_free']}")
     print(f"Fig 1 selected_checked p95_wait% (penalty=0.5): {r1['checked_pct']}")
     print(f"Fig 2: {r2['improved']}/{r2['n']} seeds improved on "
           f"{FIG2_WORKLOAD}/penalty={FIG2_PENALTY}")
