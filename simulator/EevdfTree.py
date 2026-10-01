@@ -2,7 +2,13 @@
 A faithful port of Linux's EEVDF run-queue data structure
 (kernel/sched/fair.c, cfs_rq->tasks_timeline), so Core.pick_next() can
 walk a real augmented rbtree instead of the O(n) list scan it used
-before 2026-09-24. Sourced verbatim from kernel/sched/fair.c (v6.11):
+before 2026-09-24. Sourced verbatim from kernel/sched/fair.c (v6.11),
+verified unchanged in v7.2 (pre-publication audit, 2026-10-01,
+docs/NOTEBOOK.md: `entity_before()` at v7.2's fair.c:589-595 still
+compares `a->deadline < b->deadline`, the identical deadline-keyed
+comparison described below -- this project's other fidelity work cites
+v7.2 throughout, so noting that explicitly here too rather than leaving
+a lone v6.11 citation unexplained):
 
   - __entity_less()/entity_before(): the tree is keyed by DEADLINE, not
     vruntime. (The ORIGINAL 6.6 EEVDF merge kept it vruntime-keyed with
