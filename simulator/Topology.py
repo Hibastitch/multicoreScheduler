@@ -411,6 +411,22 @@ def build_topology(num_cores=32, cores_per_pair=2, pairs_per_node=4,
     balancing is correctly per-node-anchored (§ above), but this
     fixed-root placement path is not, for half of this topology's
     nodes. Not fixed here per instruction; flagged for a future task.
+
+    CORRECTION (2026-10-01, pre-publication audit, docs/NOTEBOOK.md):
+    the CAVEAT above describes `placement_root="fixed"` (always
+    descend from `machines[0]`) -- but Task 8 Fix 3, `placement_root=
+    "own"` (Placement.select_core_for_task(), docs/FIDELITY_AUDIT.md
+    §11), has been the DEFAULT in Main.run_simulation() since
+    2026-09-29, and no script under final_results/ ever overrides it
+    (re-verified this session: `grep -rn placement_root final_results/`
+    finds no kwarg passed anywhere, only comments). "own" descends from
+    `domain_chain(waker_core)[-1]` -- the forking task's OWN per-node
+    machine domain, not the shared `machines[0]` -- which resolves the
+    node1/node3 asymmetry described above exactly, since every node's
+    machine domain is correctly anchored on itself regardless of which
+    one `build_topology()` happens to return. So every published v4
+    grid and confirmation run already used the fix; the CAVEAT's "NOT
+    yet fixed" / "flagged for a future task" is stale, not current.
     """
     cores_per_node = cores_per_pair * pairs_per_node
     num_nodes = num_cores // cores_per_node

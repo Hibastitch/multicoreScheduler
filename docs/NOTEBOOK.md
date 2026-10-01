@@ -3823,3 +3823,29 @@ same printed "0.00%%" used for the 30 cells that are exactly zero
 (`detector_fires=0.0`). `results_task6_confirmation_v4_COST_TABLE.csv`
 now has 0 `n/a` cells: 18 measured (6 workloads x 3 penalties), 30
 proven-zero.
+
+## 2026-10-01d — Pre-publication audit fix: the §11 placement caveat was stale
+
+A full pre-publication audit (read-only, separate from this entry)
+flagged `simulator/Topology.py`'s `build_topology()` CAVEAT (~lines
+395-413) and `docs/FIDELITY_AUDIT.md` §11's narrative ("Placement
+fixes remain explicitly not-yet-implemented per prior sessions") as
+self-contradicting the project's own later work: Task 8 Fix 3,
+`placement_root="own"`, has been the DEFAULT in `Main.run_simulation()`
+since 2026-09-29 (`docs/NOTEBOOK.md` 2026-09-29c item 3, 2026-09-29e
+Step 3) and `FIDELITY_AUDIT.md`'s own STATUS UPDATE section (above §15)
+already says §11 is "FIXED and DEFAULT as of 2026-09-29e" -- but §11's
+own table row and the "RETRACTION, 2026-09-29" narrative directly below
+it were apparently written without reconciling that, and kept saying
+"NOT yet fixed" / "flagged for a future task."
+
+Re-verified directly before correcting anything: `grep -rn
+placement_root final_results/` finds no script anywhere passing
+`placement_root=` as a kwarg -- every v4 grid and confirmation run used
+`Main.py`'s own default, `"own"`. So this bias was never live in any
+published number; it's a pure documentation staleness, not a result
+correction. Fixed by APPENDING a dated correction note to both
+`Topology.py`'s CAVEAT and `FIDELITY_AUDIT.md` §11 (original text left
+in place, per this project's correction-not-deletion discipline) --
+`git diff --stat` on `Topology.py` confirms the change is additive
+lines inside the docstring only, no code line touched.

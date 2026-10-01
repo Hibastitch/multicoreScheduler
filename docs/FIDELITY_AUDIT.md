@@ -404,6 +404,24 @@ audit and now correctly restate the finding, not re-measure it;
 Placement fixes remain explicitly not-yet-implemented per prior
 sessions).
 
+**CORRECTION (2026-10-01, pre-publication audit, docs/NOTEBOOK.md):**
+the "Placement fixes remain explicitly not-yet-implemented" line above
+is stale. Task 8 Fix 3, `placement_root="own"` (`Placement.
+select_core_for_task()`), has been the DEFAULT in `Main.run_simulation()`
+since 2026-09-29 -- the SAME session this §11 entry was written in
+(`docs/NOTEBOOK.md` 2026-09-29c item 3 cross-references this exact
+§11 finding as what Fix 3 addresses) -- and no script under
+`final_results/` ever overrides it (re-verified this session: `grep
+-rn placement_root final_results/` finds no kwarg passed anywhere,
+only comments). `placement_root="own"` descends from each forking
+task's OWN per-node machine domain (`domain_chain(waker_core)[-1]`),
+not the shared `machines[0]`, which resolves the node1/node3 asymmetry
+this entry describes. So every published v4 grid and confirmation run
+already used the fix; this bias was never live in any published
+number. The table row and narrative above are left as originally
+written, per this project's correction-not-deletion discipline -- this
+note is the current, operative statement.
+
 ---
 
 ## 12. PELT: decay law and util_avg/load_avg/runnable_avg usage
