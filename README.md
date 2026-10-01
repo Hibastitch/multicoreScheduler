@@ -18,7 +18,7 @@ The idle-core scan only runs when the detector actually fires and passes its coo
 
 Measured on the published runs (not estimated, all 48 confirmation cells covered): where the check runs at all, it adds 1-1085 cheap `Core.is_idle()` reads per run — 0.002%-1.91% of that same run's own baseline `sched_cores_scanned` — reported separately from `cores_scanned` itself, not folded into it. Full table and the safety check verifying these are the identical published runs: `final_results/3_idle_check_cost/`.
 
-> **Reproduce the headline result** (the confirmed configuration is already selected — `final_results/1_calibration_grid/selected_config_v4.json` is committed, so this reproduces the _confirmation_ run, not the calibration grid; same loop as `docs/PIPELINE.md`'s Confirmation step):
+> **Reproduce the headline result** (the confirmed configuration is already selected — `final_results/1_calibration_grid/selected_config_v4.json` is committed, so this reproduces the _confirmation_ run, not the calibration grid; same loop as `docs/PIPELINE.md`'s Confirmation step). Python 3.13 (tested with 3.13.3); `pip install -r requirements.txt` first.
 >
 > ```powershell
 > cd final_results/2_confirmation
