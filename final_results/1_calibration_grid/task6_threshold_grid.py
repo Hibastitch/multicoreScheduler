@@ -65,6 +65,23 @@ V3_VARIANT_KWARGS = dict(penalty_model="ran_only", burst_gap_gate=True) if V3 el
 V4 = bool(os.environ.get("TASK10_V4"))
 V4_SUFFIX = "_v4" if V4 else ""
 SUFFIX = V4_SUFFIX or V3_SUFFIX or V2_SUFFIX
+
+# PRE-PUBLICATION AUDIT FIX (2026-10-01, docs/NOTEBOOK.md): running this
+# script with NONE of TASK8_V2/TASK9_V3/TASK10_V4 set used to silently
+# fall back to v1 behavior AND overwrite the un-suffixed v1 result files
+# already on disk -- no warning, no version check. Now a hard error
+# unless TASK6_V1_LEGACY=1 is set explicitly (the only way to get that
+# old v1 behavior back on purpose). Checked BEFORE any file is opened.
+if not SUFFIX and not os.environ.get("TASK6_V1_LEGACY"):
+    raise SystemExit(
+        "ERROR: no pipeline version selected -- refusing to run (would "
+        "silently reproduce v1 and overwrite the un-suffixed v1 result "
+        "files already on disk). Set TASK10_V4=1 to reproduce the "
+        "published v4 results (the current pipeline); TASK9_V3=1 or "
+        "TASK8_V2=1 for an earlier version; or TASK6_V1_LEGACY=1 to "
+        "deliberately run the original v1 config/seeds on purpose."
+    )
+
 V4_SEED_OFFSET = 100000 if V4 else 0
 V4_BASELINE_KWARGS = dict(penalty_model="ran_only") if V4 else {}
 V4_VARIANT_KWARGS = dict(penalty_model="ran_only", burst_idle_check=True) if V4 else {}

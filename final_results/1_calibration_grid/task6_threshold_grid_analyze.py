@@ -41,6 +41,20 @@ V4 = bool(os.environ.get("TASK10_V4"))
 V4_SUFFIX = "_v4" if V4 else ""
 SUFFIX = V4_SUFFIX or V3_SUFFIX or V2_SUFFIX
 
+# PRE-PUBLICATION AUDIT FIX (2026-10-01, docs/NOTEBOOK.md): running this
+# script with NONE of TASK8_V2/TASK9_V3/TASK10_V4 set used to silently
+# fall back to v1 behavior (reading the un-suffixed v1 grid CSVs) with
+# no warning. Now a hard error unless TASK6_V1_LEGACY=1 is set
+# explicitly. Checked BEFORE any file is read.
+if not SUFFIX and not os.environ.get("TASK6_V1_LEGACY"):
+    raise SystemExit(
+        "ERROR: no pipeline version selected -- refusing to run. Set "
+        "TASK10_V4=1 to reproduce the published v4 results (the current "
+        "pipeline); TASK9_V3=1 or TASK8_V2=1 for an earlier version; or "
+        "TASK6_V1_LEGACY=1 to deliberately run the original v1 config on "
+        "purpose."
+    )
+
 # Penalties that DISQUALIFY a config (harm check) and that the benefit
 # average is computed over. v1/v2: both penalties disqualify (the grid
 # only ever had 2: 0 and 2). v3/v4: only 0 and 0.5 disqualify/count

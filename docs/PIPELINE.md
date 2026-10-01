@@ -2,6 +2,10 @@
 
 All commands are PowerShell (Windows). An environment variable set with `$env:NAME=1` lasts only for that PowerShell window — set it again in a new window, or `Remove-Item Env:\NAME` to clear it early.
 
+## Pipeline version selection (required)
+
+`task6_threshold_grid.py`, `task6_threshold_grid_recompute_harm.py`, `task6_threshold_grid_analyze.py`, `task6_confirmation_run.py`, and `task6_confirmation_analyze.py` (which `task6_threshold_grid_tradeoff.py`/`task6_threshold_grid_harm_breakdown.py`/`task6_confirmation_tables.py` each import from, so the same guard covers all eight) each require exactly one of `TASK8_V2` / `TASK9_V3` / `TASK10_V4` to be set — **`$env:TASK10_V4=1` for every command in this file**, reproducing the published v4 results. Running any of these scripts with none of the three set now exits immediately with a non-zero code and an error, before reading or writing anything (pre-publication audit fix, 2026-10-01, see `docs/NOTEBOOK.md`): forgetting the env var used to silently fall back to the original v1 config/seeds *and* overwrite the un-suffixed v1 result files already on disk, with no warning. Set `$env:TASK6_V1_LEGACY=1` instead if you deliberately want that old v1 behavior back.
+
 ## Invariant tests
 
 ```powershell
