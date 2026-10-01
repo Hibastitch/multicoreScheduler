@@ -5,7 +5,15 @@ simulation runs here, and nothing it reads is modified: this script is
 read-only over published data, same discipline as
 final_results/3_idle_check_cost/build_cost_table.py.
 
-Saves every figure as both PNG (300 dpi) and PDF into this folder.
+Run as: python make_figures.py (no arguments, works from any cwd --
+every path below is resolved relative to this file, same convention as
+the other final_results/ pipeline scripts). Requires TASK10_V4=1, same
+guard as task6_threshold_grid.py/task6_confirmation_run.py/etc: this
+reads v4-suffixed CSVs specifically (not v1/v2/v3), so running it
+without the env var set is refused rather than silently doing nothing
+useful or picking up the wrong files.
+
+Saves every figure as PNG (300 dpi) into this folder.
 
 Consistent color roles across every figure (never reassigned):
   baseline                        -> grey (neutral, not a competing hue)
@@ -25,6 +33,7 @@ not a 4th categorical hue, so it isn't part of that categorical set.
 """
 
 import csv
+import os
 import pathlib
 
 import matplotlib
@@ -34,6 +43,19 @@ from matplotlib.lines import Line2D
 
 HERE = pathlib.Path(__file__).resolve().parent
 CONF_DIR = HERE.parent / "2_confirmation"
+
+# Same guard as task6_threshold_grid.py/task6_confirmation_run.py/etc
+# (pre-publication audit fix, 2026-10-01, docs/NOTEBOOK.md): this script
+# reads v4-suffixed CSVs specifically -- refuse to run rather than
+# silently produce nothing useful (or, worse, quietly read stale
+# un-suffixed v1 files) if the version isn't selected explicitly.
+if not os.environ.get("TASK10_V4"):
+    raise SystemExit(
+        "ERROR: TASK10_V4 is not set -- refusing to run. This script reads "
+        "the v4-suffixed confirmation CSVs (results_task6_confirmation_v4_*); "
+        "set TASK10_V4=1 before running it, matching every other script in "
+        "the v4 pipeline (see docs/PIPELINE.md)."
+    )
 
 # ---------------------------------------------------------------- style --
 
@@ -67,9 +89,8 @@ WORKLOAD_ORDER = [
 
 def save(fig, name):
     fig.savefig(HERE / f"{name}.png", dpi=300, bbox_inches="tight")
-    fig.savefig(HERE / f"{name}.pdf", bbox_inches="tight")
     plt.close(fig)
-    print(f"Wrote {name}.png and {name}.pdf")
+    print(f"Wrote {name}.png")
 
 
 def read_csv(name):

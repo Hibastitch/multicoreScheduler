@@ -34,9 +34,11 @@ Measured on the published runs (not estimated, all 48 confirmation cells covered
 > (Get-ChildItem "results_task6_confirmation_v4_*_summary.csv").Count   # expect 16
 > python task6_confirmation_analyze.py
 > python task6_confirmation_tables.py
+> cd ../figures
+> python make_figures.py
 > ```
 >
-> Rough estimate, not precisely re-measured (see `docs/PIPELINE.md`): a multi-hour background job, dominated by the 16-workload loop. Result: `results_task6_confirmation_v4_MAIN_TABLE.csv` (the Headline result above is read straight from it).
+> Rough estimate, not precisely re-measured (see `docs/PIPELINE.md`): a multi-hour background job, dominated by the 16-workload loop. Result: `results_task6_confirmation_v4_MAIN_TABLE.csv` (the Headline result above is read straight from it) plus the four PNG figures in `final_results/figures/`.
 
 ## Repository layout
 

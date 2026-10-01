@@ -97,6 +97,20 @@ No arguments; both read every `results_task6_confirmation_v4_*_summary.csv` alre
 
 `task6_confirmation_tables.py` writes: one `_TABLE_<variant>.csv` per non-headline variant (full per-penalty detail); the **COMPACT TABLE** (`_COMPACT_TABLE.{csv,md}` — one row per workload, grouped by whether `selected_checked` showed disqualifying harm / helped / was silent / fired without benefit); and, v4 only, **CHECK_EFFECT** (`_CHECK_EFFECT.{csv,md}` — `selected_checked` vs `selected_unchecked` compared *directly*, same seed/workload/penalty, not against baseline, isolating the idle check's own effect).
 
+## Figures
+
+```powershell
+cd ../figures
+python make_figures.py
+```
+
+No arguments; same `TASK10_V4=1` requirement as every script above (refuses to run otherwise). Reads only CSVs the two steps above already wrote — no new simulations, nothing in `final_results/2_confirmation/` is modified. Writes four PNG figures (300 dpi) into `final_results/figures/`:
+
+- `fig1_headline_p95wait_by_workload.png` — all 16 workloads' `p95_wait` % change at penalty=0.5ms, `selected_checked` vs `original_q2_a0.8_or_unchecked`, from `_MAIN_TABLE.csv` and `_TABLE_original_q2_a0.8_or_unchecked.csv`.
+- `fig2_stacked_high_perseed_scatter.png` — `stacked_high`/penalty=0.5, one point per seed, from `results_task6_confirmation_v4_stacked_high_perseed.csv`.
+- `fig3_bursty_high_s64_checked_vs_unchecked.png` — `bursty_high_s64`, all 3 penalties, `total_migrations` and `p95_wait` for baseline/`selected_unchecked`/`selected_checked`, from `_MAIN_TABLE.csv` and `_TABLE_selected_unchecked.csv`, cross-checked against `_CHECK_EFFECT.csv`.
+- `fig4_p95wait_vs_arrival_rate.png` — the same data as `figure_p95wait_vs_arrival_rate_v4.png` above, restyled to match the other three, from `_MAIN_TABLE.csv` and `_TABLE_original_q2_a0.8_or_unchecked.csv`.
+
 ## How to read an output line
 
 A real line from the v4 confirmation run (`results_task6_confirmation_v4_stacked_high_summary.csv`, reconstructed through `task6_confirmation_run.py`'s own print format):

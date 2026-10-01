@@ -59,15 +59,15 @@ Moved here from `development/` (2026-10-01) since it measures the exact seeds/th
 
 ### `final_results/figures/` — presentation figures, built from committed CSVs only
 
-Read-only, same discipline as `3_idle_check_cost/build_cost_table.py`: no simulation runs, reads only the already-committed CSVs under `final_results/2_confirmation/`, writes nothing back into that folder.
+Read-only, same discipline as `3_idle_check_cost/build_cost_table.py`: no simulation runs, reads only the already-committed CSVs under `final_results/2_confirmation/`, writes nothing back into that folder. Same `TASK10_V4=1` guard as the pipeline scripts it follows (`docs/PIPELINE.md`'s Figures step) -- refuses to run otherwise. Figures are PNG only (300 dpi), no PDF.
 
 | file | what it does |
 |---|---|
 | `make_figures.py` | One script, four figures. Reads `results_task6_confirmation_v4_MAIN_TABLE.csv`, `_TABLE_selected_unchecked.csv`, `_TABLE_original_q2_a0.8_or_unchecked.csv`, `_CHECK_EFFECT.csv`, and the `stacked_high` per-seed CSV. Cross-checks every plotted number against a second source table before drawing it (e.g. Fig 3's migration counts are independently recomputed and compared against `_CHECK_EFFECT.csv`'s own percentage column) and prints every check's result. |
-| `fig1_headline_p95wait_by_workload.{png,pdf}` | All 16 workloads, p95_wait % change vs baseline at penalty=0.5ms, `selected_checked` vs `original_q2_a0.8_or_unchecked`, sorted so the 4 workloads where v4 significantly helps are at the top. |
-| `fig2_stacked_high_perseed_scatter.{png,pdf}` | `stacked_high`/penalty=0.5: one point per seed, baseline vs `selected_checked` p95_wait, with the y=x line and the improved-seed count annotated. |
-| `fig3_bursty_high_s64_checked_vs_unchecked.{png,pdf}` | `bursty_high_s64`, all 3 penalties: `total_migrations` and `p95_wait` for baseline/`selected_unchecked`/`selected_checked`, with `any_harm=True` cells marked (`selected_unchecked`'s penalty=2.0 cell is the one real hit here, driven by `avg_slowdown`/`makespan_excess`, not by either plotted metric). |
-| `fig4_p95wait_vs_arrival_rate.{png,pdf}` | The arrival-rate figure (`figure_p95wait_vs_arrival_rate_v4.png`'s data), restyled: p95_wait % change vs `arrival_rate_during_burst`, burst sizes 4 and 12, `selected_checked` vs `original_q2_a0.8_or_unchecked`, penalties 0 and 2ms. |
+| `fig1_headline_p95wait_by_workload.png` | All 16 workloads, p95_wait % change vs baseline at penalty=0.5ms, `selected_checked` vs `original_q2_a0.8_or_unchecked`, sorted so the 4 workloads where v4 significantly helps are at the top. |
+| `fig2_stacked_high_perseed_scatter.png` | `stacked_high`/penalty=0.5: one point per seed, baseline vs `selected_checked` p95_wait, with the y=x line and the improved-seed count annotated. |
+| `fig3_bursty_high_s64_checked_vs_unchecked.png` | `bursty_high_s64`, all 3 penalties: `total_migrations` and `p95_wait` for baseline/`selected_unchecked`/`selected_checked`, with `any_harm=True` cells marked (`selected_unchecked`'s penalty=2.0 cell is the one real hit here, driven by `avg_slowdown`/`makespan_excess`, not by either plotted metric). |
+| `fig4_p95wait_vs_arrival_rate.png` | The arrival-rate figure (`figure_p95wait_vs_arrival_rate_v4.png`'s data), restyled: p95_wait % change vs `arrival_rate_during_burst`, burst sizes 4 and 12, `selected_checked` vs `original_q2_a0.8_or_unchecked`, penalties 0 and 2ms. |
 
 ### `development/` — one-off diagnosis and verification, real findings that aren't the final numbers
 
