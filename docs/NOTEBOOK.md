@@ -3154,7 +3154,7 @@ installed (unverified in this environment -- noted as such in the file).
 
 ## 2026-09-29g — Task 8 result: the v2 calibration grid (seeds 10000+, all 6 fidelity fixes as default)
 
-Run and committed by the user directly (`5d326ee`, "Task 8 v2 grid
+Run and committed by the user directly (`ea1e567`, "Task 8 v2 grid
 results (seeds 10000+): no harm-free config"), using the `TASK8_V2=1`
 pipeline Task 8 Step 4 prepared. Recorded here per this project's
 standing ledger discipline, verified against the actual output before
@@ -3598,11 +3598,11 @@ will use, not a reproducibility problem. No other workload's
 
 ## 2026-09-30g — Task 10 result: v4 confirmation (seeds 120000+, 16 workloads, n=30, penalties 0/0.5/2ms)
 
-Grid (seeds 110000+, commit `1cb0500`): 8/12 configs harm-free under
+Grid (seeds 110000+, commit `9a10ad3`): 8/12 configs harm-free under
 rule (e); selected `q8_a1.5_or` (`queue_growth_threshold=8,
 arrival_rate_threshold=1.5, combine=or`), runner-up `q2_a1.5_and`
 (near-tied mean p95 reduction on stacked_medium+stacked_high,
--16.91% vs -16.87%). Confirmation (seeds 120000+, commit `80bdc02`):
+-16.91% vs -16.87%). Confirmation (seeds 120000+, commit `6c6789e`):
 16 workloads, 30 paired seeds each, `selected_checked`/
 `selected_unchecked`/`runner_up_checked`/`original_q2_a0.8_or_unchecked`
 vs baseline, `penalty_model="ran_only"` throughout. All numbers below
@@ -3703,8 +3703,8 @@ produces.
 2026-09-30f addendum above (real confirmation seeds 120000-120029, a
 placeholder `selected_config_v4.json`) ran BEFORE this confirmation and
 did not affect any selection decision -- the real grid's selection
-(`q8_a1.5_or`, `selected_config_v4.json` written by commit `1cb0500`)
-was fixed before this confirmation run (`80bdc02`) started, and the
+(`q8_a1.5_or`, `selected_config_v4.json` written by commit `9a10ad3`)
+was fixed before this confirmation run (`6c6789e`) started, and the
 smoke test's placeholder config (`q4_a1.5_and`, copied from v3) never
 matched the real selection, so its `stacked_low` output numbers do not
 appear anywhere in this confirmation's real data.
