@@ -88,3 +88,5 @@ This is the fourth version of the mechanism; how it got here (v1-v3, what failed
 - `docs/LIMITATIONS.md` — the complete known-limitations writeup.
 - `docs/FIDELITY_AUDIT.md` — the 13-area, file:line-cited comparison against real Linux v7.2 source.
 - `docs/NOTEBOOK.md` — the complete dated lab notebook: every hypothesis, fix, correction, and result, in the order it actually happened.
+
+License: MIT (see LICENSE).
