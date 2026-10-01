@@ -194,6 +194,9 @@ def fig0_calibration_grid():
     # harm.py, not by task6_threshold_grid_tradeoff.py which wrote
     # tradeoff_points_v4.csv) before drawing anything.
     harm_free = sorted(p["config"] for p in points if p["harm_count"] == 0)
+    disqualified = sorted(p["config"] for p in points if p["harm_count"] > 0)
+    print(f"Fig 0: {len(disqualified)}/{len(points)} disqualified configs, "
+          f"from tradeoff_points_v4.csv's harm_count>0: {disqualified}")
     expected_harm_free = sorted(sel["harm_free_configs"])
     print(f"Fig 0: {len(harm_free)}/{len(points)} harm-free configs: {harm_free}")
     if harm_free != expected_harm_free:
@@ -221,97 +224,70 @@ def fig0_calibration_grid():
     print(f"Fig 0: SELECTED={selected_name} ({selected_pt['mean_pct']:.2f}%), "
           f"RUNNER-UP={runner_up_name} ({runner_up_pt['mean_pct']:.2f}%)")
 
-    # Group points landing on (almost) the exact same spot -- verified
-    # against the raw CSV this session: q4_a0.8_or and q8_a0.8_or are
-    # numerically IDENTICAL (same harmed workload drives both, so q never
-    # gets a chance to matter) -- merge rather than silently overplot one
-    # marker on the other.
-    groups = {}
-    for p in points:
-        key = (p["harm_count"], round(p["mean_pct"], 4))
-        groups.setdefault(key, []).append(p)
-    merged = []
-    for grp in groups.values():
-        merged.append(dict(
-            harm_count=grp[0]["harm_count"],
-            mean_pct=sum(p["mean_pct"] for p in grp) / len(grp),
-            configs=[p["config"] for p in grp],
-            label=" / ".join(p["label"] for p in grp),
-            is_selected=any(p["config"] == selected_name for p in grp),
-            is_runner_up=any(p["config"] == runner_up_name for p in grp),
-        ))
-    dupes = [g for g in merged if len(g["configs"]) > 1]
-    if dupes:
-        print("Fig 0: merged coincident points: " +
-              "; ".join(" + ".join(g["configs"]) for g in dupes))
+    # Horizontal bar chart, one bar per config (all 12, never merged --
+    # unlike a scatter, separate bars don't overplot even when two
+    # configs' scores coincide, e.g. q4_a0.8_or/q8_a0.8_or below).
+    # Sorted by selection score, best (most negative = biggest p95_wait
+    # reduction) at the top, matching Fig 1's "best at top" convention.
+    ordered = sorted(points, key=lambda p: p["mean_pct"])
+    ordered_for_plot = list(reversed(ordered))  # barh: first entry plots at the bottom
 
-    fig, ax = plt.subplots(figsize=(10.5, 8))
+    HARM_FREE_COLOR = COLOR["selected_checked"]
+    DISQUALIFIED_COLOR = COLOR["harm"]
 
-    max_harm = max(g["harm_count"] for g in merged)
-    ax.axvspan(-0.5, 0.5, color=COLOR["baseline"], alpha=0.12, zorder=0)
-    ax.annotate("Harm-free", xy=(0, 1), xycoords=("data", "axes fraction"),
-                xytext=(0, -8), textcoords="offset points",
-                ha="center", va="top", fontsize=11, color="dimgray")
+    y = list(range(len(ordered_for_plot)))
+    fig, ax = plt.subplots(figsize=(10, 8.5))
+    bar_colors = [HARM_FREE_COLOR if p["harm_count"] == 0 else DISQUALIFIED_COLOR
+                  for p in ordered_for_plot]
+    ax.barh(y, [p["mean_pct"] for p in ordered_for_plot], height=0.65,
+            color=bar_colors, zorder=3)
+    ax.axvline(0, color="black", linewidth=1.0)
 
-    for g in merged:
-        if g["is_selected"]:
-            marker, size, face, edge, lw = "*", 420, COLOR["selected_checked"], COLOR["selected_checked"], 0
-        elif g["is_runner_up"]:
-            marker, size, face, edge, lw = "D", 160, "white", COLOR["selected_checked"], 2.2
-        else:
-            marker, size, face, edge, lw = "o", 110, COLOR["baseline"], COLOR["baseline"], 0
-        ax.scatter(g["harm_count"], g["mean_pct"], marker=marker, s=size,
-                   facecolor=face, edgecolor=edge, linewidth=lw, zorder=5)
+    xmin = min(p["mean_pct"] for p in points)
+    xmax = max(p["mean_pct"] for p in points)
+    label_pad = (xmax - xmin) * 0.045 + 0.3  # layout: space for the harm-count number
 
-    # Sorted label column to the right of the data, each connected to its
-    # real point with a thin leader line -- guarantees no label overlap
-    # regardless of how close the real data points are (two configs here
-    # differ by as little as 0.04 percentage points). Column span is
-    # derived from the data's own range plus one row per point, not a
-    # fixed pixel guess.
-    ordered = sorted(merged, key=lambda g: -g["mean_pct"])
-    n = len(ordered)
-    min_gap = 2.0  # layout choice: vertical spacing between stacked label rows
-    natural_top = max(g["mean_pct"] for g in merged)
-    natural_bottom = min(g["mean_pct"] for g in merged)
-    center = (natural_top + natural_bottom) / 2
-    half_span = max((n - 1) * min_gap / 2, (natural_top - natural_bottom) / 2 + 1.0)
-    top, bottom = center + half_span, center - half_span
-    label_x = max_harm + 1.9
-    step = (top - bottom) / max(n - 1, 1)
-    for i, g in enumerate(ordered):
-        ly = top - i * step
-        weight = "bold" if g["is_selected"] else "normal"
-        color = COLOR["selected_checked"] if (g["is_selected"] or g["is_runner_up"]) else "black"
-        ax.annotate(g["label"], xy=(g["harm_count"], g["mean_pct"]),
-                    xytext=(label_x, ly), fontsize=10.5, fontweight=weight, color=color,
-                    va="center", ha="left",
-                    arrowprops=dict(arrowstyle="-", lw=0.7, color="0.55",
-                                     shrinkA=2, shrinkB=6))
+    for yy, p in zip(y, ordered_for_plot):
+        x_end = p["mean_pct"]
+        going_left = x_end <= 0
+        xtxt = x_end - label_pad if going_left else x_end + label_pad
+        ax.annotate(str(p["harm_count"]), xy=(xtxt, yy), va="center",
+                    ha="right" if going_left else "left", fontsize=10.5, color="black")
+        if p["config"] == selected_name:
+            ax.plot(x_end, yy, marker="*", markersize=20, color="black", zorder=6)
+        elif p["config"] == runner_up_name:
+            ax.plot(x_end, yy, marker="D", markersize=11, markerfacecolor="white",
+                    markeredgecolor="black", markeredgewidth=2, zorder=6)
 
-    ax.set_xlim(-0.7, label_x + 3.8)
-    ax.set_ylim(bottom - 1.5, top + 1.5)
-    ax.set_xticks(range(0, max_harm + 1))
-    ax.set_xlabel("Disqualifying harm cells (penalties 0 & 0.5 only)")
-    ax.set_ylabel("Mean p95 wait change, stacked_medium + stacked_high (%)")
+    ax.set_yticks(y)
+    ax.set_yticklabels([p["label"] for p in ordered_for_plot])
+    # Bars are drawn from 0 (barh's default), so the view must include 0
+    # regardless of whether every value happens to be negative -- excluding
+    # it here would silently clip every bar's true starting edge.
+    ax.set_xlim(min(xmin, 0) - 3 * label_pad, max(xmax, 0) + 3 * label_pad)
+    ax.set_xlabel("Mean p95 wait change, stacked_medium + stacked_high (%) "
+                  "-- number at bar end = disqualifying harm cells (penalties 0 & 0.5)")
 
     handles = [
-        Line2D([0], [0], marker="o", linestyle="none", markersize=11,
-               markerfacecolor=COLOR["baseline"], markeredgecolor=COLOR["baseline"],
-               label="Other configuration"),
-        Line2D([0], [0], marker="*", linestyle="none", markersize=18,
-               markerfacecolor=COLOR["selected_checked"], markeredgecolor=COLOR["selected_checked"],
+        Line2D([0], [0], marker="s", linestyle="none", markersize=14,
+               markerfacecolor=HARM_FREE_COLOR, markeredgecolor=HARM_FREE_COLOR,
+               label="Harm-free"),
+        Line2D([0], [0], marker="s", linestyle="none", markersize=14,
+               markerfacecolor=DISQUALIFIED_COLOR, markeredgecolor=DISQUALIFIED_COLOR,
+               label="Disqualified (harmful)"),
+        Line2D([0], [0], marker="*", linestyle="none", markersize=17, color="black",
                label=f"Selected (v4): {selected_pt['label']}"),
-        Line2D([0], [0], marker="D", linestyle="none", markersize=11,
-               markerfacecolor="white", markeredgecolor=COLOR["selected_checked"], markeredgewidth=2,
+        Line2D([0], [0], marker="D", linestyle="none", markersize=10,
+               markerfacecolor="white", markeredgecolor="black", markeredgewidth=2,
                label=f"Runner-up: {runner_up_pt['label']}"),
     ]
-    fig.legend(handles=handles, loc="upper left", frameon=False,
-               fontsize=11, bbox_to_anchor=(0.1, 0.06))
+    fig.legend(handles=handles, loc="lower center", ncol=2, frameon=False,
+               fontsize=11, bbox_to_anchor=(0.5, -0.1))
     fig.tight_layout(rect=(0, 0.1, 1, 1))
 
     save(fig, "fig0_calibration_grid")
-    return dict(selected=selected_name, runner_up=runner_up_name, harm_free=harm_free)
+    return dict(selected=selected_name, runner_up=runner_up_name,
+                harm_free=harm_free, disqualified=disqualified)
 
 
 # =============================================================== Fig 1 ==
@@ -619,7 +595,7 @@ def main():
 
     print("\n=== verification summary ===")
     print(f"Fig 0: selected={r0['selected']}, runner_up={r0['runner_up']}, "
-          f"harm_free={r0['harm_free']}")
+          f"harm_free={r0['harm_free']}, disqualified={r0['disqualified']}")
     print(f"Fig 1 selected_checked p95_wait% (penalty=0.5): {r1['checked_pct']}")
     print(f"Fig 2: {r2['improved']}/{r2['n']} seeds improved on "
           f"{FIG2_WORKLOAD}/penalty={FIG2_PENALTY}")
