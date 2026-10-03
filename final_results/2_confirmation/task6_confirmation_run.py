@@ -87,6 +87,10 @@ if not SUFFIX and not os.environ.get("TASK6_V1_LEGACY"):
 
 V4_SEED_OFFSET = 100000 if V4 else 0
 
+# REORGANIZATION (2026-10-01, docs/NOTEBOOK.md): old-version (non-v4)
+# outputs now live in history/ -- v4 keeps writing here unchanged.
+DATA_DIR = "" if V4 else "history/"
+
 from Main import run_simulation
 from LoadBalancer import LoadBalancer
 from BurstScheduler import BurstAwareLoadBalancer
@@ -107,7 +111,9 @@ def _load_v3_variants():
     by ../1_calibration_grid/task6_threshold_grid_recompute_harm.py's v3
     mode). Returns {} if that file doesn't exist yet or no config was
     selected there (rule (h): nothing to confirm)."""
-    path = pathlib.Path(__file__).resolve().parents[1] / "1_calibration_grid" / "selected_config_v3.json"
+    # REORGANIZATION (2026-10-01, docs/NOTEBOOK.md): v3 is an old version
+    # now, so its selected_config lives in the grid folder's history/.
+    path = pathlib.Path(__file__).resolve().parents[1] / "1_calibration_grid" / "history" / "selected_config_v3.json"
     try:
         with open(path) as f:
             sel = json.load(f)
@@ -355,17 +361,17 @@ def main():
                   f"harm={any_harm} fires={summary['detector_fires']:.1f} "
                   f"cores_scanned_pct={summary['sched_cores_scanned_pct']:+.1f}%")
 
-    with open(f"results_task6_confirmation{SUFFIX}_{workload_key}_perseed.csv", "w", newline="") as f:
+    with open(f"{DATA_DIR}results_task6_confirmation{SUFFIX}_{workload_key}_perseed.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(per_seed_rows[0].keys()))
         w.writeheader()
         w.writerows(per_seed_rows)
 
-    with open(f"results_task6_confirmation{SUFFIX}_{workload_key}_summary.csv", "w", newline="") as f:
+    with open(f"{DATA_DIR}results_task6_confirmation{SUFFIX}_{workload_key}_summary.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
         w.writeheader()
         w.writerows(summary_rows)
 
-    print(f"\nWrote results_task6_confirmation{SUFFIX}_{workload_key}_perseed.csv and _summary.csv")
+    print(f"\nWrote {DATA_DIR}results_task6_confirmation{SUFFIX}_{workload_key}_perseed.csv and _summary.csv")
 
 
 if __name__ == "__main__":

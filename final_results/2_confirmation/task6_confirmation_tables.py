@@ -18,6 +18,7 @@ import os
 from task6_confirmation_analyze import (
     WORKLOAD_ORDER, METRICS, COST_METRICS, load_rows, fnum,
     V2_SUFFIX, V3, V4, SUFFIX, PENALTIES, HEADLINE_VARIANT, SECONDARY_VARIANTS,
+    DATA_DIR,
 )
 # task6_confirmation_analyze's own import (above) already did
 # sys.path.insert(.../simulator) at module-load time, so this is safe
@@ -32,13 +33,13 @@ from paired_compare import sign_test_p, format_p, TIE_TOLERANCE
 # of 2 either way.
 if V3 or V4:
     VARIANT_TABLES = {
-        v: f"results_task6_confirmation{SUFFIX}_TABLE_{v}.csv"
+        v: f"{DATA_DIR}results_task6_confirmation{SUFFIX}_TABLE_{v}.csv"
         for v in SECONDARY_VARIANTS if v != HEADLINE_VARIANT
     }
 else:
     VARIANT_TABLES = {
-        "original_q2_a0.8_or": f"results_task6_confirmation{V2_SUFFIX}_TABLE_original.csv",
-        "runner_up_q4_a1.5_or": f"results_task6_confirmation{V2_SUFFIX}_TABLE_runnerup.csv",
+        "original_q2_a0.8_or": f"{DATA_DIR}results_task6_confirmation{V2_SUFFIX}_TABLE_original.csv",
+        "runner_up_q4_a1.5_or": f"{DATA_DIR}results_task6_confirmation{V2_SUFFIX}_TABLE_runnerup.csv",
     }
 
 # Compact-table comparison pair: headline vs the original detector
@@ -380,7 +381,7 @@ def write_compact_markdown_v3(compact_rows, out_path, harm_summary_lines):
                 f"{fmt_avg(r['scanwork_gated'], r['scanwork_gated_flip'])} |"
             )
 
-    appendix_tables = ", ".join([f"results_task6_confirmation{SUFFIX}_MAIN_TABLE.csv"]
+    appendix_tables = ", ".join([f"{DATA_DIR}results_task6_confirmation{SUFFIX}_MAIN_TABLE.csv"]
                                  + list(VARIANT_TABLES.values()))
     footer = ("\n_Stars: \\* p<0.05, \\*\\* p<0.01, \\*\\*\\* p<0.001 (exact sign test, n=30 "
               "paired, tie-tolerant). p95 Δ%% triples are (penalty=0 / penalty=0.5 / penalty=2), "
@@ -505,8 +506,8 @@ def write_compact_markdown(compact_rows, out_path):
               "avg_wait/migrations/scan-work %% are averaged across penalty 0 and 2; "
               "† marks a cell where penalty 0 and penalty 2 have OPPOSITE signs, so the "
               "average shown understates or masks a real per-penalty reversal -- see the "
-              "per-penalty appendix tables (results_task6_confirmation_MAIN_TABLE.csv, "
-              "_TABLE_original.csv, _TABLE_runnerup.csv) for the exact p0/p2 values. "
+              f"per-penalty appendix tables ({DATA_DIR}results_task6_confirmation_MAIN_TABLE.csv, "
+              f"{DATA_DIR}results_task6_confirmation_TABLE_original.csv, {DATA_DIR}results_task6_confirmation_TABLE_runnerup.csv) for the exact p0/p2 values. "
               "'orig harm metric(s)' names which metric(s) triggered any_harm=True for "
               "the ORIGINAL detector and at which penalty (p0/p2) -- this is independent "
               "of the p95_wait column, so a row can show p95_wait improving and still be "
@@ -539,7 +540,7 @@ CHECK_EFFECT_METRICS = ["p95_wait", "avg_wait", "avg_slowdown", "total_migration
 
 def load_perseed_rows():
     rows = []
-    for path in glob.glob(f"results_task6_confirmation{SUFFIX}_*_perseed.csv"):
+    for path in glob.glob(f"{DATA_DIR}results_task6_confirmation{SUFFIX}_*_perseed.csv"):
         if SUFFIX == "" and ("_v2_" in path or "_v3_" in path or "_v4_" in path):
             continue  # plain mode must not also pick up v2/v3/v4 files
         rows.extend(csv.DictReader(open(path)))
@@ -645,14 +646,14 @@ def write_check_effect_markdown(rows, out_path, variant_a, variant_b, metrics=CH
 def main():
     rows = load_rows()
     print(f"Loaded {len(rows)} summary rows from "
-          f"{len(glob.glob(f'results_task6_confirmation{SUFFIX}_*_summary.csv'))} files")
+          f"{len(glob.glob(f'{DATA_DIR}results_task6_confirmation{SUFFIX}_*_summary.csv'))} files")
 
     for variant, out_path in VARIANT_TABLES.items():
         write_variant_table(rows, variant, out_path)
 
     if V3 or V4:
         compact_rows = build_compact_table_v3(rows)
-        write_compact_csv_v3(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.csv")
+        write_compact_csv_v3(compact_rows, f"{DATA_DIR}results_task6_confirmation{SUFFIX}_COMPACT_TABLE.csv")
 
         # rule (e) confirmatory check (v3) / Task 10 equivalent (v4):
         # the headline variant was CHOSEN to be harm-free at penalties
@@ -661,7 +662,7 @@ def main():
         # disqualifying harm here too" is an empirical result, not a given.
         harmed = [r for r in compact_rows if r["gated_any_disqualifying_harm"]]
         harm_summary_lines = [f"{r['workload']}: {r['gated_disqualifying_harm_metrics']}" for r in harmed]
-        write_compact_markdown_v3(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.md",
+        write_compact_markdown_v3(compact_rows, f"{DATA_DIR}results_task6_confirmation{SUFFIX}_COMPACT_TABLE.md",
                                    harm_summary_lines)
 
         print(f"\n{HEADLINE_VARIANT} disqualifying harm (penalty 0 or 0.5) on any of the "
@@ -671,8 +672,8 @@ def main():
                 print(f"  {l}")
     else:
         compact_rows = build_compact_table(rows)
-        write_compact_csv(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.csv")
-        write_compact_markdown(compact_rows, f"results_task6_confirmation{SUFFIX}_COMPACT_TABLE.md")
+        write_compact_csv(compact_rows, f"{DATA_DIR}results_task6_confirmation{SUFFIX}_COMPACT_TABLE.csv")
+        write_compact_markdown(compact_rows, f"{DATA_DIR}results_task6_confirmation{SUFFIX}_COMPACT_TABLE.md")
 
     print("\nGroup counts:")
     from collections import Counter
@@ -685,8 +686,8 @@ def main():
         perseed_rows = load_perseed_rows()
         variant_a, variant_b = SECONDARY_VARIANTS[0], SECONDARY_VARIANTS[1]
         check_rows = build_check_effect(perseed_rows, variant_a, variant_b)
-        write_check_effect_csv(check_rows, f"results_task6_confirmation{SUFFIX}_CHECK_EFFECT.csv")
-        write_check_effect_markdown(check_rows, f"results_task6_confirmation{SUFFIX}_CHECK_EFFECT.md",
+        write_check_effect_csv(check_rows, f"{DATA_DIR}results_task6_confirmation{SUFFIX}_CHECK_EFFECT.csv")
+        write_check_effect_markdown(check_rows, f"{DATA_DIR}results_task6_confirmation{SUFFIX}_CHECK_EFFECT.md",
                                      variant_a, variant_b)
 
 

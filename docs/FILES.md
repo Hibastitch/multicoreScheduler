@@ -23,28 +23,32 @@ Full per-file breakdown of every folder. For the top-level tree, see `README.md`
 
 ### `final_results/1_calibration_grid/` — pick a configuration
 
+Reorganized 2026-10-01 (`git mv`, docs/NOTEBOOK.md): this folder now holds ONLY the final v4 data and the scripts -- every v1/v2/v3 output, and the old-style v4 tradeoff plot, moved into `history/` (see below). No simulation runs happened; file contents are unchanged, only locations moved.
+
 | file | what it does |
 |---|---|
-| `task6_threshold_grid.py` | Runs the 12-config x 9-workload x 3-penalty grid (baseline once per seed, reused across configs). |
-| `task6_threshold_grid_recompute_harm.py` | **Authoritative** harm rule + selection; writes `selected_config_v4.json`. |
-| `task6_threshold_grid_analyze.py` | Older/report-only harm rule, full per-cell grid printout, human-readable cross-check. |
-| `task6_threshold_grid_tradeoff.py` | Harm-count-vs-benefit scatter plot across all 12 configs. |
+| `task6_threshold_grid.py` | Runs the 12-config x 9-workload x 3-penalty grid (baseline once per seed, reused across configs). In v4 mode (`TASK10_V4=1`) writes here; in old-version modes (`TASK6_V1_LEGACY`/`TASK8_V2`/`TASK9_V3`) writes to `history/` instead. |
+| `task6_threshold_grid_recompute_harm.py` | **Authoritative** harm rule + selection; writes `selected_config_v4.json` here in v4 mode, `history/selected_config*.json` in old-version modes. |
+| `task6_threshold_grid_analyze.py` | Older/report-only harm rule, full per-cell grid printout, human-readable cross-check. Reads from `history/` in old-version modes. |
+| `task6_threshold_grid_tradeoff.py` | Harm-count-vs-benefit scatter plot across all 12 configs -- superseded by `final_results/figures/fig0_calibration_grid.png`, so its plot ALWAYS goes to `history/`, even in v4 mode; its `tradeoff_points_v4.csv` data file still writes here. |
 | `task6_threshold_grid_harm_breakdown.py` | Which metric(s) tripped harm, for every flagged cell — including non-disqualifying penalty=2ms hits. |
-| `results_task6_threshold_grid*_<workload>_{perseed,summary}.csv` | Raw per-seed / per-config-aggregated grid output, one pair per workload per pipeline version (no suffix = v1, `_v2`/`_v3`/`_v4` = later re-runs under `TASK8_V2`/`TASK9_V3`/`TASK10_V4`). |
-| `selected_config_v3.json`, `selected_config_v4.json` | The winning (and runner-up) config from each version's grid, consumed by the matching confirmation run. |
-| `tradeoff_points*.csv`, `figure_threshold_grid_tradeoff*.{png,pdf}`, `harm_breakdown*.csv`, `threshold_grid_analysis*.txt`, `threshold_grid_recompute_harm*.txt` | Outputs/captured-stdout of the four scripts above, one set per pipeline version. |
-| `logs/` | Captured console output (stdout) of the individual grid-workload runs -- provenance for the v4 grid, intentionally tracked despite `.gitignore`'s `*.log` rule (added 2026-10-01, pre-publication audit): that rule only affects new, untracked `.log` files; it does not untrack files already committed. |
+| `results_task6_threshold_grid_v4_<workload>_{perseed,summary}.csv` | Raw per-seed / per-config-aggregated v4 grid output. |
+| `selected_config_v4.json` | The winning (and runner-up) config from the v4 grid, consumed by the v4 confirmation run. |
+| `tradeoff_points_v4.csv`, `harm_breakdown_v4.csv`, `threshold_grid_analysis_v4.txt`, `threshold_grid_recompute_harm_v4.txt` | v4 data outputs/captured-stdout of the scripts above. |
+| `history/` | Every v1 (unsuffixed) / v2 (`_v2`) / v3 (`_v3`) output -- CSVs, the old-style v4 tradeoff figure (`figure_threshold_grid_tradeoff_v4.{png,pdf}`, superseded by `final_results/figures/fig0_calibration_grid.png`), `selected_config_v3.json`, `tradeoff_points*.csv`, `harm_breakdown*.csv`, `threshold_grid_analysis*.txt`, `threshold_grid_recompute_harm*.txt`, and `logs/` (captured stdout of each workload's grid run -- CORRECTED 2026-10-01: this was previously described as "the v4 grid logs" in this file, which was wrong; every one of its 9 files shows an un-suffixed output filename, i.e. it's the original **v1** grid's captured output, confirmed directly from its own content before moving it here). Kept for `docs/HISTORY.md`'s project history, not final results — see `history/README.md`. |
 
 ### `final_results/2_confirmation/` — confirm it
 
+Reorganized 2026-10-01, same discipline as above: only the final v4 data and scripts remain here; everything else is in `history/`.
+
 | file | what it does |
 |---|---|
-| `task6_confirmation_run.py` | Runs one workload (all variants, all penalties, 30 paired seeds) against baseline. |
-| `task6_confirmation_analyze.py` | Merges all 16 workloads' output into the main table, RQ4 cost/benefit table, secondary-variant table, and the arrival-rate-vs-p95 figure. |
+| `task6_confirmation_run.py` | Runs one workload (all variants, all penalties, 30 paired seeds) against baseline. Writes here in v4 mode, `history/` in old-version modes (and reads `selected_config_v3.json` from `../1_calibration_grid/history/` in v3 mode). |
+| `task6_confirmation_analyze.py` | Merges all 16 workloads' output into the main table, RQ4 cost/benefit table, secondary-variant table, and the arrival-rate-vs-p95 figure -- superseded by `final_results/figures/fig4_p95wait_vs_arrival_rate.png`, so that figure ALWAYS goes to `history/`, even in v4 mode. |
 | `task6_confirmation_tables.py` | Per-variant appendix tables, the compact paper-ready table, and (v4 only) the direct checked-vs-unchecked `CHECK_EFFECT` table. |
-| `results_task6_confirmation*_<workload>_{perseed,summary}.csv` | Raw per-seed / per-variant-aggregated confirmation output, one pair per workload per pipeline version. |
-| `results_task6_confirmation*_MAIN_TABLE.csv`, `_COMPACT_TABLE.{csv,md}`, `_TABLE_<variant>.csv`, `_CHECK_EFFECT.{csv,md}` | Merged outputs of the two analysis scripts above. |
-| `figure_p95wait_vs_arrival_rate*.png`, `confirmation_run_analysis.txt` | The arrival-rate figure and a captured-stdout snapshot. |
+| `results_task6_confirmation_v4_<workload>_{perseed,summary}.csv` | Raw per-seed / per-variant-aggregated v4 confirmation output. |
+| `results_task6_confirmation_v4_MAIN_TABLE.csv`, `_COMPACT_TABLE.{csv,md}`, `_TABLE_<variant>.csv`, `_CHECK_EFFECT.{csv,md}` | Merged v4 outputs of the two analysis scripts above. |
+| `history/` | Every v1 (unsuffixed) / v3 (`_v3`) output (no v2 confirmation was ever run, see `docs/HISTORY.md`) -- CSVs, `confirmation_run_analysis.txt`, and every version's arrival-rate figure (`figure_p95wait_vs_arrival_rate.png`/`_v3.png`/`_v4.png`), superseded by `final_results/figures/fig4_p95wait_vs_arrival_rate.png`. Kept for project history, not final results — see `history/README.md`. |
 
 ### `final_results/3_idle_check_cost/` — the idle check's own scanning cost, measured on the published runs
 
@@ -57,7 +61,9 @@ Moved here from `development/` (2026-10-01) since it measures the exact seeds/th
 | `build_cost_table.py` | Merges `results_idle_check_cost.csv` with `final_results/2_confirmation/results_task6_confirmation_v4_MAIN_TABLE.csv` into one per-(workload,penalty) cost/benefit table covering all 48 confirmation cells -- no new simulations, reads only committed CSVs. |
 | `results_task6_confirmation_v4_COST_TABLE.{csv,md}` | Its output. |
 
-### `final_results/figures/` — presentation figures, built from committed CSVs only
+### `final_results/figures/` — the ONLY final figures; everything else is `history/`
+
+Every other figure in `final_results/` (old-version plots, and the old-style v4 `figure_threshold_grid_tradeoff_v4.png`/`figure_p95wait_vs_arrival_rate_v4.png`) now lives in a `history/` subfolder of its own folder, superseded by the five figures here. If you're looking for a figure to cite, it's one of these five.
 
 Read-only, same discipline as `3_idle_check_cost/build_cost_table.py`: no simulation runs, reads only already-committed CSVs under `final_results/2_confirmation/` and `final_results/1_calibration_grid/`, writes nothing back into either. Same `TASK10_V4=1` guard as the pipeline scripts it follows (`docs/PIPELINE.md`'s Figures step) -- refuses to run otherwise. Figures are PNG only (300 dpi), no PDF.
 
@@ -68,7 +74,7 @@ Read-only, same discipline as `3_idle_check_cost/build_cost_table.py`: no simula
 | `fig1_headline_p95wait_by_workload.png` | All 16 workloads, p95_wait % change vs baseline at penalty=0.5ms, `selected_checked` vs `original_q2_a0.8_or_unchecked`, sorted so the 4 workloads where v4 significantly helps are at the top; a small circle marks a workload where v4's own change is exactly zero. |
 | `fig2_stacked_high_perseed_scatter.png` | `stacked_high`/penalty=0.5: one point per seed, baseline vs `selected_checked` p95_wait, with the y=x line and the improved-seed count annotated. |
 | `fig3_bursty_high_s64_checked_vs_unchecked.png` | `bursty_high_s64`, all 3 penalties: `total_migrations` and `p95_wait` for baseline/`selected_unchecked`/`selected_checked`. The one harmful cell (`selected_unchecked`, penalty=2.0) is called out by a text label on the migrations panel naming the specific metrics that tripped it (read from that row's own per-metric harm columns -- `avg_slowdown`/`makespan_excess`, not p95_wait or migrations themselves), rather than a marker on both panels. |
-| `fig4_p95wait_vs_arrival_rate.png` | The arrival-rate figure (`figure_p95wait_vs_arrival_rate_v4.png`'s data), restyled: p95_wait % change vs `arrival_rate_during_burst`, burst sizes 4 and 12, `selected_checked` vs `original_q2_a0.8_or_unchecked`, penalties 0.5 and 2ms (matching Fig 1's penalty), with any harmful point marked. |
+| `fig4_p95wait_vs_arrival_rate.png` | The arrival-rate figure (`2_confirmation/history/figure_p95wait_vs_arrival_rate_v4.png`'s data, the superseded original), restyled: p95_wait % change vs `arrival_rate_during_burst`, burst sizes 4 and 12, `selected_checked` vs `original_q2_a0.8_or_unchecked`, penalties 0.5 and 2ms (matching Fig 1's penalty), with any harmful point marked. |
 
 Figs 1-4 use plain-language series names (e.g. "Burst trigger + idle check (v4)" for `selected_checked`) rather than the CSV's own variant codes -- the one `LABELS` dict at the top of `make_figures.py` is the only place that mapping lives. Fig 0 predates the confirmation (it's the calibration step), so it labels configurations by their actual thresholds instead (e.g. "q≥8 OR rate≥1.5"), derived from `tradeoff_points_v4.csv`'s own `q`/`a`/`combine` columns.
 

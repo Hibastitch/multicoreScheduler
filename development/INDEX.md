@@ -1,6 +1,6 @@
 # development/ — diagnosis and verification work behind the final code
 
-Real, correct findings — just not the final paper numbers (those are in `final_results/`).
+Real, correct findings — just not the final paper numbers (those are in `final_results/`; its own superseded v1-v3 outputs and old-style v4 plots live in a `history/` subfolder of each result folder, not here — the only final figures are in `final_results/figures/`).
 
 ## topology_audit/ — Fix D: periodic-checker election vs. real should_we_balance()
 

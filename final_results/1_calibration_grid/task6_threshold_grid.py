@@ -86,6 +86,11 @@ V4_SEED_OFFSET = 100000 if V4 else 0
 V4_BASELINE_KWARGS = dict(penalty_model="ran_only") if V4 else {}
 V4_VARIANT_KWARGS = dict(penalty_model="ran_only", burst_idle_check=True) if V4 else {}
 
+# REORGANIZATION (2026-10-01, docs/NOTEBOOK.md): old-version (non-v4)
+# outputs now live in history/ -- the main folder holds only the final
+# v4 data. v4 keeps writing here unchanged (DATA_DIR="").
+DATA_DIR = "" if V4 else "history/"
+
 SEED_OFFSET = V4_SEED_OFFSET or V3_SEED_OFFSET
 BASELINE_KWARGS = V4_BASELINE_KWARGS or V3_BASELINE_KWARGS
 VARIANT_KWARGS = V4_VARIANT_KWARGS or V3_VARIANT_KWARGS
@@ -275,17 +280,17 @@ def main():
                   f"harm={any_significant_harm}  fires={summary['detector_fires']:.1f} "
                   f"recall={summary['recall']}  precision={summary['precision']}")
 
-    with open(f"results_task6_threshold_grid{SUFFIX}_{workload_key}{chunk_suffix}_perseed.csv", "w", newline="") as f:
+    with open(f"{DATA_DIR}results_task6_threshold_grid{SUFFIX}_{workload_key}{chunk_suffix}_perseed.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(per_seed_rows[0].keys()))
         w.writeheader()
         w.writerows(per_seed_rows)
 
-    with open(f"results_task6_threshold_grid{SUFFIX}_{workload_key}{chunk_suffix}_summary.csv", "w", newline="") as f:
+    with open(f"{DATA_DIR}results_task6_threshold_grid{SUFFIX}_{workload_key}{chunk_suffix}_summary.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
         w.writeheader()
         w.writerows(summary_rows)
 
-    print(f"\nWrote results_task6_threshold_grid{SUFFIX}_{workload_key}{chunk_suffix}_perseed.csv and _summary.csv")
+    print(f"\nWrote {DATA_DIR}results_task6_threshold_grid{SUFFIX}_{workload_key}{chunk_suffix}_perseed.csv and _summary.csv")
 
 
 if __name__ == "__main__":

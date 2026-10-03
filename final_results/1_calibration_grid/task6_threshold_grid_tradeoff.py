@@ -50,6 +50,14 @@ SUFFIX = V4_SUFFIX or V3_SUFFIX or V2_SUFFIX
 RULE_PENALTIES = {"0.0", "0.5"} if (V3 or V4) else {"0.0", "2.0"}
 ALL_PENALTIES = ["0.0", "0.5", "2.0"] if (V3 or V4) else ["0.0", "2.0"]
 
+# REORGANIZATION (2026-10-01, docs/NOTEBOOK.md): old-version (non-v4)
+# data now lives in history/ -- v4 keeps its DATA files in the main
+# folder. The plot this script produces is superseded by
+# final_results/figures/fig0_calibration_grid.png either way, so it
+# ALWAYS goes to history/, even in v4 mode.
+DATA_DIR = "" if V4 else "history/"
+PLOT_DIR = "history/"
+
 
 def _pen_key(pen):
     # v1/v2 keeps the ORIGINAL "p0"/"p2" scheme (pen[0]) -- unambiguous
@@ -179,13 +187,14 @@ def main():
     else:
         print("\nAll 12 harm_count and 4 benefit_score values match threshold_grid_analysis.txt exactly.")
 
-    with open(f"tradeoff_points{SUFFIX}.csv", "w", newline="") as f:
+    tradeoff_out = f"{DATA_DIR}tradeoff_points{SUFFIX}.csv"
+    with open(tradeoff_out, "w", newline="") as f:
         cols = ["config", "combine", "q", "a", "harm_count", "harmed_workloads", "benefit_score"] + \
                [f"{wl}_{_pen_key(pen)}" for wl in ["stacked_medium", "stacked_high"] for pen in ALL_PENALTIES]
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
         w.writerows(points)
-    print(f"Wrote tradeoff_points{SUFFIX}.csv")
+    print(f"Wrote {tradeoff_out}")
 
     # TASK 9 v3 / TASK 10 v4: SELECTED/RUNNER_UP come from
     # selected_config{SUFFIX}.json (written by task6_threshold_grid_
@@ -195,7 +204,7 @@ def main():
     selected, runner_up = SELECTED_DEFAULT, RUNNER_UP_DEFAULT
     if V3 or V4:
         selected, runner_up = None, None
-        sel_path = f"selected_config{SUFFIX}.json"
+        sel_path = f"{DATA_DIR}selected_config{SUFFIX}.json"
         try:
             with open(sel_path) as f:
                 sel = json.load(f)
@@ -313,9 +322,12 @@ def make_plot(points, selected=SELECTED_DEFAULT, runner_up=RUNNER_UP_DEFAULT):
     for spine in ["top", "right"]:
         ax.spines[spine].set_visible(False)
     fig.tight_layout(pad=0.4)
-    fig.savefig(f"figure_threshold_grid_tradeoff{SUFFIX}.png", dpi=300)
-    fig.savefig(f"figure_threshold_grid_tradeoff{SUFFIX}.pdf")
-    print(f"Wrote figure_threshold_grid_tradeoff{SUFFIX}.png and .pdf")
+    plot_name = f"{PLOT_DIR}figure_threshold_grid_tradeoff{SUFFIX}"
+    fig.savefig(f"{plot_name}.png", dpi=300)
+    fig.savefig(f"{plot_name}.pdf")
+    print(f"Wrote {plot_name}.png and .pdf")
+    print("superseded plot written to history/; final figures: "
+          "final_results/figures/ (make_figures.py)")
 
 
 if __name__ == "__main__":

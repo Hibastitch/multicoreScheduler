@@ -82,6 +82,11 @@ if not SUFFIX and not os.environ.get("TASK6_V1_LEGACY"):
 
 RULE_PENALTIES = {"0.0", "0.5"} if (V3 or V4) else {"0.0", "2.0"}
 
+# REORGANIZATION (2026-10-01, docs/NOTEBOOK.md): old-version (non-v4)
+# inputs and outputs now live in history/ -- the main folder holds only
+# the final v4 data. v4 keeps reading/writing here unchanged (DATA_DIR="").
+DATA_DIR = "" if V4 else "history/"
+
 
 def sign_p(wins, n):
     if n == 0:
@@ -93,7 +98,7 @@ def sign_p(wins, n):
 
 def load_rows():
     rows = []
-    for path in glob.glob(f"results_task6_threshold_grid{SUFFIX}_*_perseed.csv"):
+    for path in glob.glob(f"{DATA_DIR}results_task6_threshold_grid{SUFFIX}_*_perseed.csv"):
         if SUFFIX == "" and ("_v2_" in path or "_v3_" in path or "_v4_" in path):
             continue  # plain mode must not also pick up v2/v3 files
         with open(path, newline="") as f:
@@ -242,7 +247,7 @@ def main():
         if runner_up is not None:
             out["runner_up"] = _thresholds_for(runner_up[0])
             out["runner_up_mean_p95_pct"] = runner_up[1]
-        out_name = f"selected_config{SUFFIX}.json"
+        out_name = f"{DATA_DIR}selected_config{SUFFIX}.json"
         with open(out_name, "w") as f:
             json.dump(out, f, indent=2)
         print(f"\nWrote {out_name} "

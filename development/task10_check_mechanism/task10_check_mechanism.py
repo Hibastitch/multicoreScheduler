@@ -88,7 +88,7 @@ WORKLOADS = {
 }
 
 _SELECTED_CONFIG_PATH = (pathlib.Path(__file__).resolve().parents[2] / "final_results"
-                          / "1_calibration_grid" / "selected_config_v3.json")
+                          / "1_calibration_grid" / "history" / "selected_config_v3.json")
 with open(_SELECTED_CONFIG_PATH) as f:
     _sel = json.load(f)["selected"]
 assert (_sel["queue_growth_threshold"], _sel["arrival_rate_threshold"], _sel["combine"]) == (4, 1.5, "and"), \

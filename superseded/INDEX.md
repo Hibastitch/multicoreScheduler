@@ -1,6 +1,6 @@
 # superseded/ — invalid results, kept only for provenance. Never cite these.
 
-Every reason below is cited from `docs/NOTEBOOK.md`'s dated ledger — follow the reference to see the original finding.
+Every reason below is cited from `docs/NOTEBOOK.md`'s dated ledger — follow the reference to see the original finding. Distinct from `final_results/*/history/` (added 2026-10-01): that holds VALID v1-v3 results and superseded plots, genuinely produced by their matching pipeline version, just not the final v4 numbers; this folder holds results actually INVALIDATED by a bug. Neither is final — the only final figures are in `final_results/figures/`, the only final data in the main `final_results/1_calibration_grid/` and `final_results/2_confirmation/` folders.
 
 - **`results.csv`, `results_migration_penalty2ms.csv`** — generated entirely under `legacy_ema` with the shared-RNG bug present (Fix 3d, `docs/NOTEBOOK.md` "Task 6, Step 3" entry, 2026-09-27): baseline and burst-aware secretly saw *different* task streams for "the same seed," invalidating every paired comparison. Also predate the 2026-09-27i default-configuration flip.
 - **`task1_followup.py`, `task1_heavytail_check.py`, `results_task1_heavytail.csv`** — Task 1's original `heavy_tail`/high check, explicitly marked INVALID for paired comparison (`docs/NOTEBOOK.md`, "Point 5," 2026-09-27c-area entry): the "tail-clipping" pattern it found was most likely comparing two *different* randomly-generated workloads under the same nominal seed (the pre-Fix-3d RNG bug), not a real scheduling effect.

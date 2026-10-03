@@ -28,8 +28,13 @@ V3_SUFFIX = "_v3" if os.environ.get("TASK9_V3") else ""
 # TASK 10 v4 RE-RUN (2026-09-30, Step 3): TASK10_V4=1 writes a _v4-
 # suffixed output -- same "show everything, including non-disqualifying
 # penalty=2ms harm" behavior as v3, unchanged by design.
-V4_SUFFIX = "_v4" if os.environ.get("TASK10_V4") else ""
+V4 = bool(os.environ.get("TASK10_V4"))
+V4_SUFFIX = "_v4" if V4 else ""
 SUFFIX = V4_SUFFIX or V3_SUFFIX or V2_SUFFIX
+
+# REORGANIZATION (2026-10-01, docs/NOTEBOOK.md): old-version (non-v4)
+# outputs now live in history/ -- v4 keeps writing here unchanged.
+DATA_DIR = "" if V4 else "history/"
 
 
 def main():
@@ -46,12 +51,13 @@ def main():
                 ))
 
     rows.sort(key=lambda r: (r["workload"], r["penalty"], r["config"], r["metric"]))
-    with open(f"harm_breakdown{SUFFIX}.csv", "w", newline="") as f:
+    out_name = f"{DATA_DIR}harm_breakdown{SUFFIX}.csv"
+    with open(out_name, "w", newline="") as f:
         cols = ["config", "workload", "penalty", "metric", "pct", "wins", "harms", "ties", "n_eff", "sign_p"]
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
         w.writerows(rows)
-    print(f"Wrote harm_breakdown{SUFFIX}.csv ({len(rows)} rows)")
+    print(f"Wrote {out_name} ({len(rows)} rows)")
 
     print("\n=== bursty_high_s64 penalty=2.0 ===")
     for r in rows:

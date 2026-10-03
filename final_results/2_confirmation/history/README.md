@@ -1,0 +1,1 @@
+Outputs of earlier versions (v1-v3) and superseded plots, kept for the project history described in `docs/HISTORY.md`. Not the final results -- see the parent folder for the final v4 data and `final_results/figures/` for the final figures.

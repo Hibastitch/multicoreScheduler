@@ -10,7 +10,7 @@ From the real, committed `final_results/2_confirmation/results_task6_confirmatio
 
 ## The mechanism, in one paragraph
 
-`BurstDetector` watches two observable signals on each pair-level domain — arrival rate (tasks/ms in a sliding window) and queue growth (how much a core's run queue has grown over a sliding window) — and fires when _either_ crosses its threshold (`combine="or"`): `queue_growth_threshold=8` or `arrival_rate_threshold=1.5`. When it fires, `BurstAwareLoadBalancer` runs one more check before doing anything: `burst_idle_check` asks whether any core anywhere on the 32-core machine is currently idle — `Core.is_idle()`: no task currently running *and* nothing queued (`current_task is None and not self.rq`) — via a loop over all cores that stops at the first idle one (behaviorally identical to `any(...)`; it also counts each core read for the cost measurement). If none is idle, the walk is skipped entirely (counted, not acted on). If one is, the balancer climbs the same `domain_chain` (pair → node → one-hop → machine) the kernel's own periodic balancer would eventually climb on its own schedule anyway, calling the unchanged `_balance_domain()`/`_find_checker()` logic at each level — no new destination rule, no gap arithmetic, just an _earlier_ call to code that already exists and is already audited.
+`BurstDetector` watches two observable signals on each pair-level domain — arrival rate (tasks/ms in a sliding window) and queue growth (how much a core's run queue has grown over a sliding window) — and fires when _either_ crosses its threshold (`combine="or"`): `queue_growth_threshold=8` or `arrival_rate_threshold=1.5`. When it fires, `BurstAwareLoadBalancer` runs one more check before doing anything: `burst_idle_check` asks whether any core anywhere on the 32-core machine is currently idle — `Core.is_idle()`: no task currently running *and* nothing queued (`current_task is None and not self.rq`) — via a loop over all cores that stops at the first idle one (behaviorally identical to `any(...)`; it also counts each core read for the cost measurement). If none is idle, the walk is skipped entirely (counted, not acted on). If one is, the balancer climbs the triggering core's own `domain_chain` (pair → node → one-hop → machine), running the unchanged, kernel-faithful `_balance_domain()` balancing routine at each level — but with an idle core in that domain chosen as the pulling destination (`_find_checker()` called without `from_core`: the first idle core in the domain, else the lowest `core_id`), analogous to idle balancing in Linux, not the `should_we_balance()`-style election periodic balancing uses. No new destination rule, no gap arithmetic beyond that — just an _earlier_ call to code that already exists and is already audited.
 
 ### Cost of the idle check in a real kernel
 
@@ -46,8 +46,11 @@ Measured on the published runs (not estimated, all 48 confirmation cells covered
 simulator/              the scheduler itself — every module Main.run_simulation() wires together
 final_results/
   1_calibration_grid/    Step 1 of the pipeline: pick a detector configuration
+    history/               superseded v1-v3 outputs and the old-style v4 tradeoff plot
   2_confirmation/        Step 2: confirm the pick on fresh seeds and workloads
+    history/               superseded v1/v3 outputs and the old-style v4 arrival-rate plot
   3_idle_check_cost/     the idle check's own scanning cost, measured on the published runs
+  figures/               the only final figures -- everything in a history/ is superseded
 development/             one-off diagnosis/verification scripts — real findings, not the final numbers
 superseded/              early results known to be invalid or replaced — kept for provenance, never cite
 docs/                    pipeline docs, project history, and the full dated lab notebook

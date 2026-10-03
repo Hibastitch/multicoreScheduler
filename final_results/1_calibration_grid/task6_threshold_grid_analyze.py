@@ -62,8 +62,12 @@ if not SUFFIX and not os.environ.get("TASK6_V1_LEGACY"):
 RULE_PENALTIES = {"0.0", "0.5"} if (V3 or V4) else {"0.0", "2.0"}
 ALL_PENALTIES = ["0.0", "0.5", "2.0"] if (V3 or V4) else ["0.0", "2.0"]
 
+# REORGANIZATION (2026-10-01, docs/NOTEBOOK.md): old-version (non-v4)
+# inputs now live in history/ -- v4 keeps reading here unchanged.
+DATA_DIR = "" if V4 else "history/"
+
 rows = []
-for path in glob.glob(f"results_task6_threshold_grid{SUFFIX}_*_summary.csv"):
+for path in glob.glob(f"{DATA_DIR}results_task6_threshold_grid{SUFFIX}_*_summary.csv"):
     if SUFFIX == "" and ("_v2_" in path or "_v3_" in path or "_v4_" in path):
         continue  # plain mode must not also pick up v2/v3/v4 files
     rows.extend(csv.DictReader(open(path)))

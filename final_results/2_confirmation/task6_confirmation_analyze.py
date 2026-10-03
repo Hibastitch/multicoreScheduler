@@ -58,6 +58,15 @@ if not SUFFIX and not os.environ.get("TASK6_V1_LEGACY"):
     )
 
 PENALTIES = ["0.0", "0.5", "2.0"] if (V3 or V4) else ["0.0", "2.0"]
+
+# REORGANIZATION (2026-10-01, docs/NOTEBOOK.md): old-version (non-v4)
+# data now lives in history/ -- v4 keeps its DATA files in the main
+# folder. The arrival-rate figure this script produces is superseded
+# by final_results/figures/fig4_p95wait_vs_arrival_rate.png either
+# way, so it ALWAYS goes to history/, even in v4 mode.
+DATA_DIR = "" if V4 else "history/"
+PLOT_DIR = "history/"
+
 if V4:
     HEADLINE_VARIANT = "selected_checked"
     SECONDARY_VARIANTS = ["selected_checked", "selected_unchecked",
@@ -84,7 +93,7 @@ WORKLOAD_ORDER = [
 
 def load_rows():
     rows = []
-    for path in glob.glob(f"results_task6_confirmation{SUFFIX}_*_summary.csv"):
+    for path in glob.glob(f"{DATA_DIR}results_task6_confirmation{SUFFIX}_*_summary.csv"):
         if SUFFIX == "" and ("_v2_" in path or "_v3_" in path or "_v4_" in path):
             continue  # plain mode must not also pick up v2/v3/v4 files
         rows.extend(csv.DictReader(open(path)))
@@ -99,7 +108,7 @@ def fnum(r, k):
 def main():
     rows = load_rows()
     print(f"Loaded {len(rows)} summary rows from "
-          f"{len(glob.glob(f'results_task6_confirmation{SUFFIX}_*_summary.csv'))} files")
+          f"{len(glob.glob(f'{DATA_DIR}results_task6_confirmation{SUFFIX}_*_summary.csv'))} files")
 
     def get(workload, penalty, variant):
         for r in rows:
@@ -135,11 +144,11 @@ def main():
             cols += [f"{m}_base", f"{m}_var", f"{m}_pct", f"{m}_sign_p", f"{m}_harm", f"{m}_floored"]
         for cm in COST_METRICS:
             cols += [f"{cm}_base", f"{cm}_var", f"{cm}_pct"]
-        with open(f"results_task6_confirmation{SUFFIX}_MAIN_TABLE.csv", "w", newline="") as f:
+        with open(f"{DATA_DIR}results_task6_confirmation{SUFFIX}_MAIN_TABLE.csv", "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
             w.writeheader()
             w.writerows(main_table_rows)
-        print(f"\nWrote results_task6_confirmation{SUFFIX}_MAIN_TABLE.csv")
+        print(f"\nWrote {DATA_DIR}results_task6_confirmation{SUFFIX}_MAIN_TABLE.csv")
 
     # ================= RQ4: cost vs benefit =================
     print("\n" + "=" * 130)
@@ -225,8 +234,11 @@ def main():
     fig.suptitle("Burst-aware p95_wait change vs arrival rate -- "
                  + (f"{plot_label_a} vs {plot_label_b}" if (V3 or V4) else "final (calibrated) vs original detector"))
     fig.tight_layout()
-    fig.savefig(f"figure_p95wait_vs_arrival_rate{SUFFIX}.png", dpi=150)
-    print(f"\nWrote figure_p95wait_vs_arrival_rate{SUFFIX}.png")
+    plot_name = f"{PLOT_DIR}figure_p95wait_vs_arrival_rate{SUFFIX}.png"
+    fig.savefig(plot_name, dpi=150)
+    print(f"\nWrote {plot_name}")
+    print("superseded plot written to history/; final figures: "
+          "final_results/figures/ (make_figures.py)")
 
 
 if __name__ == "__main__":

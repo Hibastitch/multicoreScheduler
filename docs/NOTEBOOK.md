@@ -3849,3 +3849,162 @@ correction. Fixed by APPENDING a dated correction note to both
 in place, per this project's correction-not-deletion discipline) --
 `git diff --stat` on `Topology.py` confirms the change is additive
 lines inside the docstring only, no code line touched.
+
+## 2026-10-01e — Reorganization: old-version outputs moved into history/
+
+No simulation runs, no v4 result values changed -- `git mv` only, plus
+script/doc edits so old-version pipeline modes still find their inputs
+and write their outputs in the new location.
+
+**Moved** (163 files total, via `git mv`, history preserved):
+`final_results/1_calibration_grid/` -- every v1 (unsuffixed) / v2
+(`_v2`) / v3 (`_v3`) output (CSVs, `selected_config_v3.json`,
+`tradeoff_points*.csv`, `harm_breakdown*.csv`,
+`threshold_grid_analysis*.txt`, `threshold_grid_recompute_harm*.txt`),
+PLUS the old-style v4 tradeoff figure
+(`figure_threshold_grid_tradeoff_v4.{png,pdf}`, superseded by
+`final_results/figures/fig0_calibration_grid.png`) -- 75 files, into
+`history/`. `final_results/2_confirmation/` -- every v1/v3 output
+(no v2 confirmation was ever run) plus every version's arrival-rate
+figure, including the old-style v4 one -- 79 files, into `history/`.
+Both moves verified with `git status` immediately after (`R` renames,
+not delete+add) and a `ls *.png *.pdf` check confirming zero figures
+remain in either main folder.
+
+**Correction found during the move:**
+`final_results/1_calibration_grid/logs/` (9 `.log` files) had been
+described in `docs/FILES.md` (2026-10-01, the `.gitignore` task) as
+"the v4 grid logs" -- checked directly before deciding where to move
+it, and that was wrong: every one of the 9 files' own `Wrote
+results_task6_threshold_grid_<workload>_perseed.csv` line has an
+UN-SUFFIXED filename, and all 9 share an `Sep 28 19:46` mtime, before
+Task 10/v4 existed at all (v4's own pre-registration is dated
+2026-09-30d). It's the original v1 grid's captured output. Moved to
+`history/logs/` accordingly; `docs/FILES.md`'s mis-description
+corrected in place (not silently -- the correction itself is noted in
+the cell, same append-only spirit as this notebook).
+
+**Scripts** (`task6_threshold_grid.py`,
+`task6_threshold_grid_recompute_harm.py`,
+`task6_threshold_grid_analyze.py`,
+`task6_threshold_grid_harm_breakdown.py`,
+`task6_threshold_grid_tradeoff.py`, `task6_confirmation_run.py`,
+`task6_confirmation_analyze.py`, `task6_confirmation_tables.py`): each
+gained a `DATA_DIR = "" if V4 else "history/"` right after its own
+`SUFFIX`/`V4` computation, applied to every read (glob patterns,
+`open()` for reading) and write (`open()` for writing, `fig.savefig`
+excepted) path -- v4 mode is byte-for-byte unchanged (`DATA_DIR=""`),
+old-version modes (`TASK6_V1_LEGACY`/`TASK8_V2`/`TASK9_V3`) now read
+and write in `history/`. `task6_confirmation_run.py`'s v3-mode read of
+`../1_calibration_grid/selected_config_v3.json` updated to
+`.../history/selected_config_v3.json` separately (that one predates
+`DATA_DIR` and lives in the OTHER folder's `history/`, not this
+script's own). `task6_threshold_grid_tradeoff.py` and
+`task6_confirmation_analyze.py` additionally gained a `PLOT_DIR =
+"history/"` (unconditional, even under `V4`) for the one figure each
+produces -- both are superseded by `final_results/figures/`
+(`fig0_calibration_grid.png`, `fig4_p95wait_vs_arrival_rate.png`), so
+neither script's own plot belongs in the main folder even when
+everything else it writes does; each prints "superseded plot written
+to history/; final figures: final_results/figures/ (make_figures.py)"
+when it runs. `make_figures.py` itself needed no change -- it already
+only reads v4-suffixed files from the main folders, which never moved.
+
+**`history/README.md`** added to both folders (identical text):
+"Outputs of earlier versions (v1-v3) and superseded plots, kept for
+the project history described in docs/HISTORY.md. Not the final
+results -- see the parent folder for the final v4 data and
+final_results/figures/ for the final figures."
+
+**Mechanism wording fix (README.md):** the burst-walk paragraph said
+the walk "calls the unchanged `_balance_domain()`/`_find_checker()`
+logic at each level" without saying WHICH `_find_checker()` behavior
+that is -- re-verified directly in `BurstScheduler.py` before writing
+anything: the burst path always calls `_find_checker(domain)` with no
+`from_core` argument (`BurstScheduler.py:227`), which
+`LoadBalancer._find_checker()` (`LoadBalancer.py:361-370`) routes to
+its "legacy" branch regardless of `checker_model` -- first idle core
+in `domain.cores()`, else lowest `core_id` -- never the
+`should_we_balance()`-style kernel election (`_find_checker_kernel()`)
+periodic balancing uses when `checker_model="kernel"`. Corrected to
+say so explicitly: an idle core in the domain acts as the pulling
+destination, analogous to idle balancing in Linux, not periodic
+balancing's checker election.
+
+**Docs updated:** `README.md` (repository layout tree gained
+`history/` rows and a `figures/` row it had been missing entirely;
+mechanism paragraph fix above), `docs/FILES.md` (both folders'
+sections rewritten: only-v4 file tables plus a `history/` row each;
+figures/ section now states explicitly it holds the only final
+figures), `docs/PIPELINE.md` (new paragraph in the version-selection
+section explaining the `history/`/`DATA_DIR`/`PLOT_DIR` split; stale
+`figure_p95wait_vs_arrival_rate_v4.png` main-folder references fixed),
+`docs/HISTORY.md` and `development/INDEX.md` (one-sentence pointers
+added to their existing folder-map sentences), `superseded/INDEX.md`
+(one sentence distinguishing it from `history/` -- invalidated results
+vs. valid-but-superseded ones), `final_results/INDEX.md` (rewritten:
+it only ever documented the v1 run, so it now says so explicitly and
+points to `docs/FILES.md`/`docs/PIPELINE.md` for the current v4
+pipeline, with its own paths updated to the `history/` locations).
+
+## 2026-10-01f — Addendum: two real bugs caught during the reorganization's own verification pass
+
+Running the pipeline-version "Verify" step the previous entry
+promised (TASK9_V3/TASK8_V2 analysis-only re-runs, checking every
+output byte-identical) surfaced two real bugs the mechanical
+`DATA_DIR`/`PLOT_DIR` edit had missed, plus two stale hardcoded paths
+outside `final_results/` entirely:
+
+**Bug 1/2 (`final_results/2_confirmation/task6_confirmation_tables.py`):**
+two separate footer-text builders hardcoded
+`results_task6_confirmation{SUFFIX}_MAIN_TABLE.csv` (and, in the
+second, `_TABLE_original.csv`/`_TABLE_runnerup.csv` too) without the
+`{DATA_DIR}` prefix every other filename in the same string already
+had -- caught because a `TASK9_V3=1` re-run of this script produced a
+genuine (non-metadata) one-line diff in
+`history/results_task6_confirmation_v3_COMPACT_TABLE.md`: 3 of 4 cited
+filenames gained the `history/` prefix, the 4th didn't. Fixed both
+(line ~384's `appendix_tables` join, and the static v1/v2-only footer
+at ~504-510) to prefix every filename with `{DATA_DIR}`. This is a
+real, intentional 1-line content change to
+`history/results_task6_confirmation_v3_COMPACT_TABLE.md` (re-verified
+after the fix: now all four filenames consistently carry `history/`,
+and every other file in both `history/` folders re-generates fully
+byte-identical) -- not a violation of "byte-identical," since the
+footer's job is to name where its sibling files actually live, and
+that genuinely changed for v3/v1 mode as part of this same
+reorganization. Confirmed the fix is a no-op for v4 (`DATA_DIR=""`
+there), re-verified by re-running the full v4 sequence
+(recompute_harm, tradeoff, analyze, tables, make_figures): every v4
+data file and all five final figures stayed byte-identical. A third
+`Stars:` footer (line ~639, `write_check_effect_markdown`) was checked
+and contains no filenames at all -- not an instance of this bug.
+
+**Stale paths (outside `final_results/`):**
+`development/task9_gap_gate_diagnostic/task9_gap_gate_diagnostic.py`
+and `development/task10_check_mechanism/task10_check_mechanism.py`
+both hardcoded `.../1_calibration_grid/selected_config_v3.json` --
+broken by the move (the file now lives at
+`.../1_calibration_grid/history/selected_config_v3.json`). Neither
+script was re-run as part of this project's core result pipeline
+recently, so this was caught only by a `git grep` sweep for the moved
+file's old basename, not by actually running them. Both fixed to read
+from `history/`.
+
+**Other verification-pass findings, all non-substantive and
+discarded:** matplotlib embeds a build timestamp in PDF output and (as
+of this session, after a `3.11.1`→`3.11.2` venv upgrade mid-project) a
+version string in PNG metadata -- both confirmed pixel/content-identical
+by diffing the paired PNG (zero bytes differ) wherever only the PDF
+changed, or by direct `PIL`/`numpy` pixel-array comparison for the one
+PNG that showed a byte diff (`figure_threshold_grid_tradeoff_v2.png`:
+exactly 5 differing bytes, 1 version-string byte + 4-byte recalculated
+CRC, pixel arrays identical). All such diffs were discarded via `git
+checkout --`.
+
+Final sweep: `git grep` for every moved file's old (pre-`history/`)
+basename, across the whole repo excluding `docs/NOTEBOOK.md`'s
+historical entries and the already-historical captured-stdout/`.txt`
+files that correctly describe what was true when they were written --
+empty except the two stale dev-script paths above, now fixed. `ls` of
+both main result folders: no `.png`/`.pdf` remain in either.
