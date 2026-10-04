@@ -4008,3 +4008,48 @@ historical entries and the already-historical captured-stdout/`.txt`
 files that correctly describe what was true when they were written --
 empty except the two stale dev-script paths above, now fixed. `ls` of
 both main result folders: no `.png`/`.pdf` remain in either.
+
+## 2026-10-04 — Docs fix: README's Workloads table mischaracterized `heavy_tail_high` as "no burst"
+
+Caught during a methodology fact-check against `WorkloadGenerator.py`:
+`README.md`'s Workloads table described `heavy_tail_high` as "no burst;
+heavy-tailed CPU-time distribution at high intensity" with `—` for
+size/rate. That's wrong -- `generate_plan()` routes `heavy_tail` through
+the same `_plan_bursty(intensity, heavy_tail=True)` call as `bursty`
+(`WorkloadGenerator.py:300-301`), i.e. identical arrival shape to
+`bursty_high`: 30-task bursts at 3.75 tasks/ms, 15 ms apart (high
+intensity's `inter_burst_interval`), through NORMAL top-down placement
+(shared entry core, still goes through `select_core_for_task()` --
+`WorkloadGenerator.py:163-185`, `Main.py:87-96`). `heavy_tail=True`
+only changes `_sample_cpu_time()` (`WorkloadGenerator.py:121-128`) from
+the uniform `[4,40]` draw to a Pareto one (`alpha=1.5`, floor 4 ms, cap
+`40*6=240` ms) -- a task-length change, not an arrival-pattern change.
+200 tasks / 30 per burst = 7 bursts (6 full + 1 of 20), same count as
+`stacked_high`.
+
+Also verified and added to the table: `stacked_low`/`_medium`/`_high`'s
+inter-burst gap (60/35/15 ms, their intensity presets'
+`inter_burst_interval` -- `WorkloadGenerator.py:39-43`) and burst count
+(50/17/7, from `n_tasks=200` divided by `burst_size=4/12/30`, last
+partial at medium/high). Confirmed `inter_burst_interval` is applied
+end-to-start, not start-to-start (`_plan_bursty`/`_plan_stacked_burst`
+reassign `now` to the previous burst's own returned end time before
+adding the next gap -- `WorkloadGenerator.py:182,249` and `226,229`),
+so bursts never overlap regardless of in-burst duration -- relevant
+because `bursty_high_s64`'s nominal `burst_duration` override
+(64/3.75 ≈ 17.07 ms) is longer than its 15 ms inter-burst gap; the
+actual emission span is ≈16.8 ms (task-count-bound, not
+duration-bound) and still ends before the next burst starts, by
+construction. Also confirmed: within every burst arrivals are evenly
+spaced (`gap = 1/rate`, not Poisson -- same line range), and none of
+the 16 confirmation workloads has background (non-burst) arrivals --
+that trickle exists only in the separate `mixed` profile
+(`_plan_mixed`, `WorkloadGenerator.py:260-278`), which none of them use.
+
+Fixed in `README.md`'s Workloads table only -- `git grep` found no
+second copy of the table and no other "no burst"/"steady arrival"
+description of `heavy_tail` anywhere else in `README.md` or `docs/`
+(`PIPELINE.md`/`FILES.md`/`HISTORY.md`/`LIMITATIONS.md` only
+cross-reference README's table by name, they don't restate it). No
+code or result files touched -- this was a docs-only error, the
+simulator itself has always generated `heavy_tail_high` correctly.
