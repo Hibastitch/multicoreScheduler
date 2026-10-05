@@ -59,7 +59,7 @@ if not os.environ.get("TASK10_V4"):
 
 LABELS = {
     "baseline": "Linux baseline",
-    "selected_checked": "Burst trigger + idle check (v4)",
+    "selected_checked": "Burst-aware trigger",
     "selected_unchecked": "Same trigger, no idle check",
 }
 
@@ -101,6 +101,25 @@ WORKLOAD_ORDER = [
     "rate1.0_s4", "rate1.0_s12", "rate1.5_s4", "rate1.5_s12",
     "rate3.0_s4", "rate3.0_s12",
 ]
+
+# Paper-facing names for the code's workload keys (display text only --
+# every CSV lookup/dict key elsewhere in this file still uses the code
+# name unchanged). The 6 non-rate names are spelled out by hand; the 10
+# rate-sweep names are parsed from the key itself (rate{r}_s{s}) so they
+# can't drift out of sync with WORKLOAD_ORDER.
+DISPLAY_NAME = {
+    "stacked_low": "stacked low",
+    "stacked_medium": "stacked medium",
+    "stacked_high": "stacked high",
+    "bursty_high_s24": "bursty s24",
+    "bursty_high_s64": "bursty s64",
+    "heavy_tail_high": "heavy tail",
+}
+for _wl in WORKLOAD_ORDER:
+    if _wl not in DISPLAY_NAME:
+        _m = re.match(r"rate([\d.]+)_s(\d+)$", _wl)
+        DISPLAY_NAME[_wl] = f"rate sweep s{_m.group(2)}, {_m.group(1)} tasks/ms"
+assert set(DISPLAY_NAME) == set(WORKLOAD_ORDER), "DISPLAY_NAME must cover exactly WORKLOAD_ORDER"
 
 plt.rcParams.update({
     "font.size": 14,
@@ -166,14 +185,22 @@ def pretty_metric(name):
 
 # =============================================================== Fig 0 ==
 
-def config_label(row):
+def config_label(row, config_number):
     combine_word = "OR" if row["combine"] == "or" else "AND"
-    return f"q≥{int(float(row['q']))} {combine_word} rate≥{row['a']}"
+    n = config_number[row["config"]]
+    return f"#{n}  q≥{int(float(row['q']))} {combine_word} rate≥{row['a']}"
 
 
 def fig0_calibration_grid():
     rows = read_grid_csv("tradeoff_points_v4.csv")
     sel = read_grid_json("selected_config_v4.json")
+
+    # Config numbers #1-12, derived from the config names themselves
+    # (q{q}_a{a}_{and|or}), not hand-assigned: sorting those strings
+    # alphabetically groups by q (2 < 4 < 8), then by rate ("0.8" < "1.5"),
+    # then "and" < "or" -- exactly q2_a0.8_and, q2_a0.8_or, q2_a1.5_and, ...,
+    # q8_a1.5_or, #1 through #12 in that order.
+    config_number = {cfg: i + 1 for i, cfg in enumerate(sorted(r["config"] for r in rows))}
 
     # The 4 cells the selection score is averaged over (docs/PIPELINE.md's
     # Selection step): stacked_medium/stacked_high x penalties 0/0.5.
@@ -184,7 +211,7 @@ def fig0_calibration_grid():
         mean_pct = sum(fnum(r, c) for c in P95_COLS) / len(P95_COLS)
         points.append(dict(
             config=r["config"], harm_count=int(r["harm_count"]),
-            mean_pct=mean_pct, label=config_label(r),
+            mean_pct=mean_pct, label=config_label(r, config_number),
         ))
 
     # Verify against a SECOND, independently-written source
@@ -263,8 +290,7 @@ def fig0_calibration_grid():
     # regardless of whether every value happens to be negative -- excluding
     # it here would silently clip every bar's true starting edge.
     ax.set_xlim(min(xmin, 0) - 3 * label_pad, max(xmax, 0) + 3 * label_pad)
-    ax.set_xlabel("Mean p95 wait change, stacked_medium + stacked_high (%) "
-                  "-- number at bar end = disqualifying harm cells (penalties 0 & 0.5)")
+    ax.set_xlabel("Mean p95 wait change (%)")
 
     handles = [
         Line2D([0], [0], marker="s", linestyle="none", markersize=14,
@@ -274,14 +300,14 @@ def fig0_calibration_grid():
                markerfacecolor=DISQUALIFIED_COLOR, markeredgecolor=DISQUALIFIED_COLOR,
                label="Disqualified (harmful)"),
         Line2D([0], [0], marker="*", linestyle="none", markersize=17, color="black",
-               label=f"Selected (v4): {selected_pt['label']}"),
+               label=f"Selected: {selected_pt['label']}"),
         Line2D([0], [0], marker="D", linestyle="none", markersize=10,
                markerfacecolor="white", markeredgecolor="black", markeredgewidth=2,
                label=f"Runner-up: {runner_up_pt['label']}"),
     ]
     fig.legend(handles=handles, loc="lower center", ncol=2, frameon=False,
-               fontsize=11, bbox_to_anchor=(0.5, -0.1))
-    fig.tight_layout(rect=(0, 0.1, 1, 1))
+               fontsize=11, bbox_to_anchor=(0.5, -0.02))
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
 
     save(fig, "fig0_calibration_grid")
     return dict(selected=selected_name, runner_up=runner_up_name,
@@ -332,14 +358,14 @@ def fig1_headline():
 
     ax.axvline(0, color="black", linewidth=1.0)
     ax.set_yticks(y)
-    ax.set_yticklabels(ordered_for_plot)
+    ax.set_yticklabels([DISPLAY_NAME[wl] for wl in ordered_for_plot])
     ax.set_xlabel(f"p95 wait change vs baseline (%) -- penalty {PEN} ms")
 
     handles, labels = ax.get_legend_handles_labels()
     handles += [
         Line2D([0], [0], marker="o", linestyle="none", markersize=9,
                markerfacecolor="white", markeredgecolor=COLOR["selected_checked"],
-               markeredgewidth=1.6, label="No measurable change (v4)"),
+               markeredgewidth=1.6, label="No measurable change"),
         Line2D([0], [0], marker="*", linestyle="none", markersize=14,
                color=COLOR["sig"], label=f"Statistically significant improvement (p<{SIG_ALPHA})"),
         Line2D([0], [0], marker="^", linestyle="none", markersize=10,
@@ -380,11 +406,11 @@ def fig2_stacked_high_scatter():
     ax.set_ylim(lo - pad, hi + pad)
     ax.set_aspect("equal")
     ax.set_xlabel("Linux baseline p95 wait (ms)")
-    ax.set_ylabel("v4 p95 wait (ms)")
+    ax.set_ylabel("Burst-aware p95 wait (ms)")
     ax.annotate(f"{improved} of {n} seeds improved",
                 xy=(0.04, 0.94), xycoords="axes fraction",
                 fontsize=13, va="top")
-    ax.annotate(f"{FIG2_WORKLOAD}, migration penalty {FIG2_PENALTY} ms",
+    ax.annotate(f"{DISPLAY_NAME[FIG2_WORKLOAD]}, migration penalty {FIG2_PENALTY} ms",
                 xy=(0.04, 0.88), xycoords="axes fraction",
                 fontsize=11, va="top", color="dimgray")
     fig.legend(loc="lower center", ncol=2, frameon=False, fontsize=11,
@@ -496,7 +522,7 @@ def fig3_bursty_high_s64():
                              arrowprops=dict(arrowstyle="-", color=COLOR["harm"], linewidth=1))
     ax1.set_ylim(top=mig_top * 1.25)
 
-    ax1.annotate(f"{WL} ({burst_size_of(WL)}-task bursts, {MACHINE_CORES} cores)",
+    ax1.annotate(f"{DISPLAY_NAME[WL]} ({burst_size_of(WL)}-task bursts, {MACHINE_CORES} cores)",
                  xy=(0.02, 0.98), xycoords="axes fraction", fontsize=11,
                  va="top", color="dimgray")
 
