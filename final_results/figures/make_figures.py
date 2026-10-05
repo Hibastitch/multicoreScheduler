@@ -61,14 +61,12 @@ LABELS = {
     "baseline": "Linux baseline",
     "selected_checked": "Burst trigger + idle check (v4)",
     "selected_unchecked": "Same trigger, no idle check",
-    "original_q2_a0.8_or_unchecked": "Original detector, no check",
 }
 
 COLOR = {
     "baseline": "#8C8C8C",
     "selected_checked": "#0072B2",
     "selected_unchecked": "#4A90C4",
-    "original_q2_a0.8_or_unchecked": "#B86B00",
     "harm": "#C1121F",
     "sig": "#000000",
 }
@@ -294,17 +292,12 @@ def fig0_calibration_grid():
 
 def fig1_headline():
     main = index_by_wl_pen(read_csv("results_task6_confirmation_v4_MAIN_TABLE.csv"))
-    orig = index_by_wl_pen(read_csv(
-        "results_task6_confirmation_v4_TABLE_original_q2_a0.8_or_unchecked.csv"))
 
     PEN = "0.5"
     checked_pct = {wl: fnum(main[(wl, PEN)], "p95_wait_pct") for wl in WORKLOAD_ORDER}
     checked_sig = {wl: fnum(main[(wl, PEN)], "p95_wait_sign_p") < SIG_ALPHA for wl in WORKLOAD_ORDER}
     checked_harm = {wl: is_harm(main[(wl, PEN)]) for wl in WORKLOAD_ORDER}
     checked_zero = {wl: abs(checked_pct[wl]) < ZERO_TOL for wl in WORKLOAD_ORDER}
-    orig_pct = {wl: fnum(orig[(wl, PEN)], "p95_wait_pct") for wl in WORKLOAD_ORDER}
-    orig_sig = {wl: fnum(orig[(wl, PEN)], "p95_wait_sign_p") < SIG_ALPHA for wl in WORKLOAD_ORDER}
-    orig_harm = {wl: is_harm(orig[(wl, PEN)]) for wl in WORKLOAD_ORDER}
 
     # "the workloads where v4 helps" -- derived from the data: a
     # meaningfully negative p95_wait_pct that is ALSO statistically
@@ -322,29 +315,19 @@ def fig1_headline():
 
     y = list(range(len(ordered_for_plot)))
     fig, ax = plt.subplots(figsize=(9, 7.5))
-    h = 0.35
-    ax.barh([yy + h / 2 for yy in y], [checked_pct[wl] for wl in ordered_for_plot],
-            height=h, color=COLOR["selected_checked"], label=LABELS["selected_checked"])
-    ax.barh([yy - h / 2 for yy in y], [orig_pct[wl] for wl in ordered_for_plot],
-            height=h, color=COLOR["original_q2_a0.8_or_unchecked"],
-            label=LABELS["original_q2_a0.8_or_unchecked"])
+    ax.barh(y, [checked_pct[wl] for wl in ordered_for_plot],
+            height=0.6, color=COLOR["selected_checked"], label=LABELS["selected_checked"])
 
     for yy, wl in zip(y, ordered_for_plot):
         if checked_zero[wl]:
-            ax.plot(0, yy + h / 2, marker="o", markersize=7,
+            ax.plot(0, yy, marker="o", markersize=7,
                     markerfacecolor="white", markeredgecolor=COLOR["selected_checked"],
                     markeredgewidth=1.6, zorder=6)
         if checked_sig[wl] and checked_pct[wl] < 0:
-            ax.plot(checked_pct[wl], yy + h / 2, marker="*", markersize=14,
+            ax.plot(checked_pct[wl], yy, marker="*", markersize=14,
                     color=COLOR["sig"], zorder=5)
         if checked_harm[wl]:
-            ax.plot(checked_pct[wl], yy + h / 2, marker="^", markersize=10,
-                    color=COLOR["harm"], zorder=5)
-        if orig_sig[wl] and orig_pct[wl] < 0:
-            ax.plot(orig_pct[wl], yy - h / 2, marker="*", markersize=14,
-                    color=COLOR["sig"], zorder=5)
-        if orig_harm[wl]:
-            ax.plot(orig_pct[wl], yy - h / 2, marker="^", markersize=10,
+            ax.plot(checked_pct[wl], yy, marker="^", markersize=10,
                     color=COLOR["harm"], zorder=5)
 
     ax.axvline(0, color="black", linewidth=1.0)
@@ -369,7 +352,7 @@ def fig1_headline():
     fig.tight_layout(rect=(0, 0.08, 1, 1))
 
     save(fig, "fig1_headline_p95wait_by_workload")
-    return dict(checked_pct=checked_pct, orig_pct=orig_pct)
+    return dict(checked_pct=checked_pct)
 
 
 # =============================================================== Fig 2 ==
@@ -538,34 +521,31 @@ def burst_size_of(workload):
 
 def fig4_arrival_rate():
     main = index_by_wl_pen(read_csv("results_task6_confirmation_v4_MAIN_TABLE.csv"))
-    orig = index_by_wl_pen(read_csv(
-        "results_task6_confirmation_v4_TABLE_original_q2_a0.8_or_unchecked.csv"))
 
     rates = [0.5, 0.75, 1.0, 1.5, 3.0]
     pen_lo, pen_hi = FIG4_PENALTIES
     linestyle = {pen_lo: "-", pen_hi: "--"}
     marker = {pen_lo: "o", pen_hi: "x"}
 
+    key = "selected_checked"
+    color = COLOR[key]
     fig, axes = plt.subplots(1, 2, figsize=(12, 5.5), sharey=True)
     for ax, size in zip(axes, [4, 12]):
-        for key, table in [("selected_checked", main),
-                            ("original_q2_a0.8_or_unchecked", orig)]:
-            color = COLOR[key]
-            for pen in FIG4_PENALTIES:
-                ys, harmed = [], []
-                for rate in rates:
-                    wl = f"rate{rate}_s{size}"
-                    row = table[(wl, pen)]
-                    ys.append(fnum(row, "p95_wait_pct"))
-                    harmed.append(is_harm(row))
-                print(f"Fig 4 burst_size={size} {key} penalty={pen}: {ys} "
-                      f"(harm={harmed})")
-                ax.plot(rates, ys, linestyle=linestyle[pen], marker=marker[pen],
-                        color=color, label=f"{LABELS[key]} (penalty={pen}ms)")
-                for rate, yval, h in zip(rates, ys, harmed):
-                    if h:
-                        ax.plot(rate, yval, marker="^", markersize=10,
-                                color=COLOR["harm"], zorder=6)
+        for pen in FIG4_PENALTIES:
+            ys, harmed = [], []
+            for rate in rates:
+                wl = f"rate{rate}_s{size}"
+                row = main[(wl, pen)]
+                ys.append(fnum(row, "p95_wait_pct"))
+                harmed.append(is_harm(row))
+            print(f"Fig 4 burst_size={size} {key} penalty={pen}: {ys} "
+                  f"(harm={harmed})")
+            ax.plot(rates, ys, linestyle=linestyle[pen], marker=marker[pen],
+                    color=color, label=f"{LABELS[key]} (penalty={pen}ms)")
+            for rate, yval, h in zip(rates, ys, harmed):
+                if h:
+                    ax.plot(rate, yval, marker="^", markersize=10,
+                            color=COLOR["harm"], zorder=6)
         ax.axhline(0, color="black", linewidth=1.0)
         ax.set_xlabel("Arrival rate during burst (tasks/ms)")
         ax.annotate(f"burst size = {size}", xy=(0.04, 0.04), xycoords="axes fraction",
