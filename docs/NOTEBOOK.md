@@ -4053,3 +4053,12 @@ description of `heavy_tail` anywhere else in `README.md` or `docs/`
 cross-reference README's table by name, they don't restate it). No
 code or result files touched -- this was a docs-only error, the
 simulator itself has always generated `heavy_tail_high` correctly.
+
+## 2026-10-05 — Correction: the 2026-10-04 entry's "floor 4 ms" above is wrong, actual minimum is 5 ms
+
+`_sample_cpu_time()` (`WorkloadGenerator.py:121-128`) computes
+`lo + int(self.rng.paretovariate(alpha))` with `lo=4`; `paretovariate`
+never returns below 1.0, so `int(...)` is never below 1, making the
+smallest possible `heavy_tail` CPU time **5 ms**, not 4 -- 4 is only
+the uniform-profile floor (`lo` itself), never reachable by the Pareto
+draw. `README.md`'s table corrected to "minimum 5 ms" to match.
