@@ -13,7 +13,8 @@ reads v4-suffixed CSVs specifically (not v1/v2/v3), so running it
 without the env var set is refused rather than silently doing nothing
 useful or picking up the wrong files.
 
-Saves every figure as PNG (300 dpi) into this folder.
+Saves every figure as both a vector PDF (for the paper) and a 300 dpi
+PNG (for README) into this folder, same base name.
 
 Everything shown (which workloads "help", where a value is exactly
 zero, which cells are any_harm=True, which specific metrics tripped
@@ -121,12 +122,29 @@ for _wl in WORKLOAD_ORDER:
         DISPLAY_NAME[_wl] = f"rate sweep s{_m.group(2)}, {_m.group(1)} tasks/ms"
 assert set(DISPLAY_NAME) == set(WORKLOAD_ORDER), "DISPLAY_NAME must cover exactly WORKLOAD_ORDER"
 
+# LNCS paper style: Times-matching serif, small point sizes, thin lines.
+# Set once here -- every figure function below inherits it via rcParams,
+# nothing is re-set per figure.
 plt.rcParams.update({
-    "font.size": 14,
-    "axes.labelsize": 14,
-    "legend.fontsize": 12,
-    "xtick.labelsize": 12,
-    "ytick.labelsize": 12,
+    "font.family": "serif",
+    "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
+    "mathtext.fontset": "stix",
+    "font.size": 8,
+    "axes.labelsize": 9,
+    "legend.fontsize": 8,
+    "xtick.labelsize": 8,
+    "ytick.labelsize": 8,
+    "axes.linewidth": 0.6,
+    "xtick.major.width": 0.6,
+    "ytick.major.width": 0.6,
+    "ytick.major.size": 2.5,
+    "xtick.major.size": 2.5,
+    "lines.linewidth": 1.0,
+    "patch.linewidth": 0.6,
+    "legend.handlelength": 1.4,
+    "legend.borderpad": 0.3,
+    "legend.labelspacing": 0.3,
+    "legend.columnspacing": 1.0,
     "axes.spines.top": False,
     "axes.spines.right": False,
     "axes.grid": False,
@@ -134,13 +152,25 @@ plt.rcParams.update({
     "savefig.facecolor": "white",
 })
 
+# Width = LNCS single-column text width, 4.8 in (12.2 cm); height varies
+# per figure below (bar charts/scatter/two-panel each sized so nothing
+# is squashed), per figure function.
+FIG_WIDTH = 4.8
+
 
 # ================================================================== I/O ==
 
-def save(fig, name):
-    fig.savefig(HERE / f"{name}.png", dpi=300, bbox_inches="tight")
+def save(fig, name, crop=True):
+    """crop=False keeps the figure's full nominal canvas (no bbox_inches=
+    "tight") -- needed only for Fig 2, whose equal-aspect axes leaves
+    blank side margins in a non-square canvas; auto-cropping those away
+    would shrink the saved file below the LNCS text width. Every other
+    figure fills its canvas and crops normally."""
+    kwargs = dict(bbox_inches="tight", pad_inches=0.02) if crop else {}
+    fig.savefig(HERE / f"{name}.pdf", **kwargs)
+    fig.savefig(HERE / f"{name}.png", dpi=300, **kwargs)
     plt.close(fig)
-    print(f"Wrote {name}.png")
+    print(f"Wrote {name}.pdf and {name}.png")
 
 
 def read_csv(name):
@@ -261,12 +291,12 @@ def fig0_calibration_grid():
     DISQUALIFIED_COLOR = COLOR["harm"]
 
     y = list(range(len(ordered_for_plot)))
-    fig, ax = plt.subplots(figsize=(10, 8.5))
+    fig, ax = plt.subplots(figsize=(FIG_WIDTH, 3.0))
     bar_colors = [HARM_FREE_COLOR if p["harm_count"] == 0 else DISQUALIFIED_COLOR
                   for p in ordered_for_plot]
     ax.barh(y, [p["mean_pct"] for p in ordered_for_plot], height=0.65,
             color=bar_colors, zorder=3)
-    ax.axvline(0, color="black", linewidth=1.0)
+    ax.axvline(0, color="black", linewidth=0.7)
 
     xmin = min(p["mean_pct"] for p in points)
     xmax = max(p["mean_pct"] for p in points)
@@ -277,12 +307,12 @@ def fig0_calibration_grid():
         going_left = x_end <= 0
         xtxt = x_end - label_pad if going_left else x_end + label_pad
         ax.annotate(str(p["harm_count"]), xy=(xtxt, yy), va="center",
-                    ha="right" if going_left else "left", fontsize=10.5, color="black")
+                    ha="right" if going_left else "left", fontsize=6, color="black")
         if p["config"] == selected_name:
-            ax.plot(x_end, yy, marker="*", markersize=20, color="black", zorder=6)
+            ax.plot(x_end, yy, marker="*", markersize=10, color="black", zorder=6)
         elif p["config"] == runner_up_name:
-            ax.plot(x_end, yy, marker="D", markersize=11, markerfacecolor="white",
-                    markeredgecolor="black", markeredgewidth=2, zorder=6)
+            ax.plot(x_end, yy, marker="D", markersize=6, markerfacecolor="white",
+                    markeredgecolor="black", markeredgewidth=1, zorder=6)
 
     ax.set_yticks(y)
     ax.set_yticklabels([p["label"] for p in ordered_for_plot])
@@ -293,21 +323,21 @@ def fig0_calibration_grid():
     ax.set_xlabel("Mean p95 wait change (%)")
 
     handles = [
-        Line2D([0], [0], marker="s", linestyle="none", markersize=14,
+        Line2D([0], [0], marker="s", linestyle="none", markersize=6,
                markerfacecolor=HARM_FREE_COLOR, markeredgecolor=HARM_FREE_COLOR,
                label="Harm-free"),
-        Line2D([0], [0], marker="s", linestyle="none", markersize=14,
+        Line2D([0], [0], marker="s", linestyle="none", markersize=6,
                markerfacecolor=DISQUALIFIED_COLOR, markeredgecolor=DISQUALIFIED_COLOR,
                label="Disqualified (harmful)"),
-        Line2D([0], [0], marker="*", linestyle="none", markersize=17, color="black",
+        Line2D([0], [0], marker="*", linestyle="none", markersize=9, color="black",
                label=f"Selected: {selected_pt['label']}"),
-        Line2D([0], [0], marker="D", linestyle="none", markersize=10,
-               markerfacecolor="white", markeredgecolor="black", markeredgewidth=2,
+        Line2D([0], [0], marker="D", linestyle="none", markersize=6,
+               markerfacecolor="white", markeredgecolor="black", markeredgewidth=1,
                label=f"Runner-up: {runner_up_pt['label']}"),
     ]
     fig.legend(handles=handles, loc="lower center", ncol=2, frameon=False,
-               fontsize=11, bbox_to_anchor=(0.5, -0.02))
-    fig.tight_layout(rect=(0, 0.06, 1, 1))
+               bbox_to_anchor=(0.5, -0.04))
+    fig.tight_layout(rect=(0, 0.16, 1, 1))
 
     save(fig, "fig0_calibration_grid")
     return dict(selected=selected_name, runner_up=runner_up_name,
@@ -340,42 +370,46 @@ def fig1_headline():
     ordered_for_plot = list(reversed(ordered))  # barh: first entry plots at the bottom
 
     y = list(range(len(ordered_for_plot)))
-    fig, ax = plt.subplots(figsize=(9, 7.5))
+    fig, ax = plt.subplots(figsize=(FIG_WIDTH, 3.2))
     ax.barh(y, [checked_pct[wl] for wl in ordered_for_plot],
             height=0.6, color=COLOR["selected_checked"], label=LABELS["selected_checked"])
 
     for yy, wl in zip(y, ordered_for_plot):
         if checked_zero[wl]:
-            ax.plot(0, yy, marker="o", markersize=7,
+            ax.plot(0, yy, marker="o", markersize=4.5,
                     markerfacecolor="white", markeredgecolor=COLOR["selected_checked"],
-                    markeredgewidth=1.6, zorder=6)
+                    markeredgewidth=0.8, zorder=6)
         if checked_sig[wl] and checked_pct[wl] < 0:
-            ax.plot(checked_pct[wl], yy, marker="*", markersize=14,
+            ax.plot(checked_pct[wl], yy, marker="*", markersize=7,
                     color=COLOR["sig"], zorder=5)
         if checked_harm[wl]:
-            ax.plot(checked_pct[wl], yy, marker="^", markersize=10,
+            ax.plot(checked_pct[wl], yy, marker="^", markersize=5,
                     color=COLOR["harm"], zorder=5)
 
-    ax.axvline(0, color="black", linewidth=1.0)
+    ax.axvline(0, color="black", linewidth=0.7)
     ax.set_yticks(y)
     ax.set_yticklabels([DISPLAY_NAME[wl] for wl in ordered_for_plot])
-    ax.set_xlabel(f"p95 wait change vs baseline (%) -- penalty {PEN} ms")
+    ax.set_xlabel(f"p95 wait change vs baseline (%) -- migration cost {PEN} ms")
 
+    # Inside the axes, lower-left: the 12 "no measurable change" workloads
+    # (zero-length bars) are sorted to the BOTTOM of this chart (see
+    # ordered_for_plot above), so the lower-left quadrant is guaranteed
+    # empty of any bar -- a safe place for an in-plot legend instead of
+    # a separate strip below the figure.
     handles, labels = ax.get_legend_handles_labels()
     handles += [
-        Line2D([0], [0], marker="o", linestyle="none", markersize=9,
+        Line2D([0], [0], marker="o", linestyle="none", markersize=4.5,
                markerfacecolor="white", markeredgecolor=COLOR["selected_checked"],
-               markeredgewidth=1.6, label="No measurable change"),
-        Line2D([0], [0], marker="*", linestyle="none", markersize=14,
+               markeredgewidth=0.8, label="No measurable change"),
+        Line2D([0], [0], marker="*", linestyle="none", markersize=7,
                color=COLOR["sig"], label=f"Statistically significant improvement (p<{SIG_ALPHA})"),
-        Line2D([0], [0], marker="^", linestyle="none", markersize=10,
+        Line2D([0], [0], marker="^", linestyle="none", markersize=5,
                markerfacecolor=COLOR["harm"], markeredgecolor=COLOR["harm"],
                label="Flagged harmful (any affected metric)"),
     ]
     labels += [h.get_label() for h in handles[-3:]]
-    fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False,
-               fontsize=11, bbox_to_anchor=(0.5, -0.1))
-    fig.tight_layout(rect=(0, 0.08, 1, 1))
+    ax.legend(handles, labels, loc="lower left", ncol=1, frameon=False, borderaxespad=0.6)
+    fig.tight_layout()
 
     save(fig, "fig1_headline_p95wait_by_workload")
     return dict(checked_pct=checked_pct)
@@ -395,12 +429,12 @@ def fig2_stacked_high_scatter():
     print(f"Fig 2: {FIG2_WORKLOAD}, penalty={FIG2_PENALTY}, selected_checked: "
           f"{improved} of {n} seeds improved (variant < baseline p95_wait)")
 
-    fig, ax = plt.subplots(figsize=(6.5, 6.5))
+    fig, ax = plt.subplots(figsize=(FIG_WIDTH, 3.0))
     lo, hi = min(base + var), max(base + var)
     pad = (hi - lo) * 0.08
     ax.plot([lo - pad, hi + pad], [lo - pad, hi + pad],
-            color=COLOR["baseline"], linestyle="--", linewidth=1.5, label="No change (y = x)")
-    ax.scatter(base, var, color=COLOR["selected_checked"], s=60, zorder=5,
+            color=COLOR["baseline"], linestyle="--", linewidth=0.8, label="No change (y = x)")
+    ax.scatter(base, var, color=COLOR["selected_checked"], s=18, zorder=5,
                label="One seed each")
     ax.set_xlim(lo - pad, hi + pad)
     ax.set_ylim(lo - pad, hi + pad)
@@ -409,15 +443,22 @@ def fig2_stacked_high_scatter():
     ax.set_ylabel("Burst-aware p95 wait (ms)")
     ax.annotate(f"{improved} of {n} seeds improved",
                 xy=(0.04, 0.94), xycoords="axes fraction",
-                fontsize=13, va="top")
-    ax.annotate(f"{DISPLAY_NAME[FIG2_WORKLOAD]}, migration penalty {FIG2_PENALTY} ms",
+                fontsize=8, va="top")
+    ax.annotate(f"{DISPLAY_NAME[FIG2_WORKLOAD]}, migration cost {FIG2_PENALTY} ms",
                 xy=(0.04, 0.88), xycoords="axes fraction",
-                fontsize=11, va="top", color="dimgray")
-    fig.legend(loc="lower center", ncol=2, frameon=False, fontsize=11,
-               bbox_to_anchor=(0.5, -0.06))
-    fig.tight_layout(rect=(0, 0.05, 1, 1))
+                fontsize=7, va="top", color="dimgray")
+    # Inside, upper-right, dropped below the two text annotations: no
+    # data point exceeds var=~27.5 at ANY baseline value (checked
+    # directly against the per-seed values, not assumed), so the whole
+    # band above that is empty -- anchored low enough to clear the
+    # annotation text block above it. Only the y=x line passes through
+    # this corner, so a light opaque legend background cleanly sits over it.
+    ax.legend(loc="upper right", bbox_to_anchor=(0.99, 0.79),
+              frameon=True, facecolor="white", edgecolor="none", framealpha=0.9,
+              borderaxespad=0.4)
+    fig.tight_layout()
 
-    save(fig, "fig2_stacked_high_perseed_scatter")
+    save(fig, "fig2_stacked_high_perseed_scatter", crop=False)
     return dict(improved=improved, n=n)
 
 
@@ -486,7 +527,7 @@ def fig3_bursty_high_s64():
 
     x = range(len(penalties))
     w = 0.25
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5.5))
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(FIG_WIDTH, 2.4))
 
     for ax, key, ylabel in [(ax1, "mig", "Total migrations (count)"),
                              (ax2, "p95", "p95 wait (ms)")]:
@@ -501,7 +542,7 @@ def fig3_bursty_high_s64():
                color=COLOR["selected_checked"], label=LABELS["selected_checked"])
         ax.set_xticks(list(x))
         ax.set_xticklabels([f"{p} ms" for p in penalties])
-        ax.set_xlabel("Migration penalty")
+        ax.set_xlabel("Migration cost")
         ax.set_ylabel(ylabel)
 
     # Harm is reported as a text label above the affected bar, migrations
@@ -518,18 +559,18 @@ def fig3_bursty_high_s64():
                 text = "flagged harmful (" + ", ".join(pretty_metric(m) for m in metrics) + ")"
                 ax1.annotate(text, xy=(xx + dx, data[p][f"{side}_mig"]),
                              xytext=(xx + dx, mig_top * 1.08),
-                             ha="center", va="bottom", fontsize=10, color=COLOR["harm"],
-                             arrowprops=dict(arrowstyle="-", color=COLOR["harm"], linewidth=1))
+                             ha="center", va="bottom", fontsize=6, color=COLOR["harm"],
+                             arrowprops=dict(arrowstyle="-", color=COLOR["harm"], linewidth=0.6))
     ax1.set_ylim(top=mig_top * 1.25)
 
     ax1.annotate(f"{DISPLAY_NAME[WL]} ({burst_size_of(WL)}-task bursts, {MACHINE_CORES} cores)",
-                 xy=(0.02, 0.98), xycoords="axes fraction", fontsize=11,
+                 xy=(0.02, 0.98), xycoords="axes fraction", fontsize=6.5,
                  va="top", color="dimgray")
 
     handles, labels = ax1.get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper center", ncol=3, frameon=False,
-               fontsize=11, bbox_to_anchor=(0.5, 1.04))
-    fig.tight_layout(rect=(0, 0, 1, 0.93))
+               bbox_to_anchor=(0.5, 1.03))
+    fig.tight_layout(rect=(0, 0, 1, 0.88))
 
     save(fig, "fig3_bursty_high_s64_checked_vs_unchecked")
     return data
@@ -555,7 +596,7 @@ def fig4_arrival_rate():
 
     key = "selected_checked"
     color = COLOR[key]
-    fig, axes = plt.subplots(1, 2, figsize=(12, 5.5), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(FIG_WIDTH, 2.4), sharey=True)
     for ax, size in zip(axes, [4, 12]):
         for pen in FIG4_PENALTIES:
             ys, harmed = [], []
@@ -567,25 +608,28 @@ def fig4_arrival_rate():
             print(f"Fig 4 burst_size={size} {key} penalty={pen}: {ys} "
                   f"(harm={harmed})")
             ax.plot(rates, ys, linestyle=linestyle[pen], marker=marker[pen],
-                    color=color, label=f"{LABELS[key]} (penalty={pen}ms)")
+                    color=color, markersize=4, label=f"{LABELS[key]} (migration cost {pen} ms)")
             for rate, yval, h in zip(rates, ys, harmed):
                 if h:
-                    ax.plot(rate, yval, marker="^", markersize=10,
+                    ax.plot(rate, yval, marker="^", markersize=5,
                             color=COLOR["harm"], zorder=6)
-        ax.axhline(0, color="black", linewidth=1.0)
+        ax.axhline(0, color="black", linewidth=0.7)
         ax.set_xlabel("Arrival rate during burst (tasks/ms)")
         ax.annotate(f"burst size = {size}", xy=(0.04, 0.04), xycoords="axes fraction",
-                    fontsize=12, va="bottom")
+                    fontsize=7, va="bottom")
     axes[0].set_ylabel("p95 wait change vs baseline (%)")
 
     handles, labels = axes[0].get_legend_handles_labels()
-    handles.append(Line2D([0], [0], marker="^", linestyle="none", markersize=10,
+    handles.append(Line2D([0], [0], marker="^", linestyle="none", markersize=5,
                            markerfacecolor=COLOR["harm"], markeredgecolor=COLOR["harm"],
                            label="Flagged harmful (any affected metric)"))
     labels.append("Flagged harmful (any affected metric)")
-    fig.legend(handles, labels, loc="lower center", ncol=2, frameon=False,
-               fontsize=10, bbox_to_anchor=(0.5, -0.16))
-    fig.tight_layout(rect=(0, 0.12, 1, 1))
+    # Inside axes[0] (burst size = 4): every value there is exactly 0 (flat
+    # line at y=0), so the rest of that panel is empty -- an in-plot legend
+    # there costs no extra figure height, unlike the other panels where
+    # data actually varies.
+    axes[0].legend(handles, labels, loc="upper left", ncol=1, frameon=False, borderaxespad=0.6)
+    fig.tight_layout()
 
     save(fig, "fig4_p95wait_vs_arrival_rate")
 
