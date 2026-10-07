@@ -391,23 +391,32 @@ def fig1_headline():
     ax.set_yticklabels([DISPLAY_NAME[wl] for wl in ordered_for_plot])
     ax.set_xlabel(f"p95 wait change vs baseline (%) -- migration cost {PEN} ms")
 
+    # Each of these three marker legend entries is only added if that
+    # marker is actually drawn somewhere above -- same condition as the
+    # loop, read from the same dicts, not assumed from the workload set.
+    any_zero = any(checked_zero.values())
+    any_sig = any(checked_sig[wl] and checked_pct[wl] < 0 for wl in WORKLOAD_ORDER)
+    any_harm = any(checked_harm.values())
+
     # Inside the axes, lower-left: the 12 "no measurable change" workloads
     # (zero-length bars) are sorted to the BOTTOM of this chart (see
     # ordered_for_plot above), so the lower-left quadrant is guaranteed
     # empty of any bar -- a safe place for an in-plot legend instead of
     # a separate strip below the figure.
     handles, labels = ax.get_legend_handles_labels()
-    handles += [
-        Line2D([0], [0], marker="o", linestyle="none", markersize=4.5,
-               markerfacecolor="white", markeredgecolor=COLOR["selected_checked"],
-               markeredgewidth=0.8, label="No measurable change"),
-        Line2D([0], [0], marker="*", linestyle="none", markersize=7,
-               color=COLOR["sig"], label=f"Statistically significant improvement (p<{SIG_ALPHA})"),
-        Line2D([0], [0], marker="^", linestyle="none", markersize=5,
-               markerfacecolor=COLOR["harm"], markeredgecolor=COLOR["harm"],
-               label="Flagged harmful (any affected metric)"),
-    ]
-    labels += [h.get_label() for h in handles[-3:]]
+    if any_zero:
+        handles.append(Line2D([0], [0], marker="o", linestyle="none", markersize=4.5,
+                               markerfacecolor="white", markeredgecolor=COLOR["selected_checked"],
+                               markeredgewidth=0.8, label="No measurable change"))
+    if any_sig:
+        handles.append(Line2D([0], [0], marker="*", linestyle="none", markersize=7,
+                               color=COLOR["sig"],
+                               label=f"Statistically significant improvement (p<{SIG_ALPHA})"))
+    if any_harm:
+        handles.append(Line2D([0], [0], marker="^", linestyle="none", markersize=5,
+                               markerfacecolor=COLOR["harm"], markeredgecolor=COLOR["harm"],
+                               label="Flagged harmful (any affected metric)"))
+    labels = [h.get_label() for h in handles]
     ax.legend(handles, labels, loc="lower left", ncol=1, frameon=False, borderaxespad=0.6)
     fig.tight_layout()
 
@@ -596,6 +605,7 @@ def fig4_arrival_rate():
 
     key = "selected_checked"
     color = COLOR[key]
+    any_harmed = False
     fig, axes = plt.subplots(1, 2, figsize=(FIG_WIDTH, 2.4), sharey=True)
     for ax, size in zip(axes, [4, 12]):
         for pen in FIG4_PENALTIES:
@@ -611,24 +621,34 @@ def fig4_arrival_rate():
                     color=color, markersize=4, label=f"{LABELS[key]} (migration cost {pen} ms)")
             for rate, yval, h in zip(rates, ys, harmed):
                 if h:
+                    any_harmed = True
                     ax.plot(rate, yval, marker="^", markersize=5,
                             color=COLOR["harm"], zorder=6)
         ax.axhline(0, color="black", linewidth=0.7)
         ax.set_xlabel("Arrival rate during burst (tasks/ms)")
-        ax.annotate(f"burst size = {size}", xy=(0.04, 0.04), xycoords="axes fraction",
-                    fontsize=7, va="bottom")
+    # burst size = 4: every value is 0 (flat line), so (0.04, 0.04) is
+    # clear. burst size = 12: data drops to ~-23% right around rate=1.5,
+    # near that same lower-left corner -- moved to upper-middle instead,
+    # which stays clear for every rate > 1.0 (where the line is already
+    # well below 0, checked against the per-seed values, not assumed).
+    axes[0].annotate("burst size = 4", xy=(0.04, 0.04), xycoords="axes fraction",
+                      fontsize=7, va="bottom")
+    axes[1].annotate("burst size = 12", xy=(0.5, 0.95), xycoords="axes fraction",
+                      fontsize=7, ha="center", va="top")
     axes[0].set_ylabel("p95 wait change vs baseline (%)")
 
     handles, labels = axes[0].get_legend_handles_labels()
-    handles.append(Line2D([0], [0], marker="^", linestyle="none", markersize=5,
-                           markerfacecolor=COLOR["harm"], markeredgecolor=COLOR["harm"],
-                           label="Flagged harmful (any affected metric)"))
-    labels.append("Flagged harmful (any affected metric)")
+    if any_harmed:
+        handles.append(Line2D([0], [0], marker="^", linestyle="none", markersize=5,
+                               markerfacecolor=COLOR["harm"], markeredgecolor=COLOR["harm"],
+                               label="Flagged harmful (any affected metric)"))
+        labels.append("Flagged harmful (any affected metric)")
     # Inside axes[0] (burst size = 4): every value there is exactly 0 (flat
-    # line at y=0), so the rest of that panel is empty -- an in-plot legend
-    # there costs no extra figure height, unlike the other panels where
-    # data actually varies.
-    axes[0].legend(handles, labels, loc="upper left", ncol=1, frameon=False, borderaxespad=0.6)
+    # line at y=0 across the whole panel width), so "center left" sits well
+    # clear of the line and its markers, which are only up at the very top
+    # of the shared y-range (the real negative values in the right panel
+    # set how much headroom below 0 this shared axis needs).
+    axes[0].legend(handles, labels, loc="center left", ncol=1, frameon=False, borderaxespad=0.6)
     fig.tight_layout()
 
     save(fig, "fig4_p95wait_vs_arrival_rate")

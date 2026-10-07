@@ -65,7 +65,7 @@ Moved here from `development/` (2026-10-01) since it measures the exact seeds/th
 
 Every other figure in `final_results/` (old-version plots, and the old-style v4 `figure_threshold_grid_tradeoff_v4.png`/`figure_p95wait_vs_arrival_rate_v4.png`) now lives in a `history/` subfolder of its own folder, superseded by the five figures here. If you're looking for a figure to cite, it's one of these five.
 
-Read-only, same discipline as `3_idle_check_cost/build_cost_table.py`: no simulation runs, reads only already-committed CSVs under `final_results/2_confirmation/` and `final_results/1_calibration_grid/`, writes nothing back into either. Same `TASK10_V4=1` guard as the pipeline scripts it follows (`docs/PIPELINE.md`'s Figures step) -- refuses to run otherwise. Figures are PNG only (300 dpi), no PDF.
+Read-only, same discipline as `3_idle_check_cost/build_cost_table.py`: no simulation runs, reads only already-committed CSVs under `final_results/2_confirmation/` and `final_results/1_calibration_grid/`, writes nothing back into either. Same `TASK10_V4=1` guard as the pipeline scripts it follows (`docs/PIPELINE.md`'s Figures step) -- refuses to run otherwise. Each figure is written as both a vector PDF (for the paper) and a 300 dpi PNG (for README), same base name.
 
 | file | what it does |
 |---|---|
