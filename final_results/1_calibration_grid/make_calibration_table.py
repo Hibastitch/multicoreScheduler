@@ -143,15 +143,22 @@ def main():
         for cfg in EXPECTED_ORDER
     }
 
-    # ------------------------------------------------ per-workload p95 cells ==
-    cell_pct = {}  # (config, workload) -> mean p95_wait_pct over penalty 0/0.5
+    # Same 3 metrics the corrected harm rule itself checks
+    # (task6_threshold_grid_recompute_harm.py's own METRICS list) -- the
+    # ones harm_breakdown_v4.csv's "metric" column names.
+    METRICS = ["p95_wait", "avg_wait", "avg_slowdown"]
+
+    # ------------------------------------------- per-workload per-metric cells ==
+    cell_pct = {m: {} for m in METRICS}  # cell_pct[metric][(config, workload)] -> mean pct over penalty 0/0.5
     for wl, _ in WORKLOAD_COLUMNS:
         rows = read_csv(f"results_task6_threshold_grid_v4_{wl}_summary.csv")
-        by_cfg_pen = {(r["config"], r["penalty"]): float(r["p95_wait_pct"]) for r in rows}
+        by_cfg_pen = {(r["config"], r["penalty"]): r for r in rows}
         for cfg in EXPECTED_ORDER:
-            vals = [by_cfg_pen[(cfg, pen)] for pen in ("0.0", "0.5")]
-            assert len(vals) == 2, f"expected penalty 0.0 and 0.5 rows for {cfg}/{wl}, found {len(vals)}"
-            cell_pct[(cfg, wl)] = sum(vals) / 2
+            row_pair = [by_cfg_pen[(cfg, pen)] for pen in ("0.0", "0.5")]
+            assert len(row_pair) == 2, f"expected penalty 0.0 and 0.5 rows for {cfg}/{wl}, found {len(row_pair)}"
+            for m in METRICS:
+                vals = [float(r[f"{m}_pct"]) for r in row_pair]
+                cell_pct[m][(cfg, wl)] = sum(vals) / 2
 
     # ------------------------------------------- disqualifying harm detail ==
     harm_breakdown_rows = read_csv("harm_breakdown_v4.csv")
@@ -177,6 +184,16 @@ def main():
           f"tradeoff_points_v4.csv's harmed_workloads agree exactly on "
           f"{len(from_tradeoff)} disqualifying (config, workload) pairs.")
 
+    # Per-metric harm sets (for calibration_metrics_v4.md): unlike
+    # harmed_workloads_by_cfg above (ANY of the 3 metrics, used by the
+    # combined calibration_table_v4.md), each of these three tables marks
+    # only the (config, workload) cells where THAT SPECIFIC metric tripped
+    # the corrected rule -- read directly from harm_detail's own "metric"
+    # column, not re-derived or assumed.
+    harmed_by_metric = {m: {cfg: set() for cfg in EXPECTED_ORDER} for m in METRICS}
+    for r in harm_detail:
+        harmed_by_metric[r["metric"]][r["config"]].add(r["workload"])
+
     wl_display = dict(WORKLOAD_COLUMNS)
 
     def status_of(cfg):
@@ -195,7 +212,7 @@ def main():
             "config": config_label(tradeoff_by_cfg[cfg]),
         }
         for wl, disp in WORKLOAD_COLUMNS:
-            pct = cell_pct[(cfg, wl)]
+            pct = cell_pct["p95_wait"][(cfg, wl)]
             marker = "†" if wl in harmed_workloads_by_cfg[cfg] else ""
             row[disp] = f"{pct:+.1f}{marker}"
         row["selection score"] = f"{selection_score(cfg):+.2f}"
@@ -236,6 +253,38 @@ def main():
         for row in table_rows:
             f.write("| " + " | ".join(str(row[c]) for c in columns) + " |\n")
     print(f"Wrote {md_path.name}")
+
+    # -------------------------------------------------- three-metric tables ==
+    metric_columns = ["#", "config"] + [disp for _, disp in WORKLOAD_COLUMNS]
+    metric_title = {
+        "p95_wait": "p95 wait % change",
+        "avg_wait": "avg wait % change",
+        "avg_slowdown": "avg slowdown % change",
+    }
+    metrics_path = HERE / "calibration_metrics_v4.md"
+    with open(metrics_path, "w", encoding="utf-8") as f:
+        f.write("# Calibration results on the three calibration metrics\n\n")
+        f.write(
+            "Mean % change vs baseline over migration cost 0 and 0.5 ms, per "
+            "(config, calibration workload); same #1-12 numbering/order as "
+            "calibration_table_v4.md. H marks a cell where THAT metric "
+            "specifically tripped the corrected disqualifying-harm rule "
+            "(penalty 0 or 0.5 ms only) -- see calibration_harm_detail_v4.csv "
+            "for the full per-metric detail (wins/losses/sign p).\n\n"
+        )
+        for m in METRICS:
+            f.write(f"## {metric_title[m]}\n\n")
+            f.write("| " + " | ".join(metric_columns) + " |\n")
+            f.write("|" + "|".join(["---"] * len(metric_columns)) + "|\n")
+            for cfg in EXPECTED_ORDER:
+                cells = [str(config_number[cfg]), config_label(tradeoff_by_cfg[cfg])]
+                for wl, disp in WORKLOAD_COLUMNS:
+                    pct = cell_pct[m][(cfg, wl)]
+                    marker = "H" if wl in harmed_by_metric[m][cfg] else ""
+                    cells.append(f"{pct:+.1f}{marker}")
+                f.write("| " + " | ".join(cells) + " |\n")
+            f.write("\n")
+    print(f"Wrote {metrics_path.name}")
 
     detail_columns = ["config", "workload", "migration cost", "metric",
                        "% change", "wins", "losses", "sign p"]
