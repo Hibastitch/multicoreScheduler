@@ -1,0 +1,8 @@
+config,workload,migration cost,metric,% change,wins,losses,sign p
+#2 q≥2 OR rate≥0.8,bursty s24,0.0 ms,avg wait,+2.018,5,16,0.02660369873046875
+#2 q≥2 OR rate≥0.8,rate sweep s4 @0.5,0.0 ms,avg wait,+6.773,9,21,0.04277394525706768
+#2 q≥2 OR rate≥0.8,rate sweep s4 @0.5,0.0 ms,p95 wait,+20.305,7,20,0.0191572904586792
+#4 q≥2 OR rate≥1.5,rate sweep s4 @0.5,0.0 ms,avg wait,+6.773,9,21,0.04277394525706768
+#4 q≥2 OR rate≥1.5,rate sweep s4 @0.5,0.0 ms,p95 wait,+20.305,7,20,0.0191572904586792
+#6 q≥4 OR rate≥0.8,bursty s24,0.0 ms,avg wait,+2.018,5,16,0.02660369873046875
+#10 q≥8 OR rate≥0.8,bursty s24,0.0 ms,avg wait,+2.018,5,16,0.02660369873046875
